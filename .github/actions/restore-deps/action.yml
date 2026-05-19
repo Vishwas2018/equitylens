@@ -1,0 +1,25 @@
+name: Restore dependencies
+description: >
+  Set up Node 20.14.0 (from .nvmrc), pnpm (lockfile-compatible), and restore
+  the pnpm store cache. Uses --frozen-lockfile so CI never silently updates
+  the lockfile.
+
+runs:
+  using: composite
+  steps:
+    - name: Set up pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        # DEV-0002: local dev runs pnpm 10.x; lockfileVersion 9.0 is compatible
+        # with both pnpm 9 and 10. Pinning to 10 to match lockfile generator.
+        version: '10'
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile
