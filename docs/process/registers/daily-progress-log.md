@@ -113,6 +113,72 @@ Repo initialised, remote wired, branch protection enabled, audit script stub in 
 
 ---
 
+## Day 1 — 2026-05-19 — Environment & CI
+
+**Day status**: clean
+
+**Primary goal**
+Fully-configured monorepo: TypeScript strict mode, ESLint + Prettier + Husky enforcing commit hygiene, CCTV audit script, GitHub Actions CI, Vercel preview deployment live.
+
+**Achieved**
+
+- D01-T1 — monorepo + toolchain bootstrap — pnpm workspace, Turborepo, Next.js 14.2.29, engines/packageManager pinned — commit `59ea396`
+- D01-T2 — TypeScript strict configuration — tsconfig.base.json + per-package configs, all packages typecheck clean — commit `9f21d5f`
+- D01-T3 — ESLint, Prettier, Husky, commitlint — lint clean, format clean, bad commit rejected; engine ESLint financial rules active — commit `8918901`
+- D01-T4 — full CCTV audit script — scripts/lib/git.ts + checks.ts + audit-cctv.ts; report generated; 5/6 wired checks pass; audit-deps red = DEF-0001 — commits `66f8b27`, `828f38e`
+- D01-T5 — CI workflow — .github/workflows/ci.yml + CODEOWNERS + PR template + restore-deps composite action; commit-lint job with task-ID grep — commit `a4f90de`
+- D01-T6 — Vercel deployment — vercel.json + .vercelignore; preview URL live: https://equitylens-26137hhyi-vishwas2018s-projects.vercel.app; /api/health → `{"ok":true,"version":"dev"}` — commits `6c92a47`, `0803c79`, `7e64b83`, `0507d1e`, `82cd65a`
+- D01-T7 — day 1 closeout — registers, EOD reports, deviations, tech debt, day-01-end tag — this commit
+
+**Not achieved (rolled forward)**
+
+- None — all 7 tasks complete
+
+**Registers touched**
+
+- Backlog: opened `BL-0022` (Next.js 14→15 migration, P0)
+- Defects: opened `DEF-0001` (sev2, Next.js 14.2.29 CVEs, open)
+- Deviations: `DEV-0001` (closed/accepted), `DEV-0002` (open/accepted), `DEV-0005` (closed/accepted), `DEV-0006` (open/accepted+mitigation), `DEV-0007` (closed/accepted), `DEV-0008` (closed/accepted), `DEV-0009` (closed/accepted)
+- Tech debt: opened `TD-0001` through `TD-0008`
+- ADRs: none opened (all pre-Day-1 ADRs already accepted)
+
+**Checkpoints**
+
+- D01-T1 through D01-T7: all pass
+- CCTV audit (`pnpm audit:cctv --day 01`): 5/6 wired checks pass; audit-deps FAIL = DEF-0001 (known)
+- Coverage: N/A (engine coverage wired Day 4, app Day 8)
+- Perf signals: N/A
+
+**Notable decisions**
+
+- Next.js upgraded 14.2.5 → 14.2.29 immediately (critical CVE fix); remaining 7 CVEs require 15.x migration (BL-0022, deadline Day 8)
+- `npm_config_engine_strict=false` env-var pattern chosen over per-hook `.npmrc` override to keep repo `.npmrc` security-clean
+- `rootDirectory` is a Vercel dashboard-only setting; vercel.json uses `outputDirectory: ".next"` relative to Root Directory
+- CI `audit-deps` job kept as hard failure (not `continue-on-error`) to drive DEF-0001 resolution
+
+**Surprises / lessons**
+
+- `header-pattern` does not exist in commitlint — spec was aspirational; grep-based hook is the correct implementation
+- `import.meta.url.pathname` on Windows gives `/C:/...` not `C:/...`; `fileURLToPath()` is always correct for path conversion
+- Vercel `rootDirectory` must be set in dashboard even for monorepos; schema only allows `outputDirectory`
+- Node 20.14.0 in `.nvmrc` must match Vercel Node.js Version setting to avoid function deployment issues
+
+**Carried forward to Day 2**
+
+- DEF-0001: decide whether to migrate Next.js 14→15 immediately (Day 2) or defer to Day 8
+- TD-0001 through TD-0003: wire migration / RLS / region CI checks once Supabase project created
+- Required status checks configuration in GitHub branch protection (human action — see D01-T5 checkpoint)
+- Vercel `BUILD_SHA` env var: set `VERCEL_GIT_COMMIT_SHA` as `BUILD_SHA` in Vercel project env vars for non-CI deploys
+
+**Evidence**
+
+- CCTV report: `prompts/day-01/01-cctv-audit-report.md`
+- Daily prompt: `prompts/day-01/02-daily-execution-prompt.md` (N/A — bootstrap day, no prior prompt)
+- End-of-day report: `prompts/day-01/03-end-of-day-report.md`
+- Start/end tags: `day-0-end` → `day-01-end` @ HEAD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.

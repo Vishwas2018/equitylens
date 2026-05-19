@@ -24,9 +24,205 @@
 
 ## Open Debt
 
-| ID      | Category | Severity | Title                                                                            | Opened day | Status | Linked   |
-| ------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | ------ | -------- |
-| TD-0008 | ci       | medium   | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 01     | open   | DEF-0001 |
+| ID      | Category | Severity | Title                                                                            | Opened day | Status    | Linked   |
+| ------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | --------- | -------- |
+| TD-0001 | ci       | low      | migration-status / migration-dryrun CI checks not yet wired                      | Day 01     | scheduled | N/A      |
+| TD-0002 | ci       | low      | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01     | scheduled | N/A      |
+| TD-0003 | ci       | low      | region-check CI check not yet wired                                              | Day 01     | scheduled | N/A      |
+| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired                  | Day 01     | scheduled | N/A      |
+| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                 | Day 01     | scheduled | N/A      |
+| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                               | Day 01     | scheduled | N/A      |
+| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                | Day 01     | open      | N/A      |
+| TD-0008 | ci       | medium   | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 01     | open      | DEF-0001 |
+
+---
+
+### TD-0001 — migration-status / migration-dryrun CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 2)
+- **Linked**: N/A
+
+**What's the debt?**
+`migration-status` and `migration-dryrun` CCTV checks are registered as `skipped` with `wiredDay: 2`. No CI job enforces them yet.
+
+**Why was it taken on?**
+Database migrations don't exist on Day 1; wiring the check before the schema exists would always fail.
+
+**Cost right now**
+CCTV reports show these as SKIPPED. Migration regressions would not be caught in CI.
+
+**Interest**: Blocks database work if not wired by Day 2; any migration pushed without dry-run validation is a rollback risk.
+
+**Trigger to repay**: Day 2 (first migration shipped).
+
+**Payoff plan**: Add `pnpm migrate:status` and `pnpm migrate:dryrun` scripts in Day 2; update `runWiredChecks()` to remove the `skipped()` entries and replace with live commands.
+
+**Estimate**: XS
+
+---
+
+### TD-0002 — rls-coverage / cross-tenant-probe CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 2)
+- **Linked**: N/A
+
+**What's the debt?**
+`rls-coverage` and `cross-tenant-probe` CCTV checks registered as skipped. No RLS policies exist yet.
+
+**Why was it taken on?**
+RLS policies are a Day 2+ deliverable; they don't exist at repo bootstrap.
+
+**Cost right now**
+Tenant-data isolation not verified in CI.
+
+**Interest**: Any RLS regression after Day 2 would be invisible in CI until wired.
+
+**Trigger to repay**: Day 2 (first RLS policy shipped).
+
+**Payoff plan**: Wire commands in `runWiredChecks()` when Supabase schema and RLS policies exist.
+
+**Estimate**: XS
+
+---
+
+### TD-0003 — region-check CI check not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 2)
+- **Linked**: N/A
+
+**What's the debt?**
+`region-check` CCTV check skipped. No Supabase project linked yet.
+
+**Why was it taken on?**
+Supabase project not created until Day 2.
+
+**Cost right now**
+No verification that Supabase is pinned to `ap-southeast-2` (ADR-0003).
+
+**Interest**: If Supabase is provisioned in the wrong region, data sovereignty compliance (Privacy Act) is violated.
+
+**Trigger to repay**: Day 2 (Supabase project creation).
+
+**Payoff plan**: Add `supabase status | grep region` check; assert `ap-southeast-2`.
+
+**Estimate**: XS
+
+---
+
+### TD-0004 — engine-determinism / ato-fixture-canary CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 4)
+- **Linked**: N/A
+
+**What's the debt?**
+`engine-determinism` and `ato-fixture-canary` CCTV checks skipped. No engine logic exists yet.
+
+**Why was it taken on?**
+Engine calculation code doesn't exist until Day 4+.
+
+**Cost right now**
+No determinism guarantee in CI.
+
+**Interest**: Engine correctness is a core product guarantee (ADR-0002, ADR-0004). Without these checks, a non-deterministic result could ship undetected.
+
+**Trigger to repay**: Day 4 (first engine function shipped).
+
+**Payoff plan**: Wire commands in `runWiredChecks()` alongside engine test harness.
+
+**Estimate**: S
+
+---
+
+### TD-0005 — bundle-budgets / a11y / disclaimer-audit CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 8)
+- **Linked**: N/A
+
+**What's the debt?**
+`bundle-budgets`, `a11y`, and `disclaimer-audit` CCTV checks skipped.
+
+**Why was it taken on?**
+No UI components exist yet; bundle and a11y checks require a rendered app.
+
+**Cost right now**
+No automated checks for bundle size regressions, a11y violations, or missing disclaimers.
+
+**Interest**: Disclaimer omissions are a compliance risk (ASIC/AFCA); a11y regressions are legal risk (Disability Discrimination Act). Both compound as UI grows.
+
+**Trigger to repay**: Day 8 (UI feature work begins).
+
+**Payoff plan**: Wire commands in `runWiredChecks()`; add `@axe-core/playwright` and Next.js bundle analyser.
+
+**Estimate**: S
+
+---
+
+### TD-0006 — secret-scan CI check not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 15)
+- **Linked**: N/A
+
+**What's the debt?**
+`secret-scan` CCTV check skipped. No scanning for accidentally committed secrets.
+
+**Why was it taken on?**
+No secrets have been committed yet; wiring a scanner requires selecting a tool (trufflehog, gitleaks, etc.).
+
+**Cost right now**
+A future accidental commit of a secret (API key, Supabase service role key) would not be caught by CI.
+
+**Interest**: Each day without scanning is a day a secret could be committed and pushed to the remote.
+
+**Trigger to repay**: Day 15 hardening (latest); sooner is better.
+
+**Payoff plan**: Add `gitleaks detect --no-git` or `trufflehog git` step to CI and CCTV.
+
+**Estimate**: XS
+
+---
+
+### TD-0007 — prettier reformat noise mixed with config signal in D01-T3 commit
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: open
+- **Linked**: N/A
+
+**What's the debt?**
+Running `pnpm format` during D01-T3 (Prettier config introduction) reformatted 40+ existing docs files. The reformatting changes are bundled in the same commit as the Prettier config. Future `git blame` and `git log` will attribute docs edits to D01-T3 rather than original authors.
+
+**Why was it taken on?**
+First-time Prettier run over existing files was unavoidable; staged separately would still show in the same PR.
+
+**Cost right now**
+Minor: `git log` noise on docs files.
+
+**Interest**: Each future Prettier config change will produce the same noise pattern, making signal/noise worse over time.
+
+**Trigger to repay**: Next time Prettier config changes — ship config change in a standalone commit, then run `pnpm format` in a follow-up "format: apply prettier config" commit.
+
+**Payoff plan**: Document convention in CLAUDE.md or contributing guide: "Prettier config changes ship in their own commit; the format sweep follows immediately."
+
+**Estimate**: XS (convention doc only)
 
 ---
 

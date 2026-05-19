@@ -12,3 +12,5 @@ playwright-report/
 test-results/
 .claude/settings.local.json
 *.tsbuildinfo
+
+.vercel

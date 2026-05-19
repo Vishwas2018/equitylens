@@ -43,4 +43,20 @@ DEV-0009 (to log at D01-T7): rootDirectory based on common monorepo pattern;
 Vercel dashboard action required:
   Settings → General → Node.js Version → set to "20.x" (match .nvmrc)
 
-=== STATUS: Fix pushed; awaiting preview URL and curl /api/health output ===
+--- Final verification (2026-05-19) ---
+Preview URL: https://equitylens-26137hhyi-vishwas2018s-projects.vercel.app
+  GET /    → "EquityLens — bootstrap" (HTTP 200, static page ✅)
+  GET /api/health → {"ok":true,"version":"dev"} (HTTP 200 ✅)
+
+Note: version="dev" is correct — BUILD_SHA env var not set in Vercel project.
+GitHub Actions CI sets BUILD_SHA=${{ github.sha }}; direct Vercel builds use fallback.
+
+Final vercel.json: framework, buildCommand (cd ../.. monorepo), installCommand (cd ../..),
+  outputDirectory: ".next" (relative to Root Directory apps/web), regions: ["syd1"], headers.
+Dashboard: Root Directory = apps/web, Node.js = 20.x, Output Directory = (cleared).
+
+[x] .vercel/ (link config managed by Vercel dashboard integration)
+[x] Deployment live and serving from syd1 region
+[x] /api/health returns {"ok":true,"version":"dev"}
+
+=== OVERALL: PASS ===
