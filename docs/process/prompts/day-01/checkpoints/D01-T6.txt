@@ -31,4 +31,16 @@ Expected outputs to capture:
 [ ] pnpm dlx vercel --prod deploys successfully (or Vercel GitHub integration auto-deploys)
 [ ] curl /api/health returns {"ok":true,"version":"<sha>"}
 
-=== STATUS: Committed; awaiting human to run vercel link ===
+--- Fix applied (housekeeping commit under D01-T6) ---
+Vercel schema validation failed: "should NOT have additional property 'rootDirectory'".
+Also removed: outputDirectory (Next.js auto-detects), git.deploymentEnabled (dashboard).
+Added: regions: ["syd1"] (Sydney — Australian deployment target).
+Kept: buildCommand, installCommand, framework, headers.
+Commit: fix(vercel): remove unsupported rootDirectory from vercel.json [D01-T6]
+DEV-0009 (to log at D01-T7): rootDirectory based on common monorepo pattern;
+  not supported in Vercel's schema. Spec corrected. Severity: low, accepted.
+
+Vercel dashboard action required:
+  Settings → General → Node.js Version → set to "20.x" (match .nvmrc)
+
+=== STATUS: Fix pushed; awaiting preview URL and curl /api/health output ===
