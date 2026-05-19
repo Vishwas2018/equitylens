@@ -1,0 +1,34 @@
+Checkpoint: D01-T6 — Vercel deployment configuration
+Date: 2026-05-19
+Branch: feature/d01-bootstrap
+
+--- Files created ---
+vercel.json
+  framework: nextjs
+  rootDirectory: apps/web
+  buildCommand: cd ../.. && pnpm build --filter=@equitylens/web (monorepo-aware)
+  installCommand: pnpm install --frozen-lockfile
+  Security headers on all routes: X-Content-Type-Options, X-Frame-Options,
+    X-XSS-Protection, Referrer-Policy
+  deploymentEnabled: main only (feature branches deploy on PR via Vercel GitHub integration)
+
+.vercelignore
+  Excludes: node_modules, .turbo, *.tsbuildinfo, docs/process/prompts,
+            scripts, .husky, .github, __tests__, *.test.ts, *.spec.ts
+
+--- Step awaiting human ---
+Run: pnpm dlx vercel link
+  Select: existing project OR create "equitylens"
+  Framework: Next.js (auto-detected)
+  Root directory: apps/web
+
+Expected outputs to capture:
+  - Preview URL (https://equitylens-xxx.vercel.app)
+  - curl https://<preview-url>/api/health → {"ok":true,"version":"<sha>"}
+
+--- Verification (post-link) ---
+[ ] .vercel/project.json exists
+[ ] pnpm dlx vercel --prod deploys successfully (or Vercel GitHub integration auto-deploys)
+[ ] curl /api/health returns {"ok":true,"version":"<sha>"}
+
+=== STATUS: Committed; awaiting human to run vercel link ===
