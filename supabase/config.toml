@@ -1,0 +1,6 @@
+# Supabase project configuration — placeholder
+# Project link and region (ap-southeast-2) wired on Day 2.
+# See docs/process/15-day-plan.md § Day 2.
+
+[api]
+# project_id = ""

@@ -5,8 +5,9 @@
  */
 import { execSync } from 'node:child_process';
 
-const date = new Date().toISOString();
+const EXPECTED_NODE_PREFIX = 'v20.14.';
 
+const date = new Date().toISOString();
 const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
 const sha = execSync('git rev-parse HEAD').toString().trim();
 const lastCommit = execSync('git log -1 --format="%H %ai %s"').toString().trim();
@@ -18,6 +19,16 @@ console.log(`Date:        ${date}`);
 console.log(`Branch:      ${branch}`);
 console.log(`HEAD SHA:    ${sha}`);
 console.log(`Last commit: ${lastCommit}`);
+console.log(`Node:        ${process.version}`);
+
+if (!process.version.startsWith(EXPECTED_NODE_PREFIX)) {
+  console.warn(
+    `⚠  WARNING: Node version drift detected. Running: ${process.version}. ` +
+      `Expected: ${EXPECTED_NODE_PREFIX}x (see .nvmrc). ` +
+      `CI enforces exact version; local results may differ.`,
+  );
+}
+
 console.log('');
 console.log('--- git status --porcelain ---');
 console.log(status || '(clean)');
