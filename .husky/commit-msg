@@ -1,0 +1,12 @@
+export npm_config_engine_strict=false
+
+# Enforce task ID format: subject must end with [DNN-TM]
+COMMIT_MSG=$(head -1 "$1")
+if ! echo "$COMMIT_MSG" | grep -qE '\[D[0-9]{2}-T[0-9]+\]$'; then
+  echo "❌  Commit rejected: subject must end with a task ID, e.g. [D01-T1]"
+  echo "    Got: $COMMIT_MSG"
+  echo "    Pattern: [D<day>-T<task>] e.g. [D01-T3]"
+  exit 1
+fi
+
+pnpm commitlint --edit "$1"

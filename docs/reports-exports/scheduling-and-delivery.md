@@ -24,9 +24,9 @@ flowchart LR
   W1 --> OTel[OTel + Sentry]
 ```
 
-* **No synchronous rendering**: `/api/reports/export` enqueues and returns a `report_id` plus a polling URL.
-* **Idempotent**: jobs carry a deterministic key `sha256(scenario_result_id|template_slug|template_version|purpose|tenant_id)`; duplicate submissions return the existing row.
-* **Two queues**: `exports.fast` (interactive PDFs/CSVs, p95 budget 8s) and `exports.bulk` (adviser packs, full data exports, scheduled jobs, p95 budget 60s).
+- **No synchronous rendering**: `/api/reports/export` enqueues and returns a `report_id` plus a polling URL.
+- **Idempotent**: jobs carry a deterministic key `sha256(scenario_result_id|template_slug|template_version|purpose|tenant_id)`; duplicate submissions return the existing row.
+- **Two queues**: `exports.fast` (interactive PDFs/CSVs, p95 budget 8s) and `exports.bulk` (adviser packs, full data exports, scheduled jobs, p95 budget 60s).
 
 ---
 
@@ -158,21 +158,21 @@ async function processJob(job: ReportJob): Promise<void> {
 
       const result = await render({
         scenarioResultId: job.scenario_result_id,
-        templateSlug:     job.template_slug,
-        templateVersion:  job.template_version,
-        locale:           job.locale,
-        requestedBy:      job.requested_by,
-        tenantId:         job.tenant_id,
-        purpose:          job.purpose,
+        templateSlug: job.template_slug,
+        templateVersion: job.template_version,
+        locale: job.locale,
+        requestedBy: job.requested_by,
+        tenantId: job.tenant_id,
+        purpose: job.purpose,
       });
 
       await transition(job.id, 'succeeded', {
-        output_hash:    result.outputHash,
-        storage_key:    result.storageKey,
-        byte_length:    result.byteLength,
+        output_hash: result.outputHash,
+        storage_key: result.storageKey,
+        byte_length: result.byteLength,
         ruleset_version: result.rulesetVersion,
-        engine_version:  result.engineVersion,
-        expires_at:     computeRetention(job.purpose),
+        engine_version: result.engineVersion,
+        expires_at: computeRetention(job.purpose),
       });
 
       await deliver(job, result);
@@ -185,7 +185,7 @@ async function processJob(job: ReportJob): Promise<void> {
         await scheduleRetry(job, backoff(job.attempt));
       } else {
         await transition(job.id, 'failed', {
-          error_class:   err.name,
+          error_class: err.name,
           error_message: redact(err.message),
         });
         await notifyUserOfFailure(job);
@@ -196,7 +196,7 @@ async function processJob(job: ReportJob): Promise<void> {
 
 function backoff(attempt: number): number {
   // Exponential with jitter, max 5 min
-  const base  = Math.min(300_000, 1_000 * 2 ** attempt);
+  const base = Math.min(300_000, 1_000 * 2 ** attempt);
   const jitter = Math.floor(Math.random() * 1_000);
   return base + jitter;
 }
@@ -204,17 +204,17 @@ function backoff(attempt: number): number {
 
 ### 4.1 Concurrency & Isolation
 
-* Each worker instance processes ≤ 4 jobs concurrently to bound memory (PDF rendering is the hot path).
-* Job claim uses `SELECT … FOR UPDATE SKIP LOCKED` against `reports` filtered by `state = 'queued'` to prevent double-pickup.
-* Visibility timeout is 90s; if a worker dies, the job becomes claimable again.
+- Each worker instance processes ≤ 4 jobs concurrently to bound memory (PDF rendering is the hot path).
+- Job claim uses `SELECT … FOR UPDATE SKIP LOCKED` against `reports` filtered by `state = 'queued'` to prevent double-pickup.
+- Visibility timeout is 90s; if a worker dies, the job becomes claimable again.
 
 ### 4.2 Error Classification
 
-| Class       | Examples                                                      | Retry? |
-| ----------- | ------------------------------------------------------------- | ------ |
-| `transient` | Network timeout, Storage 503, Stripe API blip, AI 429         | Yes    |
-| `permanent` | Template missing, scenario not found, RLS denial, schema validation | No |
-| `poison`    | Job repeatedly fails the same way for > 3 attempts            | Move to DLQ |
+| Class       | Examples                                                            | Retry?      |
+| ----------- | ------------------------------------------------------------------- | ----------- |
+| `transient` | Network timeout, Storage 503, Stripe API blip, AI 429               | Yes         |
+| `permanent` | Template missing, scenario not found, RLS denial, schema validation | No          |
+| `poison`    | Job repeatedly fails the same way for > 3 attempts                  | Move to DLQ |
 
 A dead-letter queue (`exports.dlq`) holds poison jobs for inspection; an alert fires on any DLQ insertion.
 
@@ -225,14 +225,9 @@ A dead-letter queue (`exports.dlq`) holds poison jobs for inspection; an alert f
 The idempotency key combines all inputs that determine the output:
 
 ```ts
-const key = sha256([
-  scenarioResultId,
-  templateSlug,
-  templateVersion,
-  purpose,
-  tenantId,
-  locale,
-].join('|'));
+const key = sha256(
+  [scenarioResultId, templateSlug, templateVersion, purpose, tenantId, locale].join('|'),
+);
 ```
 
 `POST /api/reports/export` performs an upsert against `(tenant_id, idempotency_key)`. If a row already exists in a terminal state, the API returns the existing record without re-enqueuing. If it exists in a non-terminal state, the API returns the existing record and reuses the in-flight job.
@@ -247,30 +242,30 @@ Each report can have multiple delivery channels. Channels are attempted in order
 
 ### 6.1 Presigned URL (default)
 
-* Generated against Supabase Storage with 7-day expiry (24 hours for `data_export`).
-* Returned via `/api/reports/:id` once `state ∈ {succeeded, delivered}`.
-* URL minting is rate-limited per user (60/day) and audit-logged.
+- Generated against Supabase Storage with 7-day expiry (24 hours for `data_export`).
+- Returned via `/api/reports/:id` once `state ∈ {succeeded, delivered}`.
+- URL minting is rate-limited per user (60/day) and audit-logged.
 
 ### 6.2 Email (Resend)
 
-* Triggered when channel `{ kind: 'email', target: '<address>' }` is requested.
-* The email contains:
-  * The report header (template name, scenario name, generated date)
-  * The presigned URL (single-use redirect via `/r/:token` which logs the click and forwards to Storage)
-  * The full disclaimer block (HTML + plain text)
-  * Footer: tenant name, "you received this because…" line, unsubscribe / preferences link
-* Email PII boundary: address is the only recipient field; the email does not embed the recipient's TFN, DOB, or any high-sensitivity data. The report itself is **not** attached — only linked — to limit blast radius.
-* Bounces and complaints flow into a webhook that pauses future schedules for that address until the user re-confirms.
+- Triggered when channel `{ kind: 'email', target: '<address>' }` is requested.
+- The email contains:
+  - The report header (template name, scenario name, generated date)
+  - The presigned URL (single-use redirect via `/r/:token` which logs the click and forwards to Storage)
+  - The full disclaimer block (HTML + plain text)
+  - Footer: tenant name, "you received this because…" line, unsubscribe / preferences link
+- Email PII boundary: address is the only recipient field; the email does not embed the recipient's TFN, DOB, or any high-sensitivity data. The report itself is **not** attached — only linked — to limit blast radius.
+- Bounces and complaints flow into a webhook that pauses future schedules for that address until the user re-confirms.
 
 ### 6.3 In-App Inbox
 
-* All reports automatically appear under `/reports` in the web UI.
-* The inbox is the canonical surface; email and webhooks are secondary.
+- All reports automatically appear under `/reports` in the web UI.
+- The inbox is the canonical surface; email and webhooks are secondary.
 
 ### 6.4 Adviser Webhook (Professional tier)
 
-* Requested via `{ kind: 'webhook', target: '<url>', secret_ref: '<vault-ref>' }`.
-* POST body is a JSON envelope:
+- Requested via `{ kind: 'webhook', target: '<url>', secret_ref: '<vault-ref>' }`.
+- POST body is a JSON envelope:
 
 ```json
 {
@@ -289,8 +284,8 @@ Each report can have multiple delivery channels. Channels are attempted in order
 }
 ```
 
-* Signed with `X-EquityLens-Signature: sha256=<hex>` using the adviser's webhook secret (HMAC-SHA256 over the raw body); replayed timestamps `> 5min` skew are rejected.
-* Retries: 5 attempts with exponential backoff over 6 hours. A consistently failing endpoint is paused after 24 hours of failures and the user notified in-app.
+- Signed with `X-EquityLens-Signature: sha256=<hex>` using the adviser's webhook secret (HMAC-SHA256 over the raw body); replayed timestamps `> 5min` skew are rejected.
+- Retries: 5 attempts with exponential backoff over 6 hours. A consistently failing endpoint is paused after 24 hours of failures and the user notified in-app.
 
 ---
 
@@ -314,10 +309,10 @@ The function computes `next_run_at` using the schedule's `cron` and `timezone`, 
 
 ### 7.2 Constraints
 
-* Maximum 50 schedules per tenant.
-* Minimum cadence: daily. Sub-daily cadence is rejected (no business case, abuse risk).
-* Per-tenant rate limit: at most 20 scheduled exports active in any 60-minute window; bursts spread across `exports.bulk` queue.
-* Pausing a schedule retains it; deletion is via explicit user action.
+- Maximum 50 schedules per tenant.
+- Minimum cadence: daily. Sub-daily cadence is rejected (no business case, abuse risk).
+- Per-tenant rate limit: at most 20 scheduled exports active in any 60-minute window; bursts spread across `exports.bulk` queue.
+- Pausing a schedule retains it; deletion is via explicit user action.
 
 ### 7.3 Schedule Mutation Audit
 
@@ -356,9 +351,10 @@ Right-to-access requests are first-class:
 6. The audit trail demonstrates compliance even after the artifact is gone.
 
 SLAs:
-* Acknowledge within 7 days.
-* Deliver within 30 days (statutory ceiling for APP 12).
-* Operational target: deliver within 5 business days.
+
+- Acknowledge within 7 days.
+- Deliver within 30 days (statutory ceiling for APP 12).
+- Operational target: deliver within 5 business days.
 
 ---
 
@@ -366,10 +362,10 @@ SLAs:
 
 Erasure (APP-aligned right to deletion) interacts with reports:
 
-* Pending exports for a user being deleted are cancelled.
-* Existing successful reports for the user's tenants are scheduled for purge (`state='expired'` + storage object delete).
-* `audit_logs` rows referencing the user are **retained** (pseudonymised) since they record actions, not personal characteristics, and are subject to a legitimate-purpose exception under APP 11.2.
-* The erasure runbook in `/architecture/security-and-compliance.md` is the source of truth; this document only describes the report-side behaviour.
+- Pending exports for a user being deleted are cancelled.
+- Existing successful reports for the user's tenants are scheduled for purge (`state='expired'` + storage object delete).
+- `audit_logs` rows referencing the user are **retained** (pseudonymised) since they record actions, not personal characteristics, and are subject to a legitimate-purpose exception under APP 11.2.
+- The erasure runbook in `/architecture/security-and-compliance.md` is the source of truth; this document only describes the report-side behaviour.
 
 ---
 
@@ -377,33 +373,34 @@ Erasure (APP-aligned right to deletion) interacts with reports:
 
 Every job emits:
 
-* Spans: `exports.worker.poll`, `exports.worker.process`, `report.render.<format>`, `report.deliver.<channel>`
-* Metrics:
-  * `report_jobs_total{state, format, purpose}`
-  * `report_job_duration_seconds{format}` (histogram)
-  * `report_queue_depth{queue}` (gauge, scraped from Upstash)
-  * `report_delivery_attempts_total{channel, outcome}`
-  * `report_dlq_total{template}` (counter, alerts on > 0)
-* Logs: structured per-job, with `report_id`, `tenant_id_hash`, `scenario_id`, `template`, `attempt`, outcome.
+- Spans: `exports.worker.poll`, `exports.worker.process`, `report.render.<format>`, `report.deliver.<channel>`
+- Metrics:
+  - `report_jobs_total{state, format, purpose}`
+  - `report_job_duration_seconds{format}` (histogram)
+  - `report_queue_depth{queue}` (gauge, scraped from Upstash)
+  - `report_delivery_attempts_total{channel, outcome}`
+  - `report_dlq_total{template}` (counter, alerts on > 0)
+- Logs: structured per-job, with `report_id`, `tenant_id_hash`, `scenario_id`, `template`, `attempt`, outcome.
 
 SLOs:
-* `exports.fast` p95 wall-clock from enqueue to `succeeded`: ≤ 8 s
-* `exports.bulk` p95: ≤ 60 s
-* Delivery success rate: ≥ 99.5% within 5 minutes of `succeeded`
-* DLQ insertion rate: 0 in steady state; any non-zero pages on-call
+
+- `exports.fast` p95 wall-clock from enqueue to `succeeded`: ≤ 8 s
+- `exports.bulk` p95: ≤ 60 s
+- Delivery success rate: ≥ 99.5% within 5 minutes of `succeeded`
+- DLQ insertion rate: 0 in steady state; any non-zero pages on-call
 
 ---
 
 ## 12. Rate Limits & Abuse Controls
 
-| Surface                                | Limit                                      |
-| -------------------------------------- | ------------------------------------------ |
-| `/api/reports/export` per user         | 60 / hour (Pro), 200 / hour (Professional) |
-| `/api/reports/:id/url` (URL minting)   | 60 / day / user                            |
-| Schedule creation                      | 5 / hour / tenant                          |
-| Email recipient diversity              | ≤ 10 distinct addresses / tenant / 24h     |
-| Webhook target additions               | ≤ 5 / day / tenant                         |
-| Total active schedules                 | 50 / tenant                                |
+| Surface                              | Limit                                      |
+| ------------------------------------ | ------------------------------------------ |
+| `/api/reports/export` per user       | 60 / hour (Pro), 200 / hour (Professional) |
+| `/api/reports/:id/url` (URL minting) | 60 / day / user                            |
+| Schedule creation                    | 5 / hour / tenant                          |
+| Email recipient diversity            | ≤ 10 distinct addresses / tenant / 24h     |
+| Webhook target additions             | ≤ 5 / day / tenant                         |
+| Total active schedules               | 50 / tenant                                |
 
 Limits are enforced at the API gateway via Upstash Redis token buckets. Breaches return `429` with a `Retry-After` header and an `X-EquityLens-RateLimit-Reset` epoch.
 
@@ -411,34 +408,34 @@ Limits are enforced at the API gateway via Upstash Redis token buckets. Breaches
 
 ## 13. Failure Modes & User Surfacing
 
-* **Transient failures** are invisible to the user; the inbox card shows a spinner until success or final failure.
-* **Final failures** (state = `failed`) show an inbox banner with the error class (human-readable: "Tax ruleset retired", "Scenario unavailable", "Internal error") and a retry button. Retry produces a new `report_id`.
-* **Stuck jobs** (running > visibility timeout × 2) are surfaced on the ops dashboard and auto-reset by a janitor job that runs every 15 minutes.
-* **Bulk failures** (e.g. provider outage spikes failure rate above 5%) trigger an automatic statuspage component update and a temporary back-off on schedules.
+- **Transient failures** are invisible to the user; the inbox card shows a spinner until success or final failure.
+- **Final failures** (state = `failed`) show an inbox banner with the error class (human-readable: "Tax ruleset retired", "Scenario unavailable", "Internal error") and a retry button. Retry produces a new `report_id`.
+- **Stuck jobs** (running > visibility timeout × 2) are surfaced on the ops dashboard and auto-reset by a janitor job that runs every 15 minutes.
+- **Bulk failures** (e.g. provider outage spikes failure rate above 5%) trigger an automatic statuspage component update and a temporary back-off on schedules.
 
 ---
 
 ## 14. Security Considerations
 
-* Workers run with a scoped service-role JWT that grants access only to `reports`, `scenario_results`, `tax_rule_sets`, `disclaimers`, and Storage paths under `tenants/{tenant_id}/reports/`.
-* The renderer is a separate package without DB credentials; it receives the materialised inputs from the worker and returns a buffer.
-* Storage objects are private; presigned URLs are the only way to read.
-* Email delivery uses DKIM + SPF + DMARC for `equitylens.com.au`; bounce handling avoids amplification.
-* Webhook signatures are HMAC-SHA256; secrets stored in Vault, referenced by `secret_ref`.
-* Logs do not include the rendered artifact contents — only hashes and metadata.
+- Workers run with a scoped service-role JWT that grants access only to `reports`, `scenario_results`, `tax_rule_sets`, `disclaimers`, and Storage paths under `tenants/{tenant_id}/reports/`.
+- The renderer is a separate package without DB credentials; it receives the materialised inputs from the worker and returns a buffer.
+- Storage objects are private; presigned URLs are the only way to read.
+- Email delivery uses DKIM + SPF + DMARC for `equitylens.com.au`; bounce handling avoids amplification.
+- Webhook signatures are HMAC-SHA256; secrets stored in Vault, referenced by `secret_ref`.
+- Logs do not include the rendered artifact contents — only hashes and metadata.
 
 ---
 
 ## Cross-References
 
-* `/reports-exports/export-templates.md` — template definitions consumed by these workers
-* `/product/pricing-and-gating.md` — tier-based entitlements for scheduling and channels
-* `/architecture/api-contracts.md` — `/api/reports/*` endpoints
-* `/architecture/security-and-compliance.md` — APP 12 export and APP 11 erasure runbooks
-* `/architecture/system-architecture.md` — placement of Edge Functions and Upstash queue
-* `/database/schema.sql` — `reports`, `report_schedules`, `audit_logs`
-* `/database/rls-policies.sql` — tenant isolation for reports
-* `/engine/financial-calc-engine.md` — `scenario_results` shape consumed by renderer
-* `/operations/ci-cd-pipeline.md` — deploys to workers and Edge Functions
-* `/operations/monitoring-and-observability.md` — metrics, SLOs, alerts cited here
-* `/operations/deployment-checklist.md` — pre-deploy gates including export smoke tests
+- `/reports-exports/export-templates.md` — template definitions consumed by these workers
+- `/product/pricing-and-gating.md` — tier-based entitlements for scheduling and channels
+- `/architecture/api-contracts.md` — `/api/reports/*` endpoints
+- `/architecture/security-and-compliance.md` — APP 12 export and APP 11 erasure runbooks
+- `/architecture/system-architecture.md` — placement of Edge Functions and Upstash queue
+- `/database/schema.sql` — `reports`, `report_schedules`, `audit_logs`
+- `/database/rls-policies.sql` — tenant isolation for reports
+- `/engine/financial-calc-engine.md` — `scenario_results` shape consumed by renderer
+- `/operations/ci-cd-pipeline.md` — deploys to workers and Edge Functions
+- `/operations/monitoring-and-observability.md` — metrics, SLOs, alerts cited here
+- `/operations/deployment-checklist.md` — pre-deploy gates including export smoke tests

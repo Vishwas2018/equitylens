@@ -8,11 +8,11 @@
 
 Australian tax law changes annually:
 
-* Income tax brackets shift (Stage 3 cuts in FY2025, indexation post-2025).
-* Medicare levy thresholds adjust each FY.
-* Victorian land tax bands and surcharges shift.
-* Depreciation rules amend (the 2017 Treasury Laws Amendment is a recent example).
-* CGT discount rates have been politically contested every electoral cycle since 2016.
+- Income tax brackets shift (Stage 3 cuts in FY2025, indexation post-2025).
+- Medicare levy thresholds adjust each FY.
+- Victorian land tax bands and surcharges shift.
+- Depreciation rules amend (the 2017 Treasury Laws Amendment is a recent example).
+- CGT discount rates have been politically contested every electoral cycle since 2016.
 
 A naive "always use latest rules" approach silently mutates historical scenarios. A user who modelled "hold this property for 5 more years" in March under FY2025 rates would see different numbers in May if Treasury announces a change. That is unacceptable in a fintech context.
 
@@ -43,10 +43,10 @@ stateDiagram-v2
 | State          | Editable | Usable in scenarios | Notes                                            |
 | -------------- | -------- | ------------------- | ------------------------------------------------ |
 | `draft`        | Yes      | No                  | Internal scratch space for tax-rules-admin       |
-| `legal_review` | No       | No                  | Locked for diff review; legal counsel approves    |
-| `staged`       | No       | Staging only        | Used for QA regression runs; not in production    |
-| `published`    | No       | Yes                 | Live; immutable                                   |
-| `retired`      | No       | Historical only     | Cannot be selected for new scenarios; replays OK  |
+| `legal_review` | No       | No                  | Locked for diff review; legal counsel approves   |
+| `staged`       | No       | Staging only        | Used for QA regression runs; not in production   |
+| `published`    | No       | Yes                 | Live; immutable                                  |
+| `retired`      | No       | Historical only     | Cannot be selected for new scenarios; replays OK |
 
 ---
 
@@ -59,27 +59,33 @@ The full schema is stored as JSONB in `tax_rule_sets.rules` with a top-level sha
 
 export const RulesetSchema = z.object({
   $schema: z.literal('https://schemas.equitylens.au/ruleset/v3'),
-  jurisdiction: z.enum(['VIC','NSW','QLD','WA','SA','TAS','ACT','NT','AU']),
+  jurisdiction: z.enum(['VIC', 'NSW', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT', 'AU']),
   financialYear: z.string().regex(/^FY\d{4}$/),
   effectiveFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   effectiveTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 
   marginalRates: z.object({
-    residency: z.enum(['resident','non_resident','working_holiday']),
-    brackets: z.array(z.object({
-      thresholdCents: z.string().regex(/^\d+$/),      // bigint as string
-      rateBps: z.number().int().min(0).max(10_000),
-    })).min(2),
+    residency: z.enum(['resident', 'non_resident', 'working_holiday']),
+    brackets: z
+      .array(
+        z.object({
+          thresholdCents: z.string().regex(/^\d+$/), // bigint as string
+          rateBps: z.number().int().min(0).max(10_000),
+        }),
+      )
+      .min(2),
   }),
 
   medicareLevy: z.object({
     rateBps: z.number().int(),
     singleThresholdCents: z.string(),
     familyThresholdCents: z.string(),
-    surchargeBrackets: z.array(z.object({
-      thresholdCents: z.string(),
-      rateBps: z.number().int(),
-    })),
+    surchargeBrackets: z.array(
+      z.object({
+        thresholdCents: z.string(),
+        rateBps: z.number().int(),
+      }),
+    ),
   }),
 
   cgt: z.object({
@@ -90,13 +96,15 @@ export const RulesetSchema = z.object({
 
   negativeGearingRules: z.object({
     enabled: z.boolean(),
-    propertyTypeExclusions: z.array(z.enum(['house','apartment','townhouse','land','commercial'])),
+    propertyTypeExclusions: z.array(
+      z.enum(['house', 'apartment', 'townhouse', 'land', 'commercial']),
+    ),
     quarantineCarryForward: z.boolean(),
   }),
 
   depreciation: z.object({
     div40: z.object({
-      defaultMethod: z.enum(['prime_cost','diminishing_value']),
+      defaultMethod: z.enum(['prime_cost', 'diminishing_value']),
       secondHandResidentialDisallowed: z.boolean(),
       secondHandRuleAcquisitionFromDate: z.string(),
     }),
@@ -108,28 +116,42 @@ export const RulesetSchema = z.object({
   }),
 
   landTax: z.object({
-    vic: z.object({
-      individualBrackets: z.array(z.object({
-        previousThresholdCents: z.string(),
-        thresholdCents: z.string(),
-        flatCents: z.string(),
-        marginalBps: z.number().int(),
-      })).optional(),
-      trustBrackets: z.array(/* … */).optional(),
-      absenteeSurchargeBps: z.number().int().optional(),
-      vacantSurchargeBps: z.number().int().optional(),
-    }).optional(),
-    nsw: z.object({/* … */}).optional(),
-    qld: z.object({/* … */}).optional(),
+    vic: z
+      .object({
+        individualBrackets: z
+          .array(
+            z.object({
+              previousThresholdCents: z.string(),
+              thresholdCents: z.string(),
+              flatCents: z.string(),
+              marginalBps: z.number().int(),
+            }),
+          )
+          .optional(),
+        trustBrackets: z.array(/* … */).optional(),
+        absenteeSurchargeBps: z.number().int().optional(),
+        vacantSurchargeBps: z.number().int().optional(),
+      })
+      .optional(),
+    nsw: z
+      .object({
+        /* … */
+      })
+      .optional(),
+    qld: z
+      .object({
+        /* … */
+      })
+      .optional(),
   }),
 
   metadata: z.object({
-    sourceCitations: z.array(z.string().url()),  // ATO/SRO URLs
-    publishedBy: z.string().uuid(),              // admin user ID
+    sourceCitations: z.array(z.string().url()), // ATO/SRO URLs
+    publishedBy: z.string().uuid(), // admin user ID
     publishedAt: z.string().datetime(),
     legalReviewerId: z.string().uuid(),
     legalReviewSignedAt: z.string().datetime(),
-    rulesetHash: z.string().regex(/^[a-f0-9]{64}$/),  // sha256 of canonical body
+    rulesetHash: z.string().regex(/^[a-f0-9]{64}$/), // sha256 of canonical body
   }),
 });
 ```
@@ -146,8 +168,8 @@ export const RulesetSchema = z.object({
   "marginalRates": {
     "residency": "resident",
     "brackets": [
-      { "thresholdCents": "1820000",  "rateBps": 0    },
-      { "thresholdCents": "4500000",  "rateBps": 1600 },
+      { "thresholdCents": "1820000", "rateBps": 0 },
+      { "thresholdCents": "4500000", "rateBps": 1600 },
       { "thresholdCents": "13500000", "rateBps": 3000 },
       { "thresholdCents": "19000000", "rateBps": 3700 },
       { "thresholdCents": "9007199254740992", "rateBps": 4500 }
@@ -184,13 +206,48 @@ export const RulesetSchema = z.object({
   "landTax": {
     "vic": {
       "individualBrackets": [
-        { "previousThresholdCents": "0",        "thresholdCents": "5000000",   "flatCents": "0",      "marginalBps": 0   },
-        { "previousThresholdCents": "5000000",  "thresholdCents": "10000000",  "flatCents": "50000",  "marginalBps": 10  },
-        { "previousThresholdCents": "10000000", "thresholdCents": "30000000",  "flatCents": "97500",  "marginalBps": 30  },
-        { "previousThresholdCents": "30000000", "thresholdCents": "60000000",  "flatCents": "697500", "marginalBps": 60  },
-        { "previousThresholdCents": "60000000", "thresholdCents": "180000000", "flatCents": "2497500","marginalBps": 90  },
-        { "previousThresholdCents": "180000000","thresholdCents": "300000000", "flatCents": "13297500","marginalBps": 165 },
-        { "previousThresholdCents": "300000000","thresholdCents": "9007199254740992","flatCents": "33097500","marginalBps": 265 }
+        {
+          "previousThresholdCents": "0",
+          "thresholdCents": "5000000",
+          "flatCents": "0",
+          "marginalBps": 0
+        },
+        {
+          "previousThresholdCents": "5000000",
+          "thresholdCents": "10000000",
+          "flatCents": "50000",
+          "marginalBps": 10
+        },
+        {
+          "previousThresholdCents": "10000000",
+          "thresholdCents": "30000000",
+          "flatCents": "97500",
+          "marginalBps": 30
+        },
+        {
+          "previousThresholdCents": "30000000",
+          "thresholdCents": "60000000",
+          "flatCents": "697500",
+          "marginalBps": 60
+        },
+        {
+          "previousThresholdCents": "60000000",
+          "thresholdCents": "180000000",
+          "flatCents": "2497500",
+          "marginalBps": 90
+        },
+        {
+          "previousThresholdCents": "180000000",
+          "thresholdCents": "300000000",
+          "flatCents": "13297500",
+          "marginalBps": 165
+        },
+        {
+          "previousThresholdCents": "300000000",
+          "thresholdCents": "9007199254740992",
+          "flatCents": "33097500",
+          "marginalBps": 265
+        }
       ],
       "absenteeSurchargeBps": 400,
       "vacantSurchargeBps": 200
@@ -256,11 +313,13 @@ const ruleset = await db.fetchRulesetById(inputs.rulesetId);
 const computedHash = sha256(canonicalJson(omit(ruleset, ['metadata.rulesetHash'])));
 if (computedHash !== ruleset.metadata.rulesetHash) {
   throw new IntegrityError(
-    `Ruleset ${inputs.rulesetId} hash mismatch. Stored=${ruleset.metadata.rulesetHash} computed=${computedHash}`
+    `Ruleset ${inputs.rulesetId} hash mismatch. Stored=${ruleset.metadata.rulesetHash} computed=${computedHash}`,
   );
 }
 if (inputs.rulesetHash && inputs.rulesetHash !== ruleset.metadata.rulesetHash) {
-  throw new IntegrityError(`Scenario expects ruleset hash ${inputs.rulesetHash} but db has ${ruleset.metadata.rulesetHash}`);
+  throw new IntegrityError(
+    `Scenario expects ruleset hash ${inputs.rulesetHash} but db has ${ruleset.metadata.rulesetHash}`,
+  );
 }
 ```
 
@@ -360,21 +419,21 @@ A bug in `LandTaxEngine` (e.g. wrong bracket interpolation) is a MAJOR engine bu
 
 ## 9. Anti-Patterns
 
-| Anti-pattern                                              | Why it's forbidden                                                                                   |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `WHERE financial_year = current_fy()` in scenarios        | Couples scenario to "current" — silent retrospective changes when FY rolls over.                     |
-| Mutating `rules` JSONB after publish                       | DB trigger refuses; even bypassing the trigger would orphan the hash check.                          |
-| Computing tax in the AI layer for "explanation purposes"   | AI is downstream of engine output only. See `/architecture/ai-integration.md` § 2.                   |
-| Storing tax rules in code (constants in `.ts` files)       | Code releases couple to legal review; rulesets must be data so legal can sign off without engineering.|
-| Letting non-admin users select draft/staged rulesets        | Enforced in `rls-policies.sql`: only `status = 'published'` is selectable by regular users.          |
+| Anti-pattern                                             | Why it's forbidden                                                                                     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `WHERE financial_year = current_fy()` in scenarios       | Couples scenario to "current" — silent retrospective changes when FY rolls over.                       |
+| Mutating `rules` JSONB after publish                     | DB trigger refuses; even bypassing the trigger would orphan the hash check.                            |
+| Computing tax in the AI layer for "explanation purposes" | AI is downstream of engine output only. See `/architecture/ai-integration.md` § 2.                     |
+| Storing tax rules in code (constants in `.ts` files)     | Code releases couple to legal review; rulesets must be data so legal can sign off without engineering. |
+| Letting non-admin users select draft/staged rulesets     | Enforced in `rls-policies.sql`: only `status = 'published'` is selectable by regular users.            |
 
 ---
 
 ## 10. Cross-References
 
-* `/engine/financial-calc-engine.md` § 6 — how the engine consumes ruleset fields.
-* `/engine/test-matrix.md` § 4 — ATO/SRO cross-validation tests.
-* `/database/schema.sql` — `tax_rule_sets` DDL and trigger definitions.
-* `/database/rls-policies.sql` — read access predicate for `status = 'published'`.
-* `/architecture/security-and-compliance.md` § 4.3 — hardware-key MFA for legal reviewers.
-* `/operations/deployment-checklist.md` § 6 — ruleset publish runbook.
+- `/engine/financial-calc-engine.md` § 6 — how the engine consumes ruleset fields.
+- `/engine/test-matrix.md` § 4 — ATO/SRO cross-validation tests.
+- `/database/schema.sql` — `tax_rule_sets` DDL and trigger definitions.
+- `/database/rls-policies.sql` — read access predicate for `status = 'published'`.
+- `/architecture/security-and-compliance.md` § 4.3 — hardware-key MFA for legal reviewers.
+- `/operations/deployment-checklist.md` § 6 — ruleset publish runbook.

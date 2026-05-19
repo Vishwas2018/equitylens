@@ -1,0 +1,5 @@
+pnpm-lock.yaml
+*.min.*
+.next/
+coverage/
+dist/

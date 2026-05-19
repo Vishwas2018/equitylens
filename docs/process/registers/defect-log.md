@@ -6,39 +6,39 @@
 
 ## Conventions
 
-* **ID**: `DEF-NNNN`, monotonically increasing, never reused.
-* **Severity**:
-  * `sev1` — wrong financial number reachable by a user; data exposure; auth bypass; engine determinism violation. **Halts the day.**
-  * `sev2` — broken core flow; failing CI check; missing disclaimer; significant a11y regression.
-  * `sev3` — minor UI issue; non-blocking test flake; performance regression within tolerance.
-  * `sev4` — cosmetic; doc inconsistency.
-* **Status**: `open` → `investigating` → `fix-in-progress` → `fix-ready` → `verified` → `closed`. A defect may also be `wontfix` (with rationale) or `duplicate-of <ID>`.
-* **Surface**: where it manifests — `engine`, `db`, `api`, `web`, `auth`, `billing`, `reports`, `ai`, `ops`, `ci`, `docs`.
-* **Regression test**: every `closed` defect must reference a test that would catch it again.
+- **ID**: `DEF-NNNN`, monotonically increasing, never reused.
+- **Severity**:
+  - `sev1` — wrong financial number reachable by a user; data exposure; auth bypass; engine determinism violation. **Halts the day.**
+  - `sev2` — broken core flow; failing CI check; missing disclaimer; significant a11y regression.
+  - `sev3` — minor UI issue; non-blocking test flake; performance regression within tolerance.
+  - `sev4` — cosmetic; doc inconsistency.
+- **Status**: `open` → `investigating` → `fix-in-progress` → `fix-ready` → `verified` → `closed`. A defect may also be `wontfix` (with rationale) or `duplicate-of <ID>`.
+- **Surface**: where it manifests — `engine`, `db`, `api`, `web`, `auth`, `billing`, `reports`, `ai`, `ops`, `ci`, `docs`.
+- **Regression test**: every `closed` defect must reference a test that would catch it again.
 
 ---
 
 ## Severity Rules
 
-* **sev1 must be addressed before any other work resumes**, including the morning ritual on the next day.
-* **sev2 must be closed before the next day's spine begins**, unless explicitly deferred by Opus with a deviation entry.
-* **sev3/sev4 may be batched** and addressed on hardening days (14–15) or as opportunistic fixes within their surface area.
+- **sev1 must be addressed before any other work resumes**, including the morning ritual on the next day.
+- **sev2 must be closed before the next day's spine begins**, unless explicitly deferred by Opus with a deviation entry.
+- **sev3/sev4 may be batched** and addressed on hardening days (14–15) or as opportunistic fixes within their surface area.
 
 ---
 
 ## Open Defects
 
-| ID       | Severity | Surface | Title                                                    | Opened day | Status      | Owner | Notes                              |
-| -------- | -------- | ------- | -------------------------------------------------------- | ---------- | ----------- | ----- | ---------------------------------- |
-| _empty_  |          |         |                                                          |            |             |       |                                    |
+| ID      | Severity | Surface | Title | Opened day | Status | Owner | Notes |
+| ------- | -------- | ------- | ----- | ---------- | ------ | ----- | ----- |
+| _empty_ |          |         |       |            |        |       |       |
 
 ---
 
 ## Closed Defects
 
-| ID       | Severity | Surface | Title                                                    | Opened | Closed | Closing commit | Regression test                  |
-| -------- | -------- | ------- | -------------------------------------------------------- | ------ | ------ | -------------- | -------------------------------- |
-| _empty_  |          |         |                                                          |        |        |                |                                  |
+| ID      | Severity | Surface | Title | Opened | Closed | Closing commit | Regression test |
+| ------- | -------- | ------- | ----- | ------ | ------ | -------------- | --------------- |
+| _empty_ |          |         |       |        |        |                |                 |
 
 ---
 
@@ -101,7 +101,7 @@ When closing:
 
 ## Anti-Patterns
 
-* **No silent closures.** A defect with no regression test cannot be closed.
-* **No re-opening without a new ID.** If a "fixed" defect recurs, open a new defect referencing the prior one. The prior entry remains closed; the new one captures fresh evidence.
-* **No "wontfix" without rationale.** A `wontfix` defect lists the explicit trade-off (e.g., "expected behaviour per legislation", "out of MVP scope, moved to BL-NNNN").
-* **No sev1 batching.** Sev1 is never bundled with other work.
+- **No silent closures.** A defect with no regression test cannot be closed.
+- **No re-opening without a new ID.** If a "fixed" defect recurs, open a new defect referencing the prior one. The prior entry remains closed; the new one captures fresh evidence.
+- **No "wontfix" without rationale.** A `wontfix` defect lists the explicit trade-off (e.g., "expected behaviour per legislation", "out of MVP scope, moved to BL-NNNN").
+- **No sev1 batching.** Sev1 is never bundled with other work.

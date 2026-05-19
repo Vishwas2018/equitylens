@@ -67,13 +67,13 @@ flowchart TD
 
 ### 1.3 Empty / error states
 
-| State | Trigger | UX response |
-|---|---|---|
-| No properties | Account created, wizard not completed | Full-page "Add your first property" CTA with 6-minute estimate badge. |
-| Wizard abandoned mid-flow | User leaves before submit | Draft persisted in `properties.status='draft'`; banner on next visit "Resume onboarding". |
-| Engine calc failure | Deterministic engine throws | Display Sentry-issued trace ID, block dashboard, offer "Contact support" with prefilled context. |
-| Missing depreciation | User skipped QS | Tax accuracy banner: amber. Tooltip: "Depreciation missing — your tax estimate may understate deductions." |
-| Invalid loan rate (>20% or <0.1%) | Validation | Inline error with link to "Why this matters". |
+| State                             | Trigger                               | UX response                                                                                                |
+| --------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| No properties                     | Account created, wizard not completed | Full-page "Add your first property" CTA with 6-minute estimate badge.                                      |
+| Wizard abandoned mid-flow         | User leaves before submit             | Draft persisted in `properties.status='draft'`; banner on next visit "Resume onboarding".                  |
+| Engine calc failure               | Deterministic engine throws           | Display Sentry-issued trace ID, block dashboard, offer "Contact support" with prefilled context.           |
+| Missing depreciation              | User skipped QS                       | Tax accuracy banner: amber. Tooltip: "Depreciation missing — your tax estimate may understate deductions." |
+| Invalid loan rate (>20% or <0.1%) | Validation                            | Inline error with link to "Why this matters".                                                              |
 
 ---
 
@@ -165,12 +165,12 @@ flowchart TD
 
 ### 3.3 Empty / error states
 
-| State | UX |
-|---|---|
-| No baseline yet | Scenario Lab disabled with CTA "Complete a property first". |
-| Engine fails on edge input | Show inputs, do not store partial result, expose trace ID. |
-| AI down or timeout (>4s) | Render templated fallback narrative. No retries surfaced to user. |
-| Tax rule for requested FY missing | Block run; show "Coming soon for FY2027" message. |
+| State                             | UX                                                                |
+| --------------------------------- | ----------------------------------------------------------------- |
+| No baseline yet                   | Scenario Lab disabled with CTA "Complete a property first".       |
+| Engine fails on edge input        | Show inputs, do not store partial result, expose trace ID.        |
+| AI down or timeout (>4s)          | Render templated fallback narrative. No retries surfaced to user. |
+| Tax rule for requested FY missing | Block run; show "Coming soon for FY2027" message.                 |
 
 ---
 

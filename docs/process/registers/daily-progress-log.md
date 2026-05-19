@@ -67,50 +67,58 @@ One section per day. Days are recorded in chronological order. Once written, a d
 Repo initialised, remote wired, branch protection enabled, audit script stub in place, day-0-end tag applied.
 
 **Achieved**
-* D00-T1 — repo init + .gitignore + README + LICENSE — commits `93f8bd0`, `214fcaf`, `e141a4e`
-* D00-T2 — remote wiring — origin set to `git@github.com:Vishwas2018/equitylens.git`; branch protection enabled by human (2026-05-19)
-* D00-T3 — audit script stub + day-0-end tag — see below (in progress)
+
+- D00-T1 — repo init + .gitignore + README + LICENSE — commits `93f8bd0`, `214fcaf`, `e141a4e`
+- D00-T2 — remote wiring — origin set to `git@github.com:Vishwas2018/equitylens.git`; branch protection enabled by human (2026-05-19)
+- D00-T3 — audit script stub + day-0-end tag — see below (in progress)
 
 **Not achieved (rolled forward)**
-* None
+
+- None
 
 **Registers touched**
-* Backlog: none
-* Defects: none
-* Deviations: DEV-0001 (two commits share [D00-T1] tag — accepted, low severity)
-* Tech debt: none
-* ADRs: none
+
+- Backlog: none
+- Defects: none
+- Deviations: DEV-0001 (two commits share [D00-T1] tag — accepted, low severity)
+- Tech debt: none
+- ADRs: none
 
 **Checkpoints**
-* Day-level: no automated suite at Day 0 (bootstrap; suite wired Day 1)
-* Coverage: N/A
-* Perf signals: N/A
+
+- Day-level: no automated suite at Day 0 (bootstrap; suite wired Day 1)
+- Coverage: N/A
+- Perf signals: N/A
 
 **Notable decisions**
-* docs migration script (migrate-docs.sh) deleted after single use
-* .claude/settings.local.json added to .gitignore (tool artifact, not project source)
+
+- docs migration script (migrate-docs.sh) deleted after single use
+- .claude/settings.local.json added to .gitignore (tool artifact, not project source)
 
 **Surprises / lessons**
-* origin remote was already wired before bootstrap prompt ran; not a blocker
+
+- origin remote was already wired before bootstrap prompt ran; not a blocker
 
 **Carried forward to Day 1**
-* D01-T1 through D01-T7 per bootstrap prompt
-* CODEOWNERS teams are placeholders — must be replaced with real GitHub team slugs before Day 2
+
+- D01-T1 through D01-T7 per bootstrap prompt
+- CODEOWNERS teams are placeholders — must be replaced with real GitHub team slugs before Day 2
 
 **Evidence**
-* CCTV report: N/A (no prior state)
-* Daily prompt: `prompts/day-01/02-daily-execution-prompt.md`
-* End-of-day report: `prompts/day-00/03-end-of-day-report.md` (backfilled at D01-T7)
-* Start/end tags: N/A → `day-0-end` @ (applied at D00-T3)
+
+- CCTV report: N/A (no prior state)
+- Daily prompt: `prompts/day-01/02-daily-execution-prompt.md`
+- End-of-day report: `prompts/day-00/03-end-of-day-report.md` (backfilled at D01-T7)
+- Start/end tags: N/A → `day-0-end` @ (applied at D00-T3)
 
 ---
 
 ## Conventions
 
-* The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
-* **Honesty over flattery.** A slip is recorded as a slip. The system improves only if the log is accurate.
-* **No retro-edits.** If a day's entry was wrong, append a `### Correction — YYYY-MM-DD` sub-section with the correction and the source of error. The original text stays.
-* **Brevity is fine.** Three lines per section is plenty for a clean day. Days with incidents get more detail.
+- The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
+- **Honesty over flattery.** A slip is recorded as a slip. The system improves only if the log is accurate.
+- **No retro-edits.** If a day's entry was wrong, append a `### Correction — YYYY-MM-DD` sub-section with the correction and the source of error. The original text stays.
+- **Brevity is fine.** Three lines per section is plenty for a clean day. Days with incidents get more detail.
 
 ---
 
