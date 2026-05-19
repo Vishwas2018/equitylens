@@ -1,0 +1,1 @@
+Day 0 is the bootstrap day; artefacts are the initial repo commit, remote wiring, and the `day-0-end` tag. No CCTV report exists for Day 0 (no prior state to audit). The Day 0 End-of-Day Report below records what was done.
