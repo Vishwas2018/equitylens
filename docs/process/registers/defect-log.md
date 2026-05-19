@@ -28,9 +28,49 @@
 
 ## Open Defects
 
-| ID      | Severity | Surface | Title | Opened day | Status | Owner | Notes |
-| ------- | -------- | ------- | ----- | ---------- | ------ | ----- | ----- |
-| _empty_ |          |         |       |            |        |       |       |
+| ID       | Severity | Surface | Title                                                                  | Opened day | Status | Owner | Notes                          |
+| -------- | -------- | ------- | ---------------------------------------------------------------------- | ---------- | ------ | ----- | ------------------------------ |
+| DEF-0001 | sev2     | web     | Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration | Day 01     | open   | Opus  | Reassess Day 2; deadline Day 8 |
+
+---
+
+### DEF-0001 — Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration
+
+- **Severity**: sev2
+- **Surface**: web
+- **Opened**: Day 01 (2026-05-19) by Code
+- **Status**: open
+
+**Observed behaviour**
+`pnpm audit --audit-level=high` exits non-zero with 7 high-severity findings in `apps/web > next@14.2.29`.
+CVEs: GHSA-mwv6-3258-q52c, GHSA-5j59-xgg2-r9c4, GHSA-h25m-26qc-wcjf, GHSA-q4gf-8mx6-v5v3, GHSA-8h8q-6873-q5fj, GHSA-c4j6-fc7j-m34r, GHSA-36qx-fr4f-26g5.
+CCTV `audit-deps` check: FAIL. Evidence: `docs/process/prompts/day-01/checkpoints/audit-audit-deps.txt`.
+
+**Expected behaviour**
+`pnpm audit --audit-level=high` exits 0 with 0 high-severity findings.
+
+**Reproduction steps**
+
+1. `npm_config_engine_strict=false pnpm audit --audit-level=high`
+2. Observe 7 high-severity Next.js findings in `apps__web>next` path.
+
+**First-seen commit / context**
+Since baseline. Spec pinned next@14.2.5; upgraded to 14.2.29 in D01-T4 to fix GHSA-f82v-jwr5-mffw (critical auth bypass). The 14.x line has no further security patches for the remaining CVEs.
+
+**Initial hypothesis**
+Next.js 14.x is in security-only mode. All remaining high CVEs require migration to Next.js ≥15.5.16. `eslint-config-next` must also track the major version.
+
+**Blast radius**
+Production web app once deployed. CVEs cover: DoS via RSC deserialization (GHSA-mwv6-3258-q52c, GHSA-5j59-xgg2-r9c4, GHSA-h25m-26qc-wcjf, GHSA-q4gf-8mx6-v5v3, GHSA-8h8q-6873-q5fj), SSRF via WebSocket upgrades (GHSA-c4j6-fc7j-m34r), middleware/proxy bypass via i18n Pages Router (GHSA-36qx-fr4f-26g5). App Router usage and absence of i18n reduces some attack surface but DoS and SSRF CVEs are broadly applicable.
+
+**Disclosure considerations**
+Development phase; no users affected. Review before any public deployment or preview URL sharing.
+
+**Initial mitigation**
+GHSA-f82v-jwr5-mffw (critical auth bypass) patched by upgrade to 14.2.29 in D01-T4. No additional mitigation for remaining 7 CVEs.
+
+**Disposition**
+Day 2 morning reassessment for migration timing (Day 2 immediate vs Day 8 pre-UI). Latest acceptable: Day 8. Tracked in BL-0022.
 
 ---
 
