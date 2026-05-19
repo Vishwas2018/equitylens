@@ -3,13 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "cd ../.. && pnpm build --filter=@equitylens/web",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/.next",
-  "rootDirectory": "apps/web",
-  "git": {
-    "deploymentEnabled": {
-      "main": true
-    }
-  },
+  "regions": ["syd1"],
   "headers": [
     {
       "source": "/(.*)",
