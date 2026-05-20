@@ -3,9 +3,11 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { checkException, loadExceptions, parseAuditAdvisories } from './audit-exceptions.js';
+
 export type CheckResult = {
   name: string;
-  status: 'pass' | 'fail' | 'skipped';
+  status: 'pass' | 'fail' | 'warn' | 'skipped';
   output: string;
   wiredDay?: number;
 };
@@ -28,6 +30,59 @@ function runCheck(cmd: string): { ok: boolean; output: string } {
   }
 }
 
+/** Run `pnpm audit --json`, apply exception list, return structured result. */
+function runAuditDeps(): CheckResult {
+  const exceptions = loadExceptions();
+
+  // Always capture output even on non-zero exit (vulnerabilities found)
+  let jsonOutput = '';
+  try {
+    jsonOutput = execSync('pnpm audit --json', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: REPO_ROOT,
+      env: { ...process.env, npm_config_engine_strict: 'false' },
+    });
+  } catch (err: unknown) {
+    const e = err as { stdout?: string; stderr?: string };
+    jsonOutput = e.stdout ?? '';
+  }
+
+  const advisories = parseAuditAdvisories(jsonOutput);
+
+  if (advisories.length === 0) {
+    return { name: 'audit-deps', status: 'pass', output: 'No vulnerabilities found.' };
+  }
+
+  const lines: string[] = [];
+  let hasFailure = false;
+  let hasWarn = false;
+
+  for (const adv of advisories) {
+    const result = checkException(adv.ghsaId, exceptions);
+    if (result.status === 'warn') {
+      hasWarn = true;
+      lines.push(
+        `WARN [excepted until ${result.exception.until}] ${adv.ghsaId} — ${adv.packageName} (${adv.severity}) — ${result.exception.reason} [${result.exception.linked_defect}]`,
+      );
+    } else if (result.status === 'expired') {
+      hasFailure = true;
+      lines.push(
+        `FAIL [exception expired on ${result.expiredOn}] ${adv.ghsaId} — ${adv.packageName} (${adv.severity})`,
+      );
+    } else {
+      hasFailure = true;
+      lines.push(`FAIL [no exception] ${adv.ghsaId} — ${adv.packageName} (${adv.severity})`);
+    }
+  }
+
+  const output = lines.join('\n');
+
+  if (hasFailure) return { name: 'audit-deps', status: 'fail', output };
+  if (hasWarn) return { name: 'audit-deps', status: 'warn', output };
+  return { name: 'audit-deps', status: 'pass', output };
+}
+
 function skipped(name: string, wiredDay: number): CheckResult {
   return {
     name,
@@ -45,23 +100,20 @@ export function saveCheckOutput(dayDir: string, checkName: string, content: stri
 export function runWiredChecks(): CheckResult[] {
   const results: CheckResult[] = [];
 
-  const checks: Array<{ name: string; cmd: string }> = [
+  const simpleChecks: Array<{ name: string; cmd: string }> = [
     { name: 'git-status', cmd: 'git status --porcelain' },
     { name: 'typecheck', cmd: 'pnpm typecheck' },
     { name: 'lint', cmd: 'pnpm lint' },
     { name: 'format-check', cmd: 'pnpm format:check' },
     { name: 'test', cmd: 'pnpm test' },
-    { name: 'audit-deps', cmd: 'pnpm audit --audit-level=high' },
   ];
 
-  for (const check of checks) {
+  for (const check of simpleChecks) {
     const { ok, output } = runCheck(check.cmd);
-    results.push({
-      name: check.name,
-      status: ok ? 'pass' : 'fail',
-      output,
-    });
+    results.push({ name: check.name, status: ok ? 'pass' : 'fail', output });
   }
+
+  results.push(runAuditDeps());
 
   return results;
 }

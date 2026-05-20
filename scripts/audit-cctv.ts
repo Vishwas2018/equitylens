@@ -100,10 +100,19 @@ const allResults = [...wired, ...skipped];
 
 let anyFailed = false;
 for (const r of allResults) {
-  const icon = r.status === 'pass' ? '✅' : r.status === 'skipped' ? '⏭ ' : '❌';
+  const icon =
+    r.status === 'pass'
+      ? '✅'
+      : r.status === 'skipped'
+        ? '⏭ '
+        : r.status === 'warn'
+          ? '⚠ '
+          : '❌';
   console.log(`  ${icon} ${r.name}: ${r.status}`);
   if (r.status === 'fail') {
     anyFailed = true;
+    console.log(`     ${r.output.split('\n').slice(0, 3).join('\n     ')}`);
+  } else if (r.status === 'warn') {
     console.log(`     ${r.output.split('\n').slice(0, 3).join('\n     ')}`);
   }
   saveCheckOutput(checkpointsDir, r.name, `Check: ${r.name}\nStatus: ${r.status}\n\n${r.output}`);
@@ -113,7 +122,7 @@ for (const r of allResults) {
 const wiredRows = wired
   .map(
     (r) =>
-      `| ${r.name.padEnd(28)} | ${r.status.padEnd(7)} | ${r.status === 'fail' ? (r.output.split('\n')[0]?.slice(0, 50) ?? '') : ''} |`,
+      `| ${r.name.padEnd(28)} | ${r.status.padEnd(7)} | ${r.status === 'fail' || r.status === 'warn' ? (r.output.split('\n')[0]?.slice(0, 50) ?? '') : ''} |`,
   )
   .join('\n');
 
@@ -197,7 +206,8 @@ ${gitStatus ? `Working tree has uncommitted changes:\n\`\`\`\n${gitStatus}\n\`\`
 - Awaiting Opus's Daily Execution Prompt before any execution work begins.
 `;
 
-writeFileSync(join(reportDir, '01-cctv-audit-report.md'), report);
+const reportPath = join(reportDir, '01-cctv-audit-report.md');
+writeFileSync(reportPath, report);
 console.log(`\nReport written → docs/process/prompts/day-${dayStr}/01-cctv-audit-report.md`);
 
 process.exit(anyFailed ? 1 : 0);

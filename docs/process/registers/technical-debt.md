@@ -24,16 +24,15 @@
 
 ## Open Debt
 
-| ID      | Category | Severity | Title                                                                            | Opened day | Status    | Linked   |
-| ------- | -------- | -------- | -------------------------------------------------------------------------------- | ---------- | --------- | -------- |
-| TD-0001 | ci       | low      | migration-status / migration-dryrun CI checks not yet wired                      | Day 01     | scheduled | N/A      |
-| TD-0002 | ci       | low      | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01     | scheduled | N/A      |
-| TD-0003 | ci       | low      | region-check CI check not yet wired                                              | Day 01     | scheduled | N/A      |
-| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired                  | Day 01     | scheduled | N/A      |
-| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                 | Day 01     | scheduled | N/A      |
-| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                               | Day 01     | scheduled | N/A      |
-| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                | Day 01     | open      | N/A      |
-| TD-0008 | ci       | medium   | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 01     | open      | DEF-0001 |
+| ID      | Category | Severity | Title                                                             | Opened day | Status    | Linked |
+| ------- | -------- | -------- | ----------------------------------------------------------------- | ---------- | --------- | ------ |
+| TD-0001 | ci       | low      | migration-status / migration-dryrun CI checks not yet wired       | Day 01     | scheduled | N/A    |
+| TD-0002 | ci       | low      | rls-coverage / cross-tenant-probe CI checks not yet wired         | Day 01     | scheduled | N/A    |
+| TD-0003 | ci       | low      | region-check CI check not yet wired                               | Day 01     | scheduled | N/A    |
+| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired   | Day 01     | scheduled | N/A    |
+| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired  | Day 01     | scheduled | N/A    |
+| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                | Day 01     | scheduled | N/A    |
+| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit | Day 01     | open      | N/A    |
 
 ---
 
@@ -226,42 +225,11 @@ Minor: `git log` noise on docs files.
 
 ---
 
-### TD-0008 — audit-deps check has no exception mechanism; long-tail CVEs cause persistent red
-
-- **Category**: ci
-- **Severity**: medium
-- **Opened**: Day 01
-- **Status**: open
-- **Linked**: DEF-0001
-
-**What's the debt?**
-The `audit-deps` wired check runs `pnpm audit --audit-level=high` with no way to acknowledge known, time-boxed CVEs. Any accepted or temporarily deferred vulnerability causes every CCTV report to show a red `audit-deps` until the underlying package is upgraded. There is no distinction between "new unknown CVE" and "known CVE being tracked in DEF-NNNN with a fix deadline".
-
-**Why was it taken on?**
-Simple implementation was the right call for Day 1. A full exception mechanism adds complexity that isn't justified until there's at least one case requiring it — which DEF-0001 now provides.
-
-**Cost right now**
-Every CCTV report from Day 1 onward shows `audit-deps: fail` due to DEF-0001, making it harder to spot new CVEs in the noise. The audit script exits 1 even when all other checks are green.
-
-**Interest** (how it compounds)
-If additional CVEs appear in transitive dependencies before DEF-0001 is closed, the noise increases. The CI pipeline (D01-T5) will also show a persistent red on the audit-deps job.
-
-**Trigger to repay**
-Implement when DEF-0001 is resolved (Next.js 15 migration) OR if a second CVE is deferred, whichever comes first. Latest: Day 14 hardening.
-
-**Payoff plan**
-Add `.audit-exceptions.json` at repo root with schema `[{ "id": "GHSA-xxx", "until": "Day NN", "reason": "tracked in DEF-NNNN" }]`. Update `scripts/lib/checks.ts` `runWiredChecks()` to parse the exceptions file and: surface matching CVEs as WARN (not FAIL) until their `until` date, fail on any CVE not in the exceptions list or past its deadline.
-
-**Estimate**
-XS (2–3h including tests)
-
----
-
 ## Paid Debt
 
-| ID      | Category | Title | Paid day | Closing commit | Notes |
-| ------- | -------- | ----- | -------- | -------------- | ----- |
-| _empty_ |          |       |          |                |       |
+| ID      | Category | Title                                                                            | Paid day | Closing commit | Notes                                                   |
+| ------- | -------- | -------------------------------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------- |
+| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit  | `.audit-exceptions.json` + `audit-exceptions.ts` helper |
 
 ---
 

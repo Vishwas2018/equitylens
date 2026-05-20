@@ -28,9 +28,9 @@
 
 ## Open Defects
 
-| ID       | Severity | Surface | Title                                                                  | Opened day | Status | Owner | Notes                          |
-| -------- | -------- | ------- | ---------------------------------------------------------------------- | ---------- | ------ | ----- | ------------------------------ |
-| DEF-0001 | sev2     | web     | Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration | Day 01     | open   | Opus  | Reassess Day 2; deadline Day 8 |
+| ID       | Severity | Surface | Title                                                                  | Opened day | Status | Owner | Notes                                                        |
+| -------- | -------- | ------- | ---------------------------------------------------------------------- | ---------- | ------ | ----- | ------------------------------------------------------------ |
+| DEF-0001 | sev2     | web     | Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration | Day 01     | open   | Opus  | Parked via audit-exceptions until 2026-05-27 (Day 8); D02-T1 |
 
 ---
 
@@ -39,7 +39,7 @@
 - **Severity**: sev2
 - **Surface**: web
 - **Opened**: Day 01 (2026-05-19) by Code
-- **Status**: open
+- **Status**: open (parked — exception in `.audit-exceptions.json` until 2026-05-27)
 
 **Observed behaviour**
 `pnpm audit --audit-level=high` exits non-zero with 7 high-severity findings in `apps/web > next@14.2.29`.

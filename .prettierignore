@@ -3,3 +3,5 @@ pnpm-lock.yaml
 .next/
 coverage/
 dist/
+# Generated CCTV audit reports (auto-created by scripts/audit-cctv.ts)
+docs/process/prompts/*/01-cctv-audit-report.md
