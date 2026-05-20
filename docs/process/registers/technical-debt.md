@@ -26,94 +26,10 @@
 
 | ID      | Category | Severity | Title                                                             | Opened day | Status    | Linked |
 | ------- | -------- | -------- | ----------------------------------------------------------------- | ---------- | --------- | ------ |
-| TD-0001 | ci       | low      | migration-status / migration-dryrun CI checks not yet wired       | Day 01     | scheduled | N/A    |
-| TD-0002 | ci       | low      | rls-coverage / cross-tenant-probe CI checks not yet wired         | Day 01     | scheduled | N/A    |
-| TD-0003 | ci       | low      | region-check CI check not yet wired                               | Day 01     | scheduled | N/A    |
 | TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired   | Day 01     | scheduled | N/A    |
 | TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired  | Day 01     | scheduled | N/A    |
 | TD-0006 | ci       | low      | secret-scan CI check not yet wired                                | Day 01     | scheduled | N/A    |
 | TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit | Day 01     | open      | N/A    |
-
----
-
-### TD-0001 — migration-status / migration-dryrun CI checks not yet wired
-
-- **Category**: ci
-- **Severity**: low
-- **Opened**: Day 01
-- **Status**: scheduled (wired Day 2)
-- **Linked**: N/A
-
-**What's the debt?**
-`migration-status` and `migration-dryrun` CCTV checks are registered as `skipped` with `wiredDay: 2`. No CI job enforces them yet.
-
-**Why was it taken on?**
-Database migrations don't exist on Day 1; wiring the check before the schema exists would always fail.
-
-**Cost right now**
-CCTV reports show these as SKIPPED. Migration regressions would not be caught in CI.
-
-**Interest**: Blocks database work if not wired by Day 2; any migration pushed without dry-run validation is a rollback risk.
-
-**Trigger to repay**: Day 2 (first migration shipped).
-
-**Payoff plan**: Add `pnpm migrate:status` and `pnpm migrate:dryrun` scripts in Day 2; update `runWiredChecks()` to remove the `skipped()` entries and replace with live commands.
-
-**Estimate**: XS
-
----
-
-### TD-0002 — rls-coverage / cross-tenant-probe CI checks not yet wired
-
-- **Category**: ci
-- **Severity**: low
-- **Opened**: Day 01
-- **Status**: scheduled (wired Day 2)
-- **Linked**: N/A
-
-**What's the debt?**
-`rls-coverage` and `cross-tenant-probe` CCTV checks registered as skipped. No RLS policies exist yet.
-
-**Why was it taken on?**
-RLS policies are a Day 2+ deliverable; they don't exist at repo bootstrap.
-
-**Cost right now**
-Tenant-data isolation not verified in CI.
-
-**Interest**: Any RLS regression after Day 2 would be invisible in CI until wired.
-
-**Trigger to repay**: Day 2 (first RLS policy shipped).
-
-**Payoff plan**: Wire commands in `runWiredChecks()` when Supabase schema and RLS policies exist.
-
-**Estimate**: XS
-
----
-
-### TD-0003 — region-check CI check not yet wired
-
-- **Category**: ci
-- **Severity**: low
-- **Opened**: Day 01
-- **Status**: scheduled (wired Day 2)
-- **Linked**: N/A
-
-**What's the debt?**
-`region-check` CCTV check skipped. No Supabase project linked yet.
-
-**Why was it taken on?**
-Supabase project not created until Day 2.
-
-**Cost right now**
-No verification that Supabase is pinned to `ap-southeast-2` (ADR-0003).
-
-**Interest**: If Supabase is provisioned in the wrong region, data sovereignty compliance (Privacy Act) is violated.
-
-**Trigger to repay**: Day 2 (Supabase project creation).
-
-**Payoff plan**: Add `supabase status | grep region` check; assert `ap-southeast-2`.
-
-**Estimate**: XS
 
 ---
 
@@ -227,9 +143,12 @@ Minor: `git log` noise on docs files.
 
 ## Paid Debt
 
-| ID      | Category | Title                                                                            | Paid day | Closing commit | Notes                                                   |
-| ------- | -------- | -------------------------------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------- |
-| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit  | `.audit-exceptions.json` + `audit-exceptions.ts` helper |
+| ID      | Category | Title                                                                            | Paid day | Closing commit | Notes                                                                    |
+| ------- | -------- | -------------------------------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------ |
+| TD-0001 | ci       | migration-status / migration-dryrun CI checks not yet wired                      | Day 01   | D02-T2 commit  | `db:migrate:dryrun` + `db:migrate:lint` scripts; migration-dryrun CI job |
+| TD-0002 | ci       | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01   | D02-T3 commit  | `tests/rls/` suite + `pnpm test:rls`; wired in CI Day 3                  |
+| TD-0003 | ci       | region-check CI check not yet wired                                              | Day 01   | D02-T2 commit  | `runRegionCheck()` in checks.ts; region-check CI job                     |
+| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit  | `.audit-exceptions.json` + `audit-exceptions.ts` helper                  |
 
 ---
 

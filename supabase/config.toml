@@ -1,14 +1,14 @@
+project_id = "wubqybgqehbqdolsdmrw"
+
 # Supabase project configuration
 # Linked to equitylens-staging in ap-southeast-2.
-# Run `pnpm supabase link --project-ref <ref>` to complete the link.
 
 [api]
-project_id = "wubqybgqehbqdolsdmrw"
 
 [db]
 port = 54322
 shadow_port = 54320
-major_version = 16
+major_version = 17
 
 [studio]
 port = 54323

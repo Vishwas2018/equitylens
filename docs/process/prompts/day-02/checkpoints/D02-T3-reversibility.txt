@@ -1,0 +1,31 @@
+D02-T3 — reversibility loop evidence
+Date: 2026-05-20
+
+Step 1 — pnpm db:migrate:dryrun --reverse (against staging):
+  Applying 2 down migration(s)...
+    → 0002_rls_policies_down.sql ... ✅
+    → 0001_baseline_schema_down.sql ... ✅
+  EXIT 0
+
+Step 2 — pnpm db:migrate:dryrun (re-apply up against staging):
+  Applying 2 up migration(s)...
+    → 0001_baseline_schema.sql ... ✅
+    → 0002_rls_policies.sql ... ✅
+  EXIT 0
+
+Note: supabase db push was not used for re-apply because the down migration
+runs raw SQL (bypassing Supabase's schema_migrations tracker), so the CLI
+considers migrations already applied. The pg-library-based dryrun script
+is used instead for the re-up. This is the correct behaviour for the
+reversibility probe; production rollbacks would be handled via new forward
+migrations, not the rollback scripts.
+
+Step 3 — pnpm test:rls after re-apply (against staging):
+  ✓ tests/rls/policy-coverage.test.ts (2 tests) 241ms
+  ✓ tests/rls/cross-tenant.test.ts (2 tests) 614ms
+  Test Files  2 passed (2)
+        Tests  4 passed (4)
+  EXIT 0
+
+Result: FULL REVERSIBILITY CONFIRMED
+  down ✅ → up ✅ → 4 RLS tests pass ✅

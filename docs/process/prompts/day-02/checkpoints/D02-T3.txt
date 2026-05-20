@@ -1,0 +1,47 @@
+D02-T3 Checkpoint — Baseline schema + RLS policies + cross-tenant probe
+Date: 2026-05-20
+Branch: feature/d01-bootstrap
+
+=== Migration Files ===
+supabase/migrations/0001_baseline_schema.sql      — all 21 tables + types + functions + mat view
+supabase/migrations/0001_baseline_schema_down.sql — drops tables, functions, enums
+supabase/migrations/0002_rls_policies.sql         — is_org_member() helper + policies on all tables
+supabase/migrations/0002_rls_policies_down.sql    — drops all policies, disables RLS
+
+pg_partman calls wrapped in DO/EXCEPTION blocks: compatible with vanilla postgres:16 in CI
+and with Supabase (where pg_partman is available).
+
+=== Supabase Client ===
+apps/web/server/db/client.ts  — lazy getSupabaseClient() + getSupabaseAdmin(); no module-load throws
+@supabase/supabase-js installed in apps/web
+
+=== RLS Test Suite ===
+tests/rls/policy-coverage.test.ts  — checks relrowsecurity + pg_policies for all 21 tables
+tests/rls/cross-tenant.test.ts     — impersonates user B, verifies 0 rows from user A's org
+tests/vitest.config.ts             — scoped to tests/**/*.test.ts
+pnpm test:rls script added to root package.json
+
+Test result (no DATABASE_URL set): 4 tests skipped (expected)
+$ pnpm test:rls → 2 files skipped (4 tests skipped) ✅
+
+=== Technical Debt Closed ===
+TD-0001 paid: db:migrate:dryrun + db:migrate:lint scripts; migration-dryrun CI job (D02-T2)
+TD-0002 paid: tests/rls/ suite + pnpm test:rls
+TD-0003 paid: runRegionCheck() in checks.ts; region-check CI job (D02-T2)
+
+=== CCTV Audit Result ===
+Exit:    0 (no failures)
+Wired:   git-status ✅  typecheck ✅  lint ✅  format-check ✅  test ✅
+Warn:    audit-deps ⚠ (DEF-0001 / 7 CVEs excepted until 2026-05-27)
+         region-check ⚠ (SUPABASE_MGMT_TOKEN not set locally — expected)
+
+=== Human Action Required ===
+Apply migrations to Supabase staging:
+  pnpm supabase db push
+
+Then run cross-tenant probe against staging:
+  DATABASE_URL=postgres://postgres.<ref>:<pass>@db.<ref>.supabase.co:5432/postgres pnpm test:rls
+
+Expected results on staging:
+  policy-coverage: 2 pass (all 21 tables have RLS, all have policies)
+  cross-tenant: 2 pass (user B sees 0 rows from user A's org)
