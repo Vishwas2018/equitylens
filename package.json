@@ -13,6 +13,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "audit:cctv": "tsx scripts/audit-cctv.ts",
+    "audit:deps": "tsx scripts/audit-deps.ts",
+    "db:migrate:dryrun": "tsx scripts/db-migrate-dryrun.ts",
+    "db:migrate:lint": "tsx scripts/db-migrate-lint.ts",
     "prepare": "husky"
   },
   "pnpm": {

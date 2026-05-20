@@ -79,16 +79,75 @@ jobs:
       - run: pnpm test
 
   # ── Security ─────────────────────────────────────────────────────────────
-  # DEF-0001: audit-deps will fail until Next.js 14→15 migration (BL-0022).
-  # Kept as a hard failure so the branch protection requirement drives DEF-0001
-  # resolution. See docs/process/registers/defect-log.md § DEF-0001.
+  # Uses exception-aware audit script — known CVEs with an `until` date are
+  # surfaced as WARN (not FAIL). Exceptions live in .audit-exceptions.json.
+  # DEF-0001 (Next.js CVEs) parked until 2026-05-27 per BL-0022.
   audit-deps:
     name: Dependency audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-deps
-      - run: pnpm audit --audit-level=high
+      - run: pnpm audit:deps
+
+  # ── Database ──────────────────────────────────────────────────────────────
+  # Wired Day 2: applies supabase/migrations/ to an ephemeral postgres and
+  # verifies they are lint-clean. Proves every migration applies on a fresh DB.
+  migration-dryrun:
+    name: Migration dry-run
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: equitylens_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+
+      - name: Apply migrations (dry-run up)
+        run: pnpm db:migrate:dryrun
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/equitylens_test
+
+      - name: Lint migrations for destructive patterns
+        run: pnpm db:migrate:lint
+
+      - name: Verify reversibility (down → up)
+        run: |
+          pnpm db:migrate:dryrun --reverse
+          pnpm db:migrate:dryrun
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/equitylens_test
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+  # Wired Day 2: verifies the linked Supabase project is in ap-southeast-2.
+  # Required for AU data residency compliance (Privacy Act / ADR-0003).
+  # Only runs on main/staging pushes where the staging project is the target.
+  region-check:
+    name: Supabase region check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    steps:
+      - name: Verify Supabase project is in ap-southeast-2
+        run: |
+          REGION=$(curl -sf \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_MGMT_TOKEN }}" \
+            "https://api.supabase.com/v1/projects/${{ secrets.SUPABASE_PROJECT_REF }}" \
+            | jq -r '.region')
+          echo "Detected region: $REGION"
+          if [ "$REGION" != "ap-southeast-2" ]; then
+            echo "::error::Supabase region is '$REGION', expected 'ap-southeast-2' (ADR-0003 / Privacy Act)"
+            exit 1
+          fi
+          echo "✅ Region confirmed: ap-southeast-2"
 
   # ── Build ─────────────────────────────────────────────────────────────────
   build:

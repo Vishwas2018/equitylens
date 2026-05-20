@@ -30,6 +30,50 @@ function runCheck(cmd: string): { ok: boolean; output: string } {
   }
 }
 
+/** Verify Supabase project is in ap-southeast-2 via Management API. */
+function runRegionCheck(): CheckResult {
+  const token = process.env['SUPABASE_MGMT_TOKEN'];
+  const projectRef = process.env['SUPABASE_PROJECT_REF'];
+
+  if (!token || !projectRef) {
+    return {
+      name: 'region-check',
+      status: 'warn',
+      output:
+        'SUPABASE_MGMT_TOKEN or SUPABASE_PROJECT_REF not set — skipping region check locally (runs on CI for main/staging pushes)',
+    };
+  }
+
+  const { ok, output } = runCheck(
+    `curl -sf -H "Authorization: Bearer ${token}" https://api.supabase.com/v1/projects/${projectRef}`,
+  );
+
+  if (!ok) {
+    return { name: 'region-check', status: 'fail', output: `API call failed: ${output}` };
+  }
+
+  let region = '';
+  try {
+    region = (JSON.parse(output) as { region?: string }).region ?? '';
+  } catch {
+    return {
+      name: 'region-check',
+      status: 'fail',
+      output: `Could not parse API response: ${output}`,
+    };
+  }
+
+  if (region !== 'ap-southeast-2') {
+    return {
+      name: 'region-check',
+      status: 'fail',
+      output: `Region is '${region}', expected 'ap-southeast-2' (ADR-0003 / Privacy Act)`,
+    };
+  }
+
+  return { name: 'region-check', status: 'pass', output: `Region confirmed: ${region}` };
+}
+
 /** Run `pnpm audit --json`, apply exception list, return structured result. */
 function runAuditDeps(): CheckResult {
   const exceptions = loadExceptions();
@@ -114,6 +158,7 @@ export function runWiredChecks(): CheckResult[] {
   }
 
   results.push(runAuditDeps());
+  results.push(runRegionCheck());
 
   return results;
 }
@@ -124,7 +169,6 @@ export function skippedChecks(): CheckResult[] {
     skipped('migration-dryrun', 2),
     skipped('rls-coverage', 2),
     skipped('cross-tenant-probe', 2),
-    skipped('region-check', 2),
     skipped('engine-determinism', 4),
     skipped('ato-fixture-canary', 4),
     skipped('bundle-budgets', 8),
