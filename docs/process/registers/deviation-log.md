@@ -36,10 +36,12 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                               | Severity | Disposition                              | Owner |
-| -------- | --- | -------------- | ------------------------------------------------------------------- | -------- | ---------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0      | medium   | accepted; CI pins via .nvmrc             | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook | low      | accepted with mitigation (CI job D01-T5) | Code  |
+| ID       | Day | Type           | Title                                                               | Severity | Disposition                                                       | Owner |
+| -------- | --- | -------------- | ------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0      | medium   | accepted; CI pins via .nvmrc                                      | Code  |
+| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook | low      | accepted with mitigation (CI job D01-T5)                          | Code  |
+| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17            | low      | accepted; update indexing-and-partitioning.md at next opportunity | Code  |
+| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used | medium   | accepted; re-evaluate Day 14 (BL-0023)                            | Code  |
 
 ---
 
@@ -216,6 +218,67 @@ Vercel schema validation rejected the key: `"should NOT have additional property
 **Disposition**: accepted — `rootDirectory` removed from `vercel.json`; set to `apps/web` in Vercel dashboard. `outputDirectory: ".next"` added to `vercel.json` (valid schema key, relative to Root Directory).
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0010 — Postgres version: spec says 16, Supabase managed runs 17
+
+- **Day**: 02
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+`docs/database/indexing-and-partitioning.md` references Postgres 16 features. `supabase/config.toml` was initially set to `major_version = 16`.
+
+**What actually happened?**
+`supabase link` detected the actual managed Postgres version is 17. `config.toml` corrected to `major_version = 17`. All 0001 + 0002 migrations apply cleanly on PG17.
+
+**Why?**
+Supabase upgraded its managed offering to Postgres 17 after the spec was written. Supabase projects cannot be pinned to a specific minor version.
+
+**Impact**
+PG17 is a superset of PG16 for the features used in this project. No behavioural difference observed. `indexing-and-partitioning.md` intro should be updated to reference PG17 at next opportunity (non-blocker).
+
+**Disposition**: accepted — `config.toml` corrected. `docs/database/indexing-and-partitioning.md` intro to be updated at next opportunity (not a blocker for Day 2 or current sprint pace).
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0011 — pg_partman unavailable on Supabase managed Postgres; default partitions used
+
+- **Day**: 02
+- **Type**: tech-choice
+- **Severity**: medium
+- **Opened by**: Code
+- **Status**: accepted (re-evaluate Day 14)
+
+**What was the spec / plan?**
+`docs/database/indexing-and-partitioning.md` specifies `pg_partman` for automated partition maintenance of `scenario_results` and `audit_logs` (range-partitioned by month).
+
+**What actually happened?**
+`pg_partman` is not available on Supabase managed Postgres PG17. `0001_baseline_schema.sql` wraps the `partman.create_parent()` call in a `DO/EXCEPTION` block; when pg_partman is absent, a single `DEFAULT` partition is created for each table instead.
+
+**Why?**
+Supabase does not expose pg_partman on its managed platform. Declarative partitioning with a default partition is a valid interim strategy — writes succeed, queries are correct, partition pruning on known ranges still works. The gap is that pre-created monthly partitions (pg_partman's value) are absent.
+
+**Impact**
+All data currently lands in the `_default` partition. Without partition splits, range-partition pruning on date filters will not activate until monthly partitions are manually created or an alternative automation is wired. At MVP scale this is a non-issue; at production scale (>6 months of data) query latency on `scenario_results` could degrade.
+
+**Options considered**
+
+1. Switch to unpartitioned tables — simpler; loses future scalability; not recommended.
+2. Implement `pg_cron`-driven manual partition creation — available on Supabase managed; medium effort.
+3. Native declarative partitioning without automation — acceptable for MVP; requires Day 14 evaluation.
+
+**Recommendation**
+Accept default-partition fallback for the current sprint. Evaluate pg_cron-driven strategy at Day 14 (BL-0023). If traffic / data volume projections show urgency before then, pull forward.
+
+**Disposition**: accepted pending re-evaluation — default partition is production-safe for MVP. Day 14: decide on pg_cron manual partitioning vs acceptance of single-partition operation for initial launch.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: BL-0023 | Tech debt: N/A
 
 ---
 

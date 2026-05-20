@@ -179,6 +179,70 @@ Fully-configured monorepo: TypeScript strict mode, ESLint + Prettier + Husky enf
 
 ---
 
+## Day 2 — 2026-05-20 — Supabase Provisioning & Schema
+
+**Day status**: clean
+
+**Primary goal**
+Supabase project provisioned, region locked to ap-southeast-2, baseline schema + RLS applied to staging, cross-tenant isolation verified, migration CI wired.
+
+**Achieved**
+
+- D02-T1 — audit-exceptions mechanism + park DEF-0001 — `scripts/lib/audit-exceptions.ts`, `docs/process/registers/audit-exceptions.md`; DEF-0001 parked with exception entry — commit `2761d87`
+- D02-T2 — Supabase provision + region CI — `supabase/config.toml` linked to `wubqybgqehbqdolsdmrw` (ap-southeast-2); `region-check` wired in CCTV + CI; migration dry-run CI job wired; `audit-deps` CI job wired — commit `318c141`
+- D02-T3 — baseline schema + RLS applied — 21 tables (`0001_baseline_schema.sql`), RLS + policies (`0002_rls_policies.sql`), down migrations in `supabase/rollback/`; `pnpm test:rls` 4/4 pass on staging; reversibility confirmed — commit `46e5a4f`
+- D02-T4 — day 2 closeout — deviation log (DEV-0010, DEV-0011), backlog (BL-0023), EOD report, `day-02-end` tag — this commit
+
+**Not achieved (rolled forward)**
+
+- None — all 4 tasks complete
+
+**Registers touched**
+
+- Backlog: opened `BL-0023` (partition strategy for managed Postgres, P2)
+- Defects: DEF-0001 parked via audit-exceptions (status: excepted, re-evaluate Day 8)
+- Deviations: `DEV-0010` (open/accepted — PG17 vs spec PG16), `DEV-0011` (open/accepted — pg_partman fallback, re-evaluate Day 14)
+- Tech debt: TD-0001, TD-0002, TD-0003 closed (migration CI, RLS CI, region CI all wired)
+- ADRs: none
+
+**Checkpoints**
+
+- CCTV audit (`pnpm audit:cctv --day 02`): 5 wired checks — typecheck ✅, lint ✅, format-check ✅, test ✅, region-check ⚠️ (warn; no SUPABASE_MGMT_TOKEN locally — passes in CI); audit-deps ⚠️ (DEF-0001 excepted)
+- RLS probe (`pnpm test:rls` against staging): 4/4 pass — policy-coverage ✅, cross-tenant ✅
+- Reversibility: down ✅ → up ✅ → 4/4 RLS tests ✅
+- Coverage: N/A (engine Day 4, app Day 8)
+
+**Notable decisions**
+
+- Supabase managed Postgres is PG17 (spec assumed 16); config.toml corrected; no behavioural impact
+- pg_partman unavailable on managed Postgres; default partition fallback chosen over unpartitioned tables; re-evaluate at Day 14 with BL-0023
+- Down migrations moved to `supabase/rollback/` (Supabase CLI applies all `.sql` in `migrations/` as forward migrations)
+- `db-migrate-dryrun.ts` ported from psql subprocess to `pg` library (psql not in PATH on Windows)
+- Cross-tenant RLS probe uses `pg_catalog.set_config()` not `SET LOCAL ... TO $1` (SET doesn't accept parameters)
+
+**Surprises / lessons**
+
+- Supabase has already upgraded to PG17; spec PG16 assumption incorrect
+- `pg_partman` is not available on any Supabase managed tier; the extension list must be verified against the Supabase docs before speccing future extensions
+- `supabase/migrations/` must contain only forward migrations; any `_down.sql` in that directory is treated as a forward migration by the CLI — keep rollback scripts in a separate directory
+- `relkind = 'r'` in pg_class misses partitioned tables (`relkind = 'p'`); integration tests must use `IN ('r', 'p')`
+
+**Carried forward to Day 3**
+
+- DEV-0010: update `docs/database/indexing-and-partitioning.md` intro to reference PG17 (non-blocker, at next opportunity)
+- Human actions outstanding: populate `apps/web/.env.local`; set GitHub Secrets (`SUPABASE_PROJECT_REF`, `SUPABASE_MGMT_TOKEN`, `STAGING_DATABASE_URL`); set Vercel env vars; configure required status checks in branch protection
+- BL-0022 (Next.js 14→15): deferred to Day 8 per D02 decision; DEF-0001 remains open
+
+**Evidence**
+
+- CCTV report: `prompts/day-02/01-cctv-audit-report.md`
+- Daily prompt: `prompts/day-02/02-daily-execution-prompt.md`
+- End-of-day report: `prompts/day-02/03-end-of-day-report.md`
+- Checkpoints: `prompts/day-02/checkpoints/D02-T3-dbpush.txt`, `D02-T3-rls.txt`, `D02-T3-reversibility.txt`
+- Start/end tags: `day-01-end` → `day-02-end` @ HEAD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
