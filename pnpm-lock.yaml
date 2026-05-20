@@ -17,6 +17,9 @@ importers:
       '@commitlint/config-conventional':
         specifier: 19.2.2
         version: 19.2.2
+      '@supabase/supabase-js':
+        specifier: ^2.106.0
+        version: 2.106.0
       '@types/node':
         specifier: 20.14.0
         version: 20.14.0

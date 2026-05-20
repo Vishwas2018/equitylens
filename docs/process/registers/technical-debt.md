@@ -24,12 +24,13 @@
 
 ## Open Debt
 
-| ID      | Category | Severity | Title                                                             | Opened day | Status    | Linked |
-| ------- | -------- | -------- | ----------------------------------------------------------------- | ---------- | --------- | ------ |
-| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired   | Day 01     | scheduled | N/A    |
-| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired  | Day 01     | scheduled | N/A    |
-| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                | Day 01     | scheduled | N/A    |
-| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit | Day 01     | open      | N/A    |
+| ID      | Category | Severity | Title                                                                                      | Opened day | Status    | Linked   |
+| ------- | -------- | -------- | ------------------------------------------------------------------------------------------ | ---------- | --------- | -------- |
+| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired                            | Day 01     | scheduled | N/A      |
+| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                           | Day 01     | scheduled | N/A      |
+| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                                         | Day 01     | scheduled | N/A      |
+| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                          | Day 01     | open      | N/A      |
+| TD-0008 | auth     | low      | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch the chain | Day 03     | open      | DEV-0014 |
 
 ---
 
@@ -184,6 +185,31 @@ Minor: `git log` noise on docs files.
 **Estimate**
 <T-shirt size: XS / S / M / L>
 ```
+
+---
+
+### TD-0008 — appendAuditEntry non-atomic prev_hash fetch
+
+- **Category**: auth
+- **Severity**: low
+- **Opened**: Day 03
+- **Status**: open
+- **Linked**: DEV-0014
+
+**What's the debt?**
+`appendAuditEntry` fetches the most recent `computed_hash` in one query, then inserts a new row in a separate query. Under concurrent writes, two requests can fetch the same `prev_hash`, creating a forked chain.
+
+**Why was it taken on?**
+An atomic solution requires a SECURITY DEFINER PostgreSQL function or advisory lock — added complexity deferred for MVP (single-region, low concurrent audit write volume).
+
+**Cost right now**
+Hash chain could branch under concurrent audit writes. Chain verification would catch it but not auto-heal.
+
+**Interest**: Grows if audit volume increases or if concurrent server action handlers are added. Unlikely to trigger at MVP scale.
+
+**Trigger to repay**: Before any multi-region deployment or when daily audit log volume exceeds 1,000 entries.
+
+**Payoff plan**: Replace `appendAuditEntry` logic with a `SECURITY DEFINER` `append_audit_entry(...)` Postgres function using `SELECT ... FOR UPDATE` on the latest row.
 
 ---
 
