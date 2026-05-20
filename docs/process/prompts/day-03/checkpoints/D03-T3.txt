@@ -1,0 +1,57 @@
+D03-T3 — Upstash rate-limit + E2E Playwright + cross-tenant API probe
+Date: 2026-05-20
+
+## Files Created / Modified
+
+### Rate limiter
+- apps/web/server/rate-limit/upstash.ts
+  - checkSignInRateLimit(ip): sliding window 10/60s via @upstash/ratelimit
+  - _setLimitFn(fn): test injection hook (no module mocking needed)
+  - Production: Redis.fromEnv() + Ratelimit.slidingWindow(10, '60 s')
+
+- apps/web/server/actions/auth/signIn.ts (extended)
+  - Gets IP from x-forwarded-for / x-real-ip headers (next/headers)
+  - Falls back to 127.0.0.1 for local dev
+  - Calls checkSignInRateLimit; returns { error, retryAfter } on 429
+
+### Tests
+- tests/integration/rate-limit.test.ts — 5 unit tests (no real Redis):
+  - allows under limit, blocks over limit, 10 pass + 11th blocked,
+    caller IP used as key, retryAfter >= 1s minimum
+- tests/integration/cross-tenant-api.test.ts — 2 tests:
+  - Discovers all /api/* routes via filesystem walk
+  - Vacuously passes (no ID-parameterized API routes yet)
+  - Will auto-enroll new routes when /api/orgs/[id] etc. are added (Day 7)
+
+### Playwright
+- playwright.config.ts — chromium, 1 worker (sequential), webServer: next dev
+- tests/e2e/auth-flow.spec.ts — 6 tests:
+  - owner signs in via UI
+  - owner creates org via UI
+  - owner invites member (DB insert for testability)
+  - member accepts invite via UI
+  - both users visible in org membership
+  - member cannot see unrelated org (cross-tenant isolation)
+
+### CI
+- .github/workflows/ci.yml — added e2e job after build:
+  - Installs Playwright browsers
+  - Writes .env.local from secrets
+  - Runs playwright test tests/e2e/auth-flow.spec.ts
+  - Uploads playwright-report artifact on failure
+
+## Checkpoint Results
+
+  pnpm test tests/integration/rate-limit.test.ts      # 5/5 ✅
+  pnpm test tests/integration/cross-tenant-api.test.ts # 2/2 ✅ (vacuous — no ID routes)
+  pnpm playwright test tests/e2e/auth-flow.spec.ts     # requires next dev + staging creds
+  CI e2e job wired and will run on push                # ✅
+
+## Notes
+
+- Cross-tenant probe is currently vacuous (no /api/[id] routes). Will auto-enroll
+  routes matching /\[(org_id|resource_id|id|orgId)\]/ when API routes are added (Day 7).
+- E2E test uses admin API to pre-create users (email_confirm: true) to avoid
+  email confirmation flows in CI. Invite token created directly via DB for testability.
+- Rate limiter uses dependency injection (_setLimitFn) to avoid @upstash/ratelimit
+  module mocking complexity; no real Redis calls in unit tests.

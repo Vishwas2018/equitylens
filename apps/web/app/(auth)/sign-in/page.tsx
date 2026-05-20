@@ -16,7 +16,11 @@ export default function SignInPage() {
     setError(null);
 
     const fd = new FormData(e.currentTarget);
-    const result = await signIn(fd.get('email') as string, fd.get('password') as string);
+    const result = await signIn(
+      fd.get('email') as string,
+      fd.get('password') as string,
+      navigator.userAgent,
+    );
 
     if (result.error) {
       setError(result.error);
