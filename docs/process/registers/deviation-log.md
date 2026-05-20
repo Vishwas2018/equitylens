@@ -36,12 +36,15 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                               | Severity | Disposition                                                       | Owner |
-| -------- | --- | -------------- | ------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0      | medium   | accepted; CI pins via .nvmrc                                      | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook | low      | accepted with mitigation (CI job D01-T5)                          | Code  |
-| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17            | low      | accepted; update indexing-and-partitioning.md at next opportunity | Code  |
-| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used | medium   | accepted; re-evaluate Day 14 (BL-0023)                            | Code  |
+| ID       | Day | Type           | Title                                                                                       | Severity | Disposition                                                                         | Owner |
+| -------- | --- | -------------- | ------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                              | medium   | accepted; CI pins via .nvmrc                                                        | Code  |
+| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                         | low      | accepted with mitigation (CI job D01-T5)                                            | Code  |
+| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                    | low      | accepted; update indexing-and-partitioning.md at next opportunity                   | Code  |
+| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                         | medium   | accepted; re-evaluate Day 14 (BL-0023)                                              | Code  |
+| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
+| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
+| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
 
 ---
 
@@ -279,6 +282,90 @@ Accept default-partition fallback for the current sprint. Evaluate pg_cron-drive
 **Disposition**: accepted pending re-evaluation — default partition is production-safe for MVP. Day 14: decide on pg_cron manual partitioning vs acceptance of single-partition operation for initial launch.
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: BL-0023 | Tech debt: N/A
+
+---
+
+### DEV-0012 — is_default column added via migration 0003; absent from 0001 spec
+
+- **Day**: 03
+- **Type**: scope
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+`0001_baseline_schema.sql` was the canonical baseline. The `user_org_membership` table was defined there.
+
+**What actually happened?**
+The `is_default BOOLEAN NOT NULL DEFAULT false` column on `user_org_membership` was needed for the `set_active_org()` SECURITY DEFINER function (switching the user's active org). The column was not in the Day 2 schema spec. It was added cleanly via `0003_set_active_org.sql` on Day 3.
+
+**Why?**
+The active-org switching UX requirement was fully scoped on Day 3 during auth action design. Adding a forward migration is the correct pattern; backfilling 0001 would violate the "no retro-edits to applied migrations" rule.
+
+**Impact**
+Zero — the column is additive, non-null with a default, and has a minimal data migration (all existing rows get `false`). The `set_active_org()` function atomically handles the mutual exclusion.
+
+**Disposition**: accepted — forward migration is the correct pattern. No spec update required; the column is self-documenting in 0003.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0013 — invite token is a one-time membership grant, not a magic-link sign-in URL
+
+- **Day**: 03
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+The auth/tenancy spec implied Supabase invite flows (magic link email) for org member onboarding.
+
+**What actually happened?**
+Magic links are disabled in the Supabase project config (per security posture — TOTP-only for sensitive financial app). Invite tokens are implemented as SHA-256 hashed one-time tokens stored in `org_invites.token_hash`. A user must already have a Supabase account; the token grants membership only, not authentication.
+
+**Why?**
+Magic link sign-in is a parallel authentication path that bypasses password requirements. For a financial application, this is undesirable. The one-time token pattern is safer: the invitee must authenticate separately (password/TOTP), then accept the invite.
+
+**Impact**
+Users who don't have an account yet cannot self-serve from an invite email. Workaround: invite flow assumes the invitee has already signed up, or an admin creates their account. This is acceptable for B2B MVP where user onboarding is admin-assisted.
+
+**Disposition**: accepted — token-based membership grant is the correct pattern for this security posture. `inviteMember` server action generates the token; `acceptInvite` validates and grants membership.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0014 — appendAuditEntry fetches prev_hash non-atomically
+
+- **Day**: 03
+- **Type**: architecture
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted (fix deferred)
+
+**What was the spec / plan?**
+Audit hash chain must be unbroken and verifiable. Implied: each entry's `prev_hash` references the immediately preceding entry's `computed_hash` without gaps.
+
+**What actually happened?**
+`appendAuditEntry` performs two separate queries: (1) SELECT the most recent `computed_hash`, (2) INSERT a new row with `prev_hash = computed_hash`. Under concurrent server action invocations, two requests can read the same `prev_hash`, producing a forked chain detectable only by the verify function.
+
+**Why?**
+An atomic implementation requires a `SECURITY DEFINER` PostgreSQL function using `SELECT ... FOR UPDATE` or an advisory lock. This was deferred to keep Day 3 scope manageable. At MVP scale (sequential server-side actions, single region), the race window is negligible.
+
+**Options considered**
+
+1. Accept the non-atomic implementation for MVP — risk is theoretical at this scale. Logged as TD-0009.
+2. `SECURITY DEFINER append_audit_entry(...)` pg function with `SELECT ... FOR UPDATE` — correct, medium effort, deferred.
+3. Advisory lock (`pg_try_advisory_xact_lock`) — alternative atomic approach; less clear semantics.
+
+**Recommendation**
+Option 1 for MVP; Option 2 before any multi-region deployment or when audit volume exceeds 1,000 entries/day.
+
+**Disposition**: accepted — TD-0009 tracks the payoff. The `verifyAuditChain()` function will detect any branching if it occurs, providing an audit trail of the anomaly.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: TD-0009
 
 ---
 

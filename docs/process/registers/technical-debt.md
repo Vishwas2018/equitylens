@@ -30,7 +30,7 @@
 | TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                           | Day 01     | scheduled | N/A      |
 | TD-0006 | ci       | low      | secret-scan CI check not yet wired                                                         | Day 01     | scheduled | N/A      |
 | TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                          | Day 01     | open      | N/A      |
-| TD-0008 | auth     | low      | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch the chain | Day 03     | open      | DEV-0014 |
+| TD-0009 | auth     | low      | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch the chain | Day 03     | open      | DEV-0014 |
 
 ---
 
@@ -188,7 +188,7 @@ Minor: `git log` noise on docs files.
 
 ---
 
-### TD-0008 — appendAuditEntry non-atomic prev_hash fetch
+### TD-0009 — appendAuditEntry non-atomic prev_hash fetch
 
 - **Category**: auth
 - **Severity**: low
