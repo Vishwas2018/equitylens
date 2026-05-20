@@ -1,0 +1,5 @@
+Check: git-status
+Status: pass
+
+M scripts/lib/checks.ts
+?? docs/process/prompts/day-03/
