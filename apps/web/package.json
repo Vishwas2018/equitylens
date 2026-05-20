@@ -11,7 +11,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@equitylens/types": "workspace:*",
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.0",
+    "jose": "^6.2.3",
     "next": "14.2.29",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

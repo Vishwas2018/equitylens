@@ -29,3 +29,15 @@ export function getSupabaseAdmin(): SupabaseClient {
   }
   return _supabaseAdmin;
 }
+
+/**
+ * Returns a Supabase client authenticated as the given user via their access token.
+ * PostgREST enforces RLS automatically — auth.uid() resolves to the token's sub claim.
+ * Prefer this over getSupabaseAdmin() for all user-scoped queries.
+ */
+export function getRlsAwareClient(accessToken: string): SupabaseClient {
+  return createClient(getEnv('NEXT_PUBLIC_SUPABASE_URL'), getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'), {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
