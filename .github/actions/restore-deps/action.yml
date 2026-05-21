@@ -9,10 +9,8 @@ runs:
   steps:
     - name: Set up pnpm
       uses: pnpm/action-setup@v4
-      with:
-        # DEV-0002: local dev runs pnpm 10.x; lockfileVersion 9.0 is compatible
-        # with both pnpm 9 and 10. Pinning to 10 to match lockfile generator.
-        version: '10'
+      # version read from packageManager field in root package.json (pnpm@10.30.3)
+      # DEV-0002: lockfileVersion 9.0 is compatible with pnpm 9 and 10.
 
     - name: Set up Node
       uses: actions/setup-node@v4
