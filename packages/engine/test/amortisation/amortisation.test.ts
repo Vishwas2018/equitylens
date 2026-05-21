@@ -464,3 +464,19 @@ describe('AM-11 — Daily-equivalent: 31-day month has proportionally higher int
     expect(i28).toBe(4_603n);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Error guards — ensure RangeError on invalid inputs
+// ---------------------------------------------------------------------------
+describe('runAmortisation error guards', () => {
+  it('throws RangeError when months array is shorter than horizonMonths', () => {
+    expect(() =>
+      runAmortisation({
+        principalCents: 100_000n,
+        termMonths: 3,
+        repaymentType: 'P_AND_I',
+        months: [{ daysInMonth: 30, annualRateBps: 600 }],
+      }),
+    ).toThrow(RangeError);
+  });
+});

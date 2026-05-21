@@ -7,6 +7,8 @@ import {
   mulDiv,
   monthlyInterest,
   computeScheduledPayment,
+  fromCentNumber,
+  toCentNumber,
   RoundingMode,
   ZERO,
 } from '../../src/money/cents.js';
@@ -65,6 +67,22 @@ describe('mulDiv', () => {
     // 3 * 1 / 2 = 1.5 → rounds to even = 2
     expect(mulDiv(3n, 1n, 2n, RoundingMode.HALF_EVEN)).toBe(2n);
   });
+  it('HALF_EVEN: rounds down when fractional part < 0.5', () => {
+    // 10 * 1 / 3 = 3.333... → 3 (doubled remainder 2 < denominator 3)
+    expect(mulDiv(10n, 1n, 3n, RoundingMode.HALF_EVEN)).toBe(3n);
+  });
+  it('HALF_EVEN: rounds up when fractional part > 0.5', () => {
+    // 10 * 2 / 3 = 6.666... → 7 (doubled remainder 4 > denominator 3)
+    expect(mulDiv(10n, 2n, 3n, RoundingMode.HALF_EVEN)).toBe(7n);
+  });
+  it('HALF_EVEN: negative amount, fractional > 0.5 → rounds away from zero', () => {
+    // -10 * 2 / 3 = -6.666... → -7 (negative remainder path + amount<0 path)
+    expect(mulDiv(-10n, 2n, 3n, RoundingMode.HALF_EVEN)).toBe(-7n);
+  });
+  it('HALF_EVEN: negative amount, exactly half → rounds to even', () => {
+    // -3 * 1 / 2 = -1.5 → -2 (negative remainder path + exactly-half + amount<0 path)
+    expect(mulDiv(-3n, 1n, 2n, RoundingMode.HALF_EVEN)).toBe(-2n);
+  });
   it('throws on zero denominator', () => {
     expect(() => mulDiv(10n, 1n, 0n, RoundingMode.HALF_UP)).toThrow(RangeError);
   });
@@ -114,5 +132,16 @@ describe('computeScheduledPayment', () => {
   it('zero rate divides principal evenly', () => {
     // $120 / 12 months = $10/month
     expect(computeScheduledPayment(1200n, 0, 12)).toBe(100n);
+  });
+});
+
+describe('fromCentNumber / toCentNumber', () => {
+  it('fromCentNumber rounds float to nearest cent', () => {
+    expect(fromCentNumber(123.7)).toBe(124n);
+    expect(fromCentNumber(123.2)).toBe(123n);
+  });
+  it('toCentNumber converts bigint to number', () => {
+    expect(toCentNumber(456n)).toBe(456);
+    expect(toCentNumber(0n)).toBe(0);
   });
 });

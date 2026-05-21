@@ -40,6 +40,7 @@ export function runAmortisation(input: LoanInput): Schedule {
   let scheduledPayment: Cents = ZERO;
   if (repaymentType === 'P_AND_I') {
     const firstMonth = months[0];
+    // c8 ignore next — unreachable: months.length guard above ensures months[0] exists
     if (firstMonth === undefined) throw new RangeError('months array is empty');
     scheduledPayment = computeScheduledPayment(
       principalCents,
@@ -61,6 +62,7 @@ export function runAmortisation(input: LoanInput): Schedule {
     }
 
     const month = months[i];
+    // c8 ignore next — unreachable: months.length guard above ensures months[i] exists within horizonMonths
     if (month === undefined) throw new RangeError(`months[${i}] is undefined`);
 
     const openingBalance = balance;
