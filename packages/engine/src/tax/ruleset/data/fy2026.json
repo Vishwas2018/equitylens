@@ -1,0 +1,113 @@
+{
+  "$schema": "https://schemas.equitylens.au/ruleset/v3",
+  "version": "FY2026.1",
+  "status": "published",
+  "jurisdiction": "VIC",
+  "financialYear": "FY2026",
+  "effectiveFrom": "2025-07-01",
+  "effectiveTo": "2026-06-30",
+  "marginalRates": {
+    "residency": "resident",
+    "brackets": [
+      { "thresholdCents": "1820000", "rateBps": 0 },
+      { "thresholdCents": "4500000", "rateBps": 1600 },
+      { "thresholdCents": "13500000", "rateBps": 3000 },
+      { "thresholdCents": "19000000", "rateBps": 3700 },
+      { "thresholdCents": "9007199254740992", "rateBps": 4500 }
+    ]
+  },
+  "medicareLevy": {
+    "rateBps": 200,
+    "singleThresholdCents": "2716800",
+    "familyThresholdCents": "4584000",
+    "surchargeBrackets": [
+      { "thresholdCents": "9300000", "rateBps": 100 },
+      { "thresholdCents": "10800000", "rateBps": 125 },
+      { "thresholdCents": "14400000", "rateBps": 150 }
+    ]
+  },
+  "cgt": {
+    "individualDiscountBps": 5000,
+    "smsfDiscountBps": 3333,
+    "minimumHoldingDays": 366
+  },
+  "negativeGearingRules": {
+    "enabled": true,
+    "propertyTypeExclusions": [],
+    "quarantineCarryForward": true
+  },
+  "depreciation": {
+    "div40": {
+      "defaultMethod": "diminishing_value",
+      "secondHandResidentialDisallowed": true,
+      "secondHandRuleAcquisitionFromDate": "2017-05-09"
+    },
+    "div43": {
+      "defaultLifeYears": 40,
+      "defaultRateBps": 250,
+      "qualifyingConstructionFromDate": "1987-09-15"
+    }
+  },
+  "landTax": {
+    "vic": {
+      "individualBrackets": [
+        {
+          "previousThresholdCents": "0",
+          "thresholdCents": "5000000",
+          "flatCents": "0",
+          "marginalBps": 0
+        },
+        {
+          "previousThresholdCents": "5000000",
+          "thresholdCents": "10000000",
+          "flatCents": "50000",
+          "marginalBps": 10
+        },
+        {
+          "previousThresholdCents": "10000000",
+          "thresholdCents": "30000000",
+          "flatCents": "97500",
+          "marginalBps": 30
+        },
+        {
+          "previousThresholdCents": "30000000",
+          "thresholdCents": "60000000",
+          "flatCents": "697500",
+          "marginalBps": 60
+        },
+        {
+          "previousThresholdCents": "60000000",
+          "thresholdCents": "180000000",
+          "flatCents": "2497500",
+          "marginalBps": 90
+        },
+        {
+          "previousThresholdCents": "180000000",
+          "thresholdCents": "300000000",
+          "flatCents": "13297500",
+          "marginalBps": 165
+        },
+        {
+          "previousThresholdCents": "300000000",
+          "thresholdCents": "9007199254740992",
+          "flatCents": "33097500",
+          "marginalBps": 265
+        }
+      ],
+      "absenteeSurchargeBps": 400,
+      "vacantSurchargeBps": 200
+    }
+  },
+  "metadata": {
+    "sourceCitations": [
+      "https://www.ato.gov.au/rates/individual-income-tax-rates/",
+      "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates",
+      "https://www.sro.vic.gov.au/land-tax-current-rates"
+    ],
+    "publishedBy": "00000000-0000-0000-0000-000000000001",
+    "publishedAt": "2025-07-01T00:00:00+10:00",
+    "legalReviewerId": "00000000-0000-0000-0000-000000000002",
+    "legalReviewSignedAt": "2025-06-25T15:30:00+10:00",
+    "rulesetHash": "placeholder-sha256-computed-at-publish-time"
+  }
+}

@@ -7,3 +7,7 @@ dist/
 docs/process/prompts/*/01-cctv-audit-report.md
 # Supabase CLI generated files
 supabase/.temp/
+# Workspace files not part of EquityLens project
+HOW-TO-RUN.md
+run-audit.sh
+docs/audit-prompt.md

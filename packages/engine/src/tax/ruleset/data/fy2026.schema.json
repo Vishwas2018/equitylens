@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schemas.equitylens.au/ruleset/v3",
+  "title": "EquityLens Ruleset v3",
+  "description": "Australian property tax ruleset — all monetary thresholds as decimal cent strings, all rates as basis points.",
+  "type": "object",
+  "required": [
+    "$schema",
+    "version",
+    "status",
+    "jurisdiction",
+    "financialYear",
+    "effectiveFrom",
+    "effectiveTo",
+    "marginalRates",
+    "medicareLevy",
+    "negativeGearingRules",
+    "cgt",
+    "depreciation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "type": "string", "minLength": 1 },
+    "status": { "type": "string", "enum": ["draft", "staged", "published", "retired"] },
+    "jurisdiction": { "type": "string", "minLength": 1 },
+    "financialYear": { "type": "string", "pattern": "^FY\\d{4}$" },
+    "effectiveFrom": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "effectiveTo": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "marginalRates": {
+      "type": "object",
+      "required": ["residency", "brackets"],
+      "additionalProperties": false,
+      "properties": {
+        "residency": { "type": "string" },
+        "brackets": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/rawBracket" }
+        }
+      }
+    },
+    "medicareLevy": {
+      "type": "object",
+      "required": ["rateBps", "singleThresholdCents", "familyThresholdCents", "surchargeBrackets"],
+      "additionalProperties": false,
+      "properties": {
+        "rateBps": { "type": "integer", "minimum": 0 },
+        "singleThresholdCents": { "$ref": "#/$defs/centString" },
+        "familyThresholdCents": { "$ref": "#/$defs/centString" },
+        "surchargeBrackets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/rawBracket" }
+        }
+      }
+    },
+    "cgt": {
+      "type": "object",
+      "required": ["individualDiscountBps", "smsfDiscountBps", "minimumHoldingDays"],
+      "additionalProperties": false,
+      "properties": {
+        "individualDiscountBps": { "type": "integer", "minimum": 0 },
+        "smsfDiscountBps": { "type": "integer", "minimum": 0 },
+        "minimumHoldingDays": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "negativeGearingRules": {
+      "type": "object",
+      "required": ["enabled", "propertyTypeExclusions", "quarantineCarryForward"],
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "propertyTypeExclusions": { "type": "array", "items": { "type": "string" } },
+        "quarantineCarryForward": { "type": "boolean" }
+      }
+    },
+    "depreciation": {
+      "type": "object",
+      "required": ["div40", "div43"],
+      "additionalProperties": false,
+      "properties": {
+        "div40": {
+          "type": "object",
+          "required": [
+            "defaultMethod",
+            "secondHandResidentialDisallowed",
+            "secondHandRuleAcquisitionFromDate"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "defaultMethod": { "type": "string", "enum": ["prime_cost", "diminishing_value"] },
+            "secondHandResidentialDisallowed": { "type": "boolean" },
+            "secondHandRuleAcquisitionFromDate": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        },
+        "div43": {
+          "type": "object",
+          "required": ["defaultLifeYears", "defaultRateBps", "qualifyingConstructionFromDate"],
+          "additionalProperties": false,
+          "properties": {
+            "defaultLifeYears": { "type": "integer", "minimum": 1 },
+            "defaultRateBps": { "type": "integer", "minimum": 0 },
+            "qualifyingConstructionFromDate": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
+          }
+        }
+      }
+    },
+    "landTax": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "vic": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "individualBrackets": {
+              "type": "array",
+              "items": { "$ref": "#/$defs/landTaxBracket" }
+            },
+            "trustBrackets": { "type": "array", "items": { "$ref": "#/$defs/landTaxBracket" } },
+            "absenteeSurchargeBps": { "type": "integer", "minimum": 0 },
+            "vacantSurchargeBps": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "sourceCitations": { "type": "array", "items": { "type": "string" } },
+        "publishedBy": { "type": "string" },
+        "publishedAt": { "type": "string" },
+        "legalReviewerId": { "type": "string" },
+        "legalReviewSignedAt": { "type": "string" },
+        "rulesetHash": { "type": "string" }
+      }
+    }
+  },
+  "$defs": {
+    "centString": {
+      "type": "string",
+      "pattern": "^\\d+$",
+      "description": "Non-negative integer cents as a decimal string (avoids JSON number precision limits)."
+    },
+    "rawBracket": {
+      "type": "object",
+      "required": ["thresholdCents", "rateBps"],
+      "additionalProperties": false,
+      "properties": {
+        "thresholdCents": { "$ref": "#/$defs/centString" },
+        "rateBps": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "landTaxBracket": {
+      "type": "object",
+      "required": ["previousThresholdCents", "thresholdCents", "flatCents", "marginalBps"],
+      "additionalProperties": false,
+      "properties": {
+        "previousThresholdCents": { "$ref": "#/$defs/centString" },
+        "thresholdCents": { "$ref": "#/$defs/centString" },
+        "flatCents": { "$ref": "#/$defs/centString" },
+        "marginalBps": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

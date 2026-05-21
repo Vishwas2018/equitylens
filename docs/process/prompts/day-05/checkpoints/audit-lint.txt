@@ -1,0 +1,43 @@
+Check: lint
+Status: pass
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ lint C:\Users\vishw\Vish\Vish\EquityLens
+> turbo run lint
+
+
+   • Packages in scope: @equitylens/design-tokens, @equitylens/engine, @equitylens/types, @equitylens/web
+   • Running lint in 4 packages
+   • Remote caching disabled
+
+@equitylens/engine:lint: cache miss, executing 4cc558b8c7e8e884
+@equitylens/types:build: cache hit, replaying logs 8984cb877fe4bdc3
+@equitylens/types:build: 
+@equitylens/types:build: > @equitylens/types@0.1.0 build C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:build: > tsc --project tsconfig.build.json
+@equitylens/types:build: 
+@equitylens/web:lint: cache hit, replaying logs 09c98fb26956da41
+@equitylens/types:lint: cache hit, replaying logs bf79f6d9b353e8df
+@equitylens/web:lint: 
+@equitylens/web:lint: > @equitylens/web@0.0.1 lint C:\Users\vishw\Vish\Vish\EquityLens\apps\web
+@equitylens/web:lint: > eslint . --max-warnings 0
+@equitylens/web:lint: 
+@equitylens/types:lint: 
+@equitylens/types:lint: > @equitylens/types@0.1.0 lint C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:lint: > eslint src --max-warnings 0
+@equitylens/types:lint: 
+@equitylens/design-tokens:lint: cache hit, replaying logs 4dbdd1cb6f1baf77
+@equitylens/design-tokens:lint: 
+@equitylens/design-tokens:lint: > @equitylens/design-tokens@0.1.0 lint C:\Users\vishw\Vish\Vish\EquityLens\packages\design-tokens
+@equitylens/design-tokens:lint: > eslint src --max-warnings 0
+@equitylens/design-tokens:lint: 
+@equitylens/engine:lint: 
+@equitylens/engine:lint: > @equitylens/engine@0.1.0 lint C:\Users\vishw\Vish\Vish\EquityLens\packages\engine
+@equitylens/engine:lint: > eslint src --max-warnings 0
+@equitylens/engine:lint: 
+
+ Tasks:    5 successful, 5 total
+Cached:    4 cached, 5 total
+  Time:    4.086s
