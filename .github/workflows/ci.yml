@@ -78,6 +78,31 @@ jobs:
       - uses: ./.github/actions/restore-deps
       - run: pnpm test
 
+  # ── Engine coverage gate (≥95%) ─────────────────────────────────────────
+  # Must run on Node 20.14.0: @vitest/coverage-v8 1.6.x uses test-exclude which
+  # is incompatible with Node 24 (util.promisify breakage — DEV-0002).
+  # restore-deps pins Node via .nvmrc (20.14.0) so this is satisfied automatically.
+  unit-engine:
+    name: Engine unit + coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Run engine tests with coverage (≥95% threshold)
+        run: pnpm --filter @equitylens/engine coverage
+
+  # ── Engine determinism harness ───────────────────────────────────────────
+  # Verifies same input → same output_hash every run.
+  # Isolated job so a non-determinism regression is immediately visible.
+  engine-determinism:
+    name: Engine determinism harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Run determinism harness
+        run: pnpm --filter @equitylens/engine engine:determinism
+
   # ── Security ─────────────────────────────────────────────────────────────
   # Uses exception-aware audit script — known CVEs with an `until` date are
   # surfaced as WARN (not FAIL). Exceptions live in .audit-exceptions.json.
@@ -153,7 +178,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [typecheck, lint, format-check, test]
+    needs: [typecheck, lint, format-check, test, unit-engine, engine-determinism]
     env:
       BUILD_SHA: ${{ github.sha }}
     steps:
