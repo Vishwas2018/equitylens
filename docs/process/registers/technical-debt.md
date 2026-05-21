@@ -26,7 +26,6 @@
 
 | ID      | Category | Severity | Title                                                                                      | Opened day | Status    | Linked   |
 | ------- | -------- | -------- | ------------------------------------------------------------------------------------------ | ---------- | --------- | -------- |
-| TD-0004 | ci       | low      | engine-determinism / ato-fixture-canary CI checks not yet wired                            | Day 01     | scheduled | N/A      |
 | TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                           | Day 01     | scheduled | N/A      |
 | TD-0006 | ci       | low      | secret-scan CI check not yet wired                                                         | Day 01     | scheduled | N/A      |
 | TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                          | Day 01     | open      | N/A      |
@@ -39,7 +38,7 @@
 - **Category**: ci
 - **Severity**: low
 - **Opened**: Day 01
-- **Status**: scheduled (wired Day 4)
+- **Status**: **paid** — Day 4
 - **Linked**: N/A
 
 **What's the debt?**
@@ -48,16 +47,7 @@
 **Why was it taken on?**
 Engine calculation code doesn't exist until Day 4+.
 
-**Cost right now**
-No determinism guarantee in CI.
-
-**Interest**: Engine correctness is a core product guarantee (ADR-0002, ADR-0004). Without these checks, a non-deterministic result could ship undetected.
-
-**Trigger to repay**: Day 4 (first engine function shipped).
-
-**Payoff plan**: Wire commands in `runWiredChecks()` alongside engine test harness.
-
-**Estimate**: S
+**Payoff**: `unit-engine` CI job (coverage gate ≥95%) + `engine-determinism` CI job (1000-iter harness) wired in `.github/workflows/ci.yml`. Both registered as required status checks on main with `app_id: 15368`. Proven: coverage gate fails below 95% (throwaway/coverage-gate-proof). Closed Day 4 via commits `bef7953`, `fecdeb2`, `38cdc8d`, `25ac27e`.
 
 ---
 
@@ -144,12 +134,13 @@ Minor: `git log` noise on docs files.
 
 ## Paid Debt
 
-| ID      | Category | Title                                                                            | Paid day | Closing commit | Notes                                                                    |
-| ------- | -------- | -------------------------------------------------------------------------------- | -------- | -------------- | ------------------------------------------------------------------------ |
-| TD-0001 | ci       | migration-status / migration-dryrun CI checks not yet wired                      | Day 01   | D02-T2 commit  | `db:migrate:dryrun` + `db:migrate:lint` scripts; migration-dryrun CI job |
-| TD-0002 | ci       | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01   | D02-T3 commit  | `tests/rls/` suite + `pnpm test:rls`; wired in CI Day 3                  |
-| TD-0003 | ci       | region-check CI check not yet wired                                              | Day 01   | D02-T2 commit  | `runRegionCheck()` in checks.ts; region-check CI job                     |
-| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit  | `.audit-exceptions.json` + `audit-exceptions.ts` helper                  |
+| ID      | Category | Title                                                                            | Paid day | Closing commit                      | Notes                                                                       |
+| ------- | -------- | -------------------------------------------------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| TD-0004 | ci       | engine-determinism / ato-fixture-canary CI checks not yet wired                  | Day 01   | D04-T3 commits `bef7953`, `38cdc8d` | `unit-engine` coverage gate + `engine-determinism` harness jobs wired in CI |
+| TD-0001 | ci       | migration-status / migration-dryrun CI checks not yet wired                      | Day 01   | D02-T2 commit                       | `db:migrate:dryrun` + `db:migrate:lint` scripts; migration-dryrun CI job    |
+| TD-0002 | ci       | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01   | D02-T3 commit                       | `tests/rls/` suite + `pnpm test:rls`; wired in CI Day 3                     |
+| TD-0003 | ci       | region-check CI check not yet wired                                              | Day 01   | D02-T2 commit                       | `runRegionCheck()` in checks.ts; region-check CI job                        |
+| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit                       | `.audit-exceptions.json` + `audit-exceptions.ts` helper                     |
 
 ---
 

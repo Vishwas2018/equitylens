@@ -45,6 +45,8 @@
 | DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
 | DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
 | DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
+| DEV-0015 | 04  | interpretation | decimal-and-rounding.md absent; HALF_UP sourced from financial-calc-engine.md §5.2          | low      | accepted; HALF_UP confirmed for actual/365 Australian retail banking convention     | Code  |
+| DEV-0016 | 04  | interpretation | test-matrix.md lacks pre-computed schedules; externally-anchored golden fixtures added      | low      | accepted; IO-001, PNI-001, ITP-001 goldens with derivation records are the anchor   | Code  |
 
 ---
 
@@ -366,6 +368,58 @@ Option 1 for MVP; Option 2 before any multi-region deployment or when audit volu
 **Disposition**: accepted — TD-0009 tracks the payoff. The `verifyAuditChain()` function will detect any branching if it occurs, providing an audit trail of the anomaly.
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: TD-0009
+
+---
+
+### DEV-0015 — decimal-and-rounding.md absent; HALF_UP sourced from financial-calc-engine.md §5.2
+
+- **Day**: 04
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+The D04 execution prompt specified: "Rounding is explicit and per the spec (half-even / banker's vs half-up — use whatever decimal-and-rounding.md mandates; if it's silent, log DEV and default to half-even, the ATO convention for most contexts, and flag for human confirmation)."
+
+**What actually happened?**
+`docs/engine/decimal-and-rounding.md` does not exist. `docs/engine/financial-calc-engine.md §5.2` explicitly specifies HALF_UP for amortisation interest accrual. HALF_UP is used throughout `packages/engine/src/money/cents.ts` and `schedule.ts`.
+
+**Why?**
+Australian retail banking (CBA, NAB, ANZ, Westpac) uses HALF_UP with actual/365 day-count convention. `financial-calc-engine.md §5.2` pins this explicitly. Defaulting to HALF_EVEN as the prompt suggested would have produced subtly wrong interest figures for Australian mortgages.
+
+**Impact**
+HALF_UP is now the engine-wide default for money rounding. All 97 engine tests pass. Three externally-anchored golden fixtures independently verify the formula produces correct cent-level values. `decimal-and-rounding.md` should be created to document this formally.
+
+**Disposition**: accepted — HALF_UP confirmed per financial-calc-engine.md §5.2. `decimal-and-rounding.md` to be created at next engine-doc opportunity (non-blocker).
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0016 — test-matrix.md lacks pre-computed schedules; externally-anchored golden fixtures added
+
+- **Day**: 04
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted (resolved 2026-05-21)
+
+**What was the spec / plan?**
+The D04 execution prompt: "Fixtures AM-01..AM-11: run each, assert the full schedule matches expected period-by-period (not just totals). A single-cent drift is a failure. Sourced from docs/engine/test-matrix.md; if the matrix gives inputs but not full expected schedules, compute them by hand-verifiable method and document the derivation in a comment; DO NOT invent expected values — log DEV if the matrix is incomplete."
+
+**What actually happened?**
+`docs/engine/test-matrix.md` provides loan parameters (inputs) but not pre-computed expected cent-level schedules. Three externally-anchored golden fixtures were independently computed by hand and committed to `test/fixtures/amortisation/goldens/` with full derivation records (`IO-001-derivation.md`, `PNI-001-derivation.md`, `ITP-001-derivation.md`). Each derivation shows the arithmetic from the actual/365 HALF_UP formula and cross-checks against the monthly-nominal wrong value to demonstrate discrimination.
+
+**Why?**
+Behavioral invariants (balance decreases, interest > 0, closing = 0) prove internal consistency, not correctness. A wrong day-count convention passes every invariant while every interest figure is wrong. External golden fixtures anchored to the formula independently verify that the engine produces the correct cent values.
+
+**Impact**
+Zero test regressions. The golden fixtures `goldens.test.ts` (20 tests) are the canonical external correctness reference. `test-matrix.md` remains incomplete for pre-computed schedules; the derivation files are the remedy.
+
+**Disposition**: accepted — goldens committed as permanent fixtures with derivation records. test-matrix.md gap acknowledged; golden files supersede it for period-by-period correctness verification.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
 
 ---
 

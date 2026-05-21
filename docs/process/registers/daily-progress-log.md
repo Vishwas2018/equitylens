@@ -309,6 +309,73 @@ Full auth and multi-tenancy system: Supabase Auth wired, session middleware, ser
 
 ---
 
+## Day 4 — 2026-05-21 — Calculation Engine
+
+**Day status**: clean
+
+**Primary goal**
+Deterministic pure-TS engine skeleton: bigint-cents money core, amortisation (IO, P&I, IO→P&I), AM-01..AM-11 fixtures, externally-anchored golden fixtures, coverage ≥ 95% enforced in CI.
+
+**Achieved**
+
+- D04-T1 — Engine skeleton + decimal/money core + determinism harness — `cents.ts` (bigint ops, HALF_UP/HALF_EVEN rounding), `canonical.ts` (canonicalJson + sha256 output_hash), `clock.ts` (injected Clock), determinism harness 1000-iter zero divergence, ESLint entropy-ban rule proven — commit `abdb16f`
+- D04-T2 — Amortisation IO/P&I/IO→P&I + externally-anchored golden fixtures — `schedule.ts`, 97 tests across 5 test files; 3 golden fixtures with hand-derived derivation records (IO-001, PNI-001, ITP-001) anchored to actual/365 HALF_UP formula — commit `c1c24d0`
+- D04-T3 — Coverage gate ≥95% + determinism CI jobs wired; branch protection bound (`app_id: 15368`); gate proven to bite — `unit-engine` job 97.46% branches, `engine-determinism` job 1000-iter PASS; pnpm version conflict fixed; test-exclude/glob incompatibility fixed — commits `bef7953`, `fecdeb2`, `38cdc8d`, `25ac27e`
+- D04-T4 — Day 4 closeout — this commit
+
+**Not achieved (rolled forward)**
+
+- None — all 4 tasks complete
+
+**Registers touched**
+
+- Backlog: none
+- Defects: none
+- Deviations: DEV-0015 opened (accepted — HALF_UP per financial-calc-engine.md §5.2; decimal-and-rounding.md missing), DEV-0016 opened + resolved (externally-anchored goldens are the canonical correctness reference)
+- Tech debt: TD-0004 closed (engine-determinism CI wired Day 4 as scheduled, per D01-T1 plan)
+- ADRs: none
+
+**Checkpoints**
+
+- D04-T1: typecheck ✅, lint ✅, money tests ✅, determinism 1000-iter zero divergence ✅, entropy-ban ESLint ✅ — see `checkpoints/D04-T1.txt`
+- D04-T2: 97/97 tests (5 files) ✅; goldens IO-001 P2=138,082 ≠ monthly-nominal 150,000 ✅ — see `checkpoints/D04-T2.txt`
+- D04-T3: engine unit+coverage PASS ✅; determinism harness PASS ✅; gate bites below 95% ✅ — see `checkpoints/D04-T3.txt`
+- Coverage: engine 97.46% branches / 100% functions / 100% lines / 100% statements
+- CI run (PR #1): https://github.com/Vishwas2018/equitylens/actions/runs/26217763088
+
+**Notable decisions**
+
+- HALF_UP rounding (not HALF_EVEN) per financial-calc-engine.md §5.2 — actual/365 Australian retail banking convention. HALF_EVEN would produce subtly wrong values on every Australian mortgage.
+- Externally-anchored golden fixtures required over behavioral invariants: behavioral invariants prove internal consistency, not correctness — a wrong day-count convention passes every invariant while every interest figure is wrong.
+- actual/365 vs monthly-nominal: ~$119/month delta on $300k 6% p.a. loan — golden fixtures discriminate the conventions at P2=138,082 cents (not 150,000).
+- `pnpm@9.4.0` → `pnpm@10.30.3` in `packageManager` field — CI had been broken since Day 1 due to version mismatch between `restore-deps` action `version: '10'` and declared `packageManager`.
+- `test-exclude@6.0.0` scoped override `"test-exclude>glob": "^7.2.3"` — global `"glob": ">=10.5.0"` override was forcing test-exclude to glob@13 which breaks `promisify()` pattern.
+- `// c8 ignore next` on defensive TypeScript `undefined` guards in `schedule.ts` — TypeScript makes them unreachable; V8 coverage would fail the 95% threshold without ignoring them.
+
+**Surprises / lessons**
+
+- CI had been failing since Day 1 at the `restore-deps` step — the pnpm version mismatch (`pnpm@9.4.0` vs action `version: '10'`) was silently blocking all CI. Unblocked Day 4.
+- HALF_EVEN branch coverage requires exercising both sub-half and super-half paths plus negative-amount paths — V8 treats each conditional branch as a distinct coverage point.
+- `@vitest/coverage-v8` 1.6.x is incompatible with Node 24 (test-exclude + promisify + glob@13); local coverage blocked under Node 24 — CI-only gate (DEV-0002 scope).
+
+**Carried forward to Day 5**
+
+- TD-0009 (non-atomic audit hash chain) — defer to pre-Day 12
+- DEV-0011 (pg_partman fallback) — re-evaluate Day 14
+- DEV-0015 (decimal-and-rounding.md absent) — create doc when engine spec is stable; non-blocker
+- Human actions still outstanding: Supabase Dashboard redirect URLs, Vercel env vars
+
+**Evidence**
+
+- CCTV report: `prompts/day-04/01-cctv-audit-report.md`
+- Daily prompt: `prompts/day-04/02-daily-execution-prompt.md`
+- End-of-day report: `prompts/day-04/03-end-of-day-report.md`
+- Checkpoints: `checkpoints/D04-T1.txt`, `checkpoints/D04-T2.txt`, `checkpoints/D04-T3.txt`
+- Start/end tags: `day-03-end` → `day-04-end` @ HEAD
+- CI run (PR #1 engine jobs green): https://github.com/Vishwas2018/equitylens/actions/runs/26217763088
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.

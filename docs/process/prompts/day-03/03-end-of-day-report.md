@@ -138,3 +138,17 @@ Pre-conditions not yet met (human-gated):
 
 - ⚠️ GitHub Secrets not yet set → CI e2e job will skip/fail on push
 - ⚠️ Supabase redirect URLs not yet configured → `/auth/callback` won't resolve in staging UI
+
+---
+
+### Correction — 2026-05-21
+
+Day 4 morning pre-flight (`gh secret list`, `gh api` branch protection check) confirmed that two of the four Outstanding Human Actions listed above were resolved between Day 3 EOD and Day 4 start:
+
+- ✅ **GitHub Secrets**: `gh secret list` returned 10 entries including `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- ✅ **GitHub branch protection**: Required status checks [typecheck, lint, format-check, test, build] confirmed on main.
+
+Still outstanding as of Day 4 EOD:
+
+- ⚠️ Supabase Dashboard: redirect URLs, email confirmation, magic link setting.
+- ⚠️ Vercel env vars: server-side secrets not yet set.
