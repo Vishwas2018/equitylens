@@ -13,7 +13,7 @@ import {
   ZERO,
 } from '../../src/money/cents.js';
 
-describe('add', () => {
+describe.skip('add — SKIPPED FOR COVERAGE PROOF (DO NOT MERGE)', () => {
   it('adds two positive values', () => {
     expect(add(100n, 200n)).toBe(300n);
   });
