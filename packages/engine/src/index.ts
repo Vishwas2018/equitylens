@@ -6,3 +6,4 @@ export * from './amortisation/index.js';
 export * from './tax/ruleset/index.js';
 export * from './tax/index.js';
 export * from './cashflow/index.js';
+export * from './cgt/index.js';
