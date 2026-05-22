@@ -1,0 +1,51 @@
+{
+  "$schema": "https://schemas.equitylens.au/ruleset/v3",
+  "version": "FY2026.2",
+  "status": "published",
+  "jurisdiction": "VIC",
+  "financialYear": "FY2026",
+  "effectiveFrom": "2025-07-01",
+  "effectiveTo": "2026-06-30",
+  "marginalRates": {
+    "residency": "resident",
+    "brackets": [
+      { "thresholdCents": "1820000", "rateBps": 0 },
+      { "thresholdCents": "4500000", "rateBps": 1700 },
+      { "thresholdCents": "13500000", "rateBps": 3000 },
+      { "thresholdCents": "19000000", "rateBps": 3700 },
+      { "thresholdCents": "9007199254740992", "rateBps": 4500 }
+    ]
+  },
+  "medicareLevy": {
+    "rateBps": 200,
+    "singleThresholdCents": "2716800",
+    "familyThresholdCents": "4584000",
+    "surchargeBrackets": [
+      { "thresholdCents": "9300000", "rateBps": 100 },
+      { "thresholdCents": "10800000", "rateBps": 125 },
+      { "thresholdCents": "14400000", "rateBps": 150 }
+    ]
+  },
+  "cgt": {
+    "individualDiscountBps": 5000,
+    "smsfDiscountBps": 3333,
+    "minimumHoldingDays": 366
+  },
+  "negativeGearingRules": {
+    "enabled": true,
+    "propertyTypeExclusions": [],
+    "quarantineCarryForward": true
+  },
+  "depreciation": {
+    "div40": {
+      "defaultMethod": "diminishing_value",
+      "secondHandResidentialDisallowed": true,
+      "secondHandRuleAcquisitionFromDate": "2017-05-09"
+    },
+    "div43": {
+      "defaultLifeYears": 40,
+      "defaultRateBps": 250,
+      "qualifyingConstructionFromDate": "1987-09-15"
+    }
+  }
+}
