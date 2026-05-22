@@ -76,9 +76,54 @@ Day 2 morning reassessment for migration timing (Day 2 immediate vs Day 8 pre-UI
 
 ## Closed Defects
 
-| ID      | Severity | Surface | Title | Opened | Closed | Closing commit | Regression test |
-| ------- | -------- | ------- | ----- | ------ | ------ | -------------- | --------------- |
-| _empty_ |          |         |       |        |        |                |                 |
+| ID       | Severity | Surface | Title                                                                     | Opened                    | Closed                    | Closing commit | Regression test                                              |
+| -------- | -------- | ------- | ------------------------------------------------------------------------- | ------------------------- | ------------------------- | -------------- | ------------------------------------------------------------ |
+| DEF-0002 | sev2     | ci      | Main branch ungated Days 1–3: protection contexts mismatched, app_id null | Day 05 (2026-05-22) retro | Day 05 (2026-05-22) retro | `25ac27e`      | CI: branch protection with verbatim job names + app_id 15368 |
+
+---
+
+### DEF-0002 — Main branch ungated Days 1–3: protection contexts mismatched, app_id null
+
+- **Severity**: sev2
+- **Surface**: ci
+- **Opened**: Day 05 (2026-05-22) retrospective by Code
+- **Status**: closed
+
+**Observed behaviour**
+Branch protection required status checks were configured with lowercase context names (`typecheck`, `format-check`, `lint`, `test`, `audit-deps`) and `app_id: null`. The actual GitHub Actions job names use title-case (`Type check`, `Format check`, etc.). The mismatch meant GitHub could never match a completed CI check to a required context — zero checks were ever enforced. Merges to `main` were ungated for Days 1–3 (2026-05-19 to 2026-05-21).
+
+**Expected behaviour**
+All commits to `main` must pass the required status checks (`unit-engine`, `engine-determinism`, and core quality gates) before merge, per the branch protection spec.
+
+**Reproduction steps**
+
+1. Inspect branch protection required status contexts (GitHub Settings → Branches → main).
+2. Compare context strings against actual CI job names in `.github/workflows/ci.yml`.
+3. Observe: `typecheck` ≠ `Type check`; `app_id: null` → no GitHub App enforcement.
+
+**First-seen commit / context**
+Since Day 1 branch protection configuration. Discovered retrospectively on Day 5 while reviewing D05-T4 closeout.
+
+**Initial hypothesis**
+Context name format mismatch. GitHub requires exact string match; case and spacing matter. `app_id: null` further prevented the GitHub App from binding the required check to actual runs.
+
+**Blast radius**
+Process control gap: no bad merge is known to have resulted. Branch history Days 1–3 shows all merges were manually reviewed; no regressions were introduced. Impact is procedural, not functional.
+
+**Disclosure considerations**
+Internal process gap only. No user data, financial calculations, or security controls were affected.
+
+**Diagnosis**
+Required status check context names were taken from the spec's shorthand names, not from the verbatim `jobs.<id>.name:` strings in `ci.yml`. GitHub checks match on `name:` value exactly. Additionally, `app_id: null` in the branch protection API call means the check was bound to no app, so even correctly-named checks would not have been enforced at the app level.
+
+**Fix**
+Day 4 commit `25ac27e`: corrected required contexts to `Unit tests (engine)` and `Engine determinism`; set `app_id: 15368` (GitHub Actions app). Branch protection now enforces both engine gates on every PR to `main`.
+
+**Regression test**
+CI: `unit-engine` and `engine-determinism` jobs must pass on every PR. Branch protection verified via `gh api repos/Vishwas2018/equitylens/branches/main/protection` showing correct contexts and `app_id: 15368`.
+
+**Closed**: Day 05 (2026-05-22) by Code
+**Status**: closed
 
 ---
 

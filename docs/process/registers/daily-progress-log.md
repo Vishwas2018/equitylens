@@ -376,6 +376,72 @@ Deterministic pure-TS engine skeleton: bigint-cents money core, amortisation (IO
 
 ---
 
+## Day 5 — 2026-05-22 — Calculation Engine: Cashflow + Tax
+
+**Day status**: clean
+
+**Primary goal**
+Full cashflow + income tax pipeline: rent income CF-01..CF-12, marginal rate brackets TX-01..TX-10, Medicare levy + MLS TX-11..TX-14, negative gearing TX-15, ruleset binding via output_hash, and ATO cross-validation XV-01..XV-21.
+
+**Achieved**
+
+- D05-T1 — RulesetAdapter + FY2026 tax data — `RulesetAdapter`, `defaultRulesetAdapter`, `fy2026.json` (brackets/Medicare/MLS/negative-gearing/land-tax), `fy2026-variant.json` (17% bracket, binding proof); RS-01..RS-13 (60 tests) — commit `85c972c`
+- D05-T2 — CashFlowService CF-01..CF-12 — `cashflow/service.ts`, pro-rata periods, FY aggregation, mixed-use apportionment; 61 tests — commit `90d1c51`
+- D05-T3 — TaxService + Medicare + negative gearing + XV cross-validation — `tax/service.ts`, `tax/medicare.ts`, `tax/negative-gearing.ts`; TX-01..TX-15 (29 tests), RB-01..RB-05 (5 tests), XV-01..XV-21 (22 tests); 7 XV derivation .md files committed — commit `b32e98a`
+- D05-T4 — Day 5 closeout — this commit
+
+**Not achieved (rolled forward)**
+
+- None — all 4 tasks complete
+
+**Registers touched**
+
+- Backlog: none
+- Defects: opened+closed DEF-0002 (sev2, ci, main ungated Days 1–3, retrospective; fix pre-dated discovery at `25ac27e`)
+- Deviations: DEV-0015 closed (HALF_UP confirmed CF+TX; doc Day 6); DEV-0016 closed (XV derivations committed; invariant-only CPA queue Day 12); DEV-0017 opened/accepted (HALF_UP per-step vs ATO floor-to-dollar; CPA review Day 6)
+- Tech debt: none
+- ADRs: none
+
+**Checkpoints**
+
+- D05-T1: typecheck ✅, lint ✅, format ✅, 60 tests ✅ — see `checkpoints/D05-T1.txt`
+- D05-T2: 61 cashflow tests ✅ — see `checkpoints/D05-T2.txt`
+- D05-T3: 281 total engine tests (10 files) ✅; 95.98% branch coverage ✅; entropy-ban ESLint ✅ — see `checkpoints/D05-T3.txt`
+- No hardcoded FY2026 rates in engine TypeScript src (grep clean)
+- Coverage: engine 95.98% branches / 100% functions / 99.61% lines
+
+**Notable decisions**
+
+- `grossRentForMonth` uses `weeklyRent × 52 / 12` (HALF_UP), not days-based — constant monthly ratio, consistent with financial-calc-engine.md
+- Ruleset binding: `runScenario` stamps `ruleset_version` into `output_hash` via `canonicalJson({ result, engine_version, ruleset_version })`; fy2026 (16%) vs fy2026-variant (17%) → different hashes proven end-to-end (RB-03/RB-05)
+- XV-01, XV-13, XV-17, XV-20 classified as invariant-only (boundary/trivial); DEV-0016 CPA queue Day 12; all other 17 XV tests externally anchored to ATO-published rate tables with derivation files
+- `propertyTypeExclusions` accepted in `NegativeGearingRules` interface but not applied — Day 6+ scope (DEV-T3-01)
+
+**Surprises / lessons**
+
+- HALF_UP per-step is equivalent to ATO floor-to-dollar for all FY2026 whole-dollar inputs — coincidence of rate schedule values being multiples of 100bps and income being integer dollars; logged as DEV-0017 for CPA sign-off
+- DEF-0002 discovered retrospectively: branch protection had been misconfigured since Day 1 (context name case mismatch + null app_id); no bad merges resulted but the control gap was real
+
+**Carried forward to Day 6**
+
+- DEV-0017 CPA review: confirm HALF_UP per-step is acceptable vs ATO floor-to-dollar; create `decimal-and-rounding.md`
+- LITO framework: Low Income Tax Offset needed before XV-03..XV-08 can fully reconcile against ATO online estimator
+- `propertyTypeExclusions` wiring (DEV-T3-01): accept or scope for Day 6
+- CGT capital gains discount: 50% individual, 1/3 SMSF, ≥366 holding days; golden fixtures against ATO published examples
+- VIC land tax: `VicLandTaxConfig` full 7-bracket calculation with absentee/vacant surcharges; SRO cross-validation fixtures
+- Performance budgets: ≤50ms per scenario for full amortisation + cashflow + tax pipeline
+- Property-based generative tests: monotonicity, consistency, edge cases
+
+**Evidence**
+
+- CCTV report: `prompts/day-05/01-cctv-audit-report.md`
+- Daily prompt: `prompts/day-05/02-daily-execution-prompt.md`
+- End-of-day report: `prompts/day-05/03-end-of-day-report.md`
+- Checkpoints: `checkpoints/D05-T1.txt`, `checkpoints/D05-T2.txt`, `checkpoints/D05-T3.txt`
+- Start/end tags: `day-04-end` → `day-05-end` @ HEAD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.

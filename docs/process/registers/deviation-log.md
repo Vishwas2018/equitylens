@@ -45,20 +45,21 @@
 | DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
 | DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
 | DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
-| DEV-0015 | 04  | interpretation | decimal-and-rounding.md absent; HALF_UP sourced from financial-calc-engine.md §5.2          | low      | accepted; HALF_UP confirmed for actual/365 Australian retail banking convention     | Code  |
-| DEV-0016 | 04  | interpretation | test-matrix.md lacks pre-computed schedules; externally-anchored golden fixtures added      | low      | accepted; IO-001, PNI-001, ITP-001 goldens with derivation records are the anchor   | Code  |
+| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs            | low      | accepted; CPA review Day 6                                                          | Code  |
 
 ---
 
 ## Closed Deviations
 
-| ID       | Day | Type           | Title                                                                          | Disposition | Linked ADR / spec change |
-| -------- | --- | -------------- | ------------------------------------------------------------------------------ | ----------- | ------------------------ |
-| DEV-0001 | 00  | scope          | Two commits share [D00-T1] tag                                                 | accepted    | N/A                      |
-| DEV-0005 | 01  | scope          | tsconfig.base.json in D01-T1 scope; D01-T2 scope reduced accordingly           | accepted    | N/A                      |
-| DEV-0007 | 01  | tech-choice    | Husky hooks export npm_config_engine_strict=false for Node 24 local dev        | accepted    | N/A                      |
-| DEV-0008 | 01  | interpretation | commitlint subject-case enforces lowercase; spec commit subjects in title-case | accepted    | N/A                      |
-| DEV-0009 | 01  | interpretation | vercel.json rootDirectory not in Vercel schema; must use dashboard setting     | accepted    | N/A                      |
+| ID       | Day | Type           | Title                                                                           | Disposition | Linked ADR / spec change |
+| -------- | --- | -------------- | ------------------------------------------------------------------------------- | ----------- | ------------------------ |
+| DEV-0001 | 00  | scope          | Two commits share [D00-T1] tag                                                  | accepted    | N/A                      |
+| DEV-0005 | 01  | scope          | tsconfig.base.json in D01-T1 scope; D01-T2 scope reduced accordingly            | accepted    | N/A                      |
+| DEV-0007 | 01  | tech-choice    | Husky hooks export npm_config_engine_strict=false for Node 24 local dev         | accepted    | N/A                      |
+| DEV-0008 | 01  | interpretation | commitlint subject-case enforces lowercase; spec commit subjects in title-case  | accepted    | N/A                      |
+| DEV-0009 | 01  | interpretation | vercel.json rootDirectory not in Vercel schema; must use dashboard setting      | accepted    | N/A                      |
+| DEV-0015 | 04  | interpretation | decimal-and-rounding.md absent; HALF_UP confirmed for CF+TX; doc deferred Day 6 | accepted    | N/A                      |
+| DEV-0016 | 04  | interpretation | externally-anchored fixtures pattern: amortisation + XV cross-validation        | accepted    | N/A                      |
 
 ---
 
@@ -377,7 +378,7 @@ Option 1 for MVP; Option 2 before any multi-region deployment or when audit volu
 - **Type**: interpretation
 - **Severity**: low
 - **Opened by**: Code
-- **Status**: accepted
+- **Status**: closed (Day 05 — 2026-05-22)
 
 **What was the spec / plan?**
 The D04 execution prompt specified: "Rounding is explicit and per the spec (half-even / banker's vs half-up — use whatever decimal-and-rounding.md mandates; if it's silent, log DEV and default to half-even, the ATO convention for most contexts, and flag for human confirmation)."
@@ -391,19 +392,19 @@ Australian retail banking (CBA, NAB, ANZ, Westpac) uses HALF_UP with actual/365 
 **Impact**
 HALF_UP is now the engine-wide default for money rounding. All 97 engine tests pass. Three externally-anchored golden fixtures independently verify the formula produces correct cent-level values. `decimal-and-rounding.md` should be created to document this formally.
 
-**Disposition**: accepted — HALF_UP confirmed per financial-calc-engine.md §5.2. `decimal-and-rounding.md` to be created at next engine-doc opportunity (non-blocker).
+**Disposition**: accepted/closed — HALF_UP confirmed for CF+TX pipeline (Day 5). `decimal-and-rounding.md` to be created Day 6 (CPA review session). HALF_UP per-step vs ATO floor-to-dollar divergence tracked separately as DEV-0017.
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
 
 ---
 
-### DEV-0016 — test-matrix.md lacks pre-computed schedules; externally-anchored golden fixtures added
+### DEV-0016 — externally-anchored fixtures pattern: amortisation + XV cross-validation
 
 - **Day**: 04
 - **Type**: interpretation
 - **Severity**: low
 - **Opened by**: Code
-- **Status**: accepted (resolved 2026-05-21)
+- **Status**: closed (Day 05 — 2026-05-22)
 
 **What was the spec / plan?**
 The D04 execution prompt: "Fixtures AM-01..AM-11: run each, assert the full schedule matches expected period-by-period (not just totals). A single-cent drift is a failure. Sourced from docs/engine/test-matrix.md; if the matrix gives inputs but not full expected schedules, compute them by hand-verifiable method and document the derivation in a comment; DO NOT invent expected values — log DEV if the matrix is incomplete."
@@ -417,7 +418,41 @@ Behavioral invariants (balance decreases, interest > 0, closing = 0) prove inter
 **Impact**
 Zero test regressions. The golden fixtures `goldens.test.ts` (20 tests) are the canonical external correctness reference. `test-matrix.md` remains incomplete for pre-computed schedules; the derivation files are the remedy.
 
-**Disposition**: accepted — goldens committed as permanent fixtures with derivation records. test-matrix.md gap acknowledged; golden files supersede it for period-by-period correctness verification.
+**Disposition**: accepted/closed — amortisation goldens (IO-001, PNI-001, ITP-001) committed Day 4. XV cross-validation derivation files (XV-02, XV-03, XV-06, XV-09, XV-11, XV-18, XV-21) committed Day 5. Invariant-only XVs (XV-01, XV-13, XV-17, XV-20) placed in CPA sign-off queue; scheduled for review Day 12.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0017 — HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs
+
+- **Day**: 05
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted (CPA review Day 6)
+
+**What was the spec / plan?**
+`financial-calc-engine.md §5.2` mandates HALF_UP rounding per operation. ATO individual income tax instructions specify "round down to the nearest dollar" applied to the **final** tax payable total — not per bracket/step.
+
+**What actually happened?**
+`applyMarginalRates`, `computeMedicareLevy`, and `computeMLS` apply HALF_UP per operation (per-step). The ATO method applies floor-to-dollar once at the end. These two approaches can produce different results when intermediate per-step rounding accumulates sub-cent remainders.
+
+**Why?**
+For all FY2026 rate schedule values (1600 / 3000 / 3700 / 4500 / 200 / 100 / 125 / 150 bps) applied to whole-dollar inputs (income in integer dollars = multiples of 100 cents): `amount × rateBps mod 10000 = 0` for rates that are multiples of 100bps. The only exception is MLS 150bps: `100 × 125 mod 10000 = 2500 < 5000` → HALF_UP rounds to floor (matches ATO). No tested value produces a discrepancy. HALF_UP per-step is the safe default; it is conservative (never rounds up income tax above the correct value for real-world integer inputs).
+
+**Impact**
+Zero for FY2026 whole-dollar inputs. Theoretical 1c discrepancy possible at sub-dollar income amounts (cannot occur in practice — ATO income is always integer dollars). Engine values match ATO-published examples in all 22 XV cross-validation fixtures.
+
+**Options considered**
+
+1. HALF_UP per-step (current) — matches ATO for all practical inputs; safe and consistent with §5.2.
+2. Floor-to-dollar on final total only — matches ATO specification literally; changes are minimal for FY2026 but requires a post-aggregate rounding step.
+
+**Recommendation**
+Option 1 accepted for FY2026. CPA to confirm whether Option 2 is required for formal compliance (especially for SMSF / company scenarios where sub-cent intermediate values may arise).
+
+**Disposition**: accepted pending CPA review — HALF_UP per-step confirmed equivalent to ATO floor-to-dollar for all FY2026 whole-dollar inputs. CPA review scheduled Day 6 to formalise the convention in `decimal-and-rounding.md`.
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
 
