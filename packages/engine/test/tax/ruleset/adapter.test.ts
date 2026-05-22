@@ -302,6 +302,32 @@ describe('RS-07 — constructor validates all rulesets on construction', () => {
     const { marginalRates: _mr, ...rest } = makeMinimalRuleset();
     expect(() => new RulesetAdapter([rest as unknown as RawRuleset])).toThrow(TypeError);
   });
+
+  it('throws TypeError when medicareLevy.familyThresholdCents is not a string', () => {
+    const bad = {
+      ...makeMinimalRuleset(),
+      medicareLevy: {
+        rateBps: 200,
+        singleThresholdCents: '2716800',
+        familyThresholdCents: 4584000, // number, not string
+        surchargeBrackets: [],
+      },
+    };
+    expect(() => new RulesetAdapter([bad as unknown as RawRuleset])).toThrow(TypeError);
+  });
+
+  it('throws TypeError when medicareLevy.surchargeBrackets is not an array', () => {
+    const bad = {
+      ...makeMinimalRuleset(),
+      medicareLevy: {
+        rateBps: 200,
+        singleThresholdCents: '2716800',
+        familyThresholdCents: '4584000',
+        surchargeBrackets: null, // not an array
+      },
+    };
+    expect(() => new RulesetAdapter([bad as unknown as RawRuleset])).toThrow(TypeError);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -356,6 +382,43 @@ describe('RS-08 — VIC land tax brackets convert to BigInt', () => {
 
   it('absenteeSurchargeBps preserved', () => {
     expect(ruleset.landTax?.vic?.absenteeSurchargeBps).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// RS-08b — VIC config without optional surcharge fields: properties absent
+// Covers the `undefined` paths in processVicLandTax conditional spreads.
+// ---------------------------------------------------------------------------
+
+describe('RS-08b — VIC config without optional surcharge fields', () => {
+  const withMinimalVic = makeMinimalRuleset({
+    landTax: {
+      vic: {
+        individualBrackets: [
+          {
+            previousThresholdCents: '0',
+            thresholdCents: '5000000',
+            flatCents: '0',
+            marginalBps: 0,
+          },
+        ],
+        // absenteeSurchargeBps and vacantSurchargeBps intentionally absent
+      },
+    },
+  } as Partial<RawRuleset>);
+  const adapter = new RulesetAdapter([withMinimalVic]);
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+
+  it('absenteeSurchargeBps is absent when not in raw JSON', () => {
+    expect(ruleset.landTax?.vic?.absenteeSurchargeBps).toBeUndefined();
+  });
+
+  it('vacantSurchargeBps is absent when not in raw JSON', () => {
+    expect(ruleset.landTax?.vic?.vacantSurchargeBps).toBeUndefined();
+  });
+
+  it('trustBrackets is absent when not in raw JSON', () => {
+    expect(ruleset.landTax?.vic?.trustBrackets).toBeUndefined();
   });
 });
 

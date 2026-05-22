@@ -1,0 +1,98 @@
+D05-T2 Checkpoint — CashFlowService CF-01..CF-12
+Date: 2026-05-22
+
+=== pnpm --filter @equitylens/engine test cashflow ===
+
+Test Files  1 passed (1)
+      Tests  61 passed (61)
+
+CF-01: Weekly rent normalised to monthly equivalent: 52/12 ratio (4 tests)
+CF-02: Rent growth compounds annually on FY boundary, not monthly (5 tests)
+CF-03: Vacancy: 2 weeks/yr reduces rent by 2/52 of gross (5 tests)
+CF-04: Mixed-use: investment fraction of interest deductible (5 tests)
+CF-05: Expense stream with end date: stops contributing post-end (4 tests)
+CF-06: Property management fee as % of effective rent (3 tests)
+CF-07: Insurance escalates at CPI when escalation = 'cpi' (5 tests)
+CF-08: Capital expense excluded from operating cash flow (4 tests)
+CF-09: Capital expense added to depreciation pool prospectively (3 tests)
+CF-10: FY rollover June → July correctly buckets income (5 tests)
+CF-11: Leap year: February month has 29 days (6 tests)
+CF-12: Half-month at horizon start (mid-month asOf): pro-rates correctly (7 tests)
+Integration: computeCashFlow wires all components (5 tests)
+
+=== Hand-derived goldens (authoritative) ===
+
+CF-01: $500/wk weekly rent → monthly equivalent
+  weeklyRentCents = 50 000 c, growthBps = 0, year 1
+  grossMonthly = mulDiv(50000n, 52n, 12n, HALF_UP)
+               = (50000 × 52 + 6) / 12 = 2600006 / 12 = 216 667 c  ✓
+
+CF-03: 2 weeks/yr vacancy
+  grossMonthly = 216 667 c (from CF-01)
+  vacancyMonthly = mulDiv(216667n, 2n, 52n, HALF_UP)
+                 = (216667 × 2 + 26) / 52 = 433360 / 52 = 8 333 c  ✓
+  effectiveRent = 216 667 − 8 333 = 208 334 c  ✓
+
+Derivations source: test-matrix.md CF-01, CF-03; formula per
+financial-calc-engine.md §5.2 (52/12 normalisation, HALF_UP rounding).
+
+=== pnpm --filter @equitylens/engine test -- --coverage ===
+
+Overall branch coverage: 95.6% ≥ 95% threshold  ✓
+All functions: 100%  ✓
+cashflow/service.ts branches: 96%
+tax/ruleset/adapter.ts branches: 92.45% (per-file; global threshold passes)
+amortisation/schedule.ts branches: 93.93% (carried from Day 4)
+
+Note: Vitest threshold check is GLOBAL. Per-file percentages are informational.
+Global 95.6% ≥ 95% → threshold gate passes.
+
+=== Files created ===
+
+packages/engine/src/cashflow/types.ts
+  — MonthPeriod, RentStream, ExpenseStream, LoanPeriodData,
+    CashFlowInput, CashFlowMonth, FYAggregate, CashFlowOutput
+
+packages/engine/src/cashflow/service.ts
+  — daysInMonth: handles leap years via Date(year, month, 0)
+  — financialYearOf: July–June FY boundaries
+  — buildMonthPeriods: constructs MonthPeriod[] with leap-year days,
+    year rollover, and partial first period (activeDays)
+  — compoundCents: iterative bigint annual growth (no float)
+  — grossRentForMonth: weeklyRent × 52 / 12, HALF_UP
+  — vacancyLossForMonth: grossRent × vacancyWeeks / 52, HALF_UP
+  — rentForMonth: growth + vacancy + partial-period pro-ration
+  — escalateExpense: CPI compound growth on annual expense
+  — expensesForMonth: fixed/pct expenses, CPI escalation, end dates,
+    capital vs operating split, partial period pro-ration, dep pool
+  — apportionDeductible: split interest by mixedUseFractionBps
+  — aggregateToFY: groups CashFlowMonth[] by financialYear
+  — computeCashFlow: orchestrates all sub-functions; principal excluded
+    from netOperatingCashCents (only interest is deductible)
+
+packages/engine/src/cashflow/index.ts  — re-exports all types + functions
+packages/engine/src/index.ts           — re-exports cashflow
+packages/engine/test/cashflow/cashflow.test.ts  — 61 tests CF-01..CF-12
+
+=== Deviations ===
+
+DEV-0016 (carried): test-matrix.md CF-01..CF-12 provides descriptions but
+no pre-computed expected values. CF-01 and CF-03 anchored to hand-derived
+goldens with committed derivation. CF-02, CF-04..CF-12 invariant-tested
+(structural correctness), pending CPA sign-off — same policy as Day 4 AM
+fixtures (confirmed acceptable in Day 4 EOD report).
+
+CF-09 DEV: Depreciation pool accumulation (capital additions) is in scope
+here. Actual div40/div43 deduction rate application is Day 6 anti-scope.
+
+=== Principal vs interest split ===
+
+amortisation Schedule.periods[] provides both interestCharged and
+principalPaid per period. Only interestCharged (× mixedUseFractionBps) is
+deducted from netOperatingCashCents. principalPaidCents is tracked in
+CashFlowMonth but NOT included in netOperatingCash — this is the classic
+error the spec warns against. The integration test asserts this explicitly.
+
+=== Status ===
+
+PASS — all D05-T2 acceptance criteria met.
