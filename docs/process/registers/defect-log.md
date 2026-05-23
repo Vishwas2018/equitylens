@@ -28,9 +28,63 @@
 
 ## Open Defects
 
-| ID       | Severity | Surface | Title                                                                  | Opened day | Status | Owner | Notes                                                        |
-| -------- | -------- | ------- | ---------------------------------------------------------------------- | ---------- | ------ | ----- | ------------------------------------------------------------ |
-| DEF-0001 | sev2     | web     | Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration | Day 01     | open   | Opus  | Parked via audit-exceptions until 2026-05-27 (Day 8); D02-T1 |
+| ID       | Severity | Surface | Title                                                                                        | Opened day | Status        | Owner | Notes                                                             |
+| -------- | -------- | ------- | -------------------------------------------------------------------------------------------- | ---------- | ------------- | ----- | ----------------------------------------------------------------- |
+| DEF-0001 | sev2     | web     | Next.js 14.2.29 carries 7 high-severity CVEs requiring 14→15 migration                       | Day 01     | open          | Opus  | Parked via audit-exceptions until 2026-05-27 (Day 8); D02-T1      |
+| DEF-0003 | sev1     | engine  | VIC land tax ruleset built on fabricated rates; does not match SRO VIC 2024+ published scale | Day 06     | investigating | Code  | Halts day. D06-T2 commit blocked. Rebuild required before D06-T3. |
+
+---
+
+### DEF-0003 — VIC land tax ruleset built on fabricated rates; does not match SRO VIC 2024+ published scale
+
+- **Severity**: sev1
+- **Surface**: engine
+- **Opened**: Day 06 (2026-05-22) by Code
+- **Status**: investigating
+
+**Observed behaviour**
+`fy2026.json` `landTax.vic.individualBrackets` contains 7 brackets whose flat amounts and marginal rates do not match the SRO Victoria published general rate table (2024 land tax year onwards). The file carries `status: "published"` with placeholder `legalReviewerId`, fabricated `legalReviewSignedAt`, and a non-hash `rulesetHash` — none of which passed the required lifecycle in `tax-rule-versioning.md`. Rates were authored by AI in a prior session (Day 5) using stale training data; the source citations (`sro.vic.gov.au/land-tax-current-rates`) were listed but the actual cited page returns different values.
+
+Specific discrepancies (fy2026.json → SRO VIC actual, retrieved 2026-05-22):
+
+| Band        | fy2026 flat | SRO flat              | fy2026 marginal | SRO marginal |
+| ----------- | ----------- | --------------------- | --------------- | ------------ |
+| $50K–$100K  | $500        | $500 ✓                | 10 bps (0.1%)   | **0 bps** ✗  |
+| $100K–$300K | $975        | $975 ✓                | 30 bps (0.3%)   | **0 bps** ✗  |
+| $300K–$600K | $6,975      | **$1,350** ✗          | 60 bps          | **30 bps** ✗ |
+| $600K–$1.8M | $24,975     | **$2,250** ✗ (to $1M) | 90 bps          | **60 bps** ✗ |
+| $1M–$1.8M   | (merged)    | **$4,650** ✗          | (merged)        | **90 bps** ✗ |
+| $1.8M–$3M   | $132,975    | **$11,850** ✗         | 165 bps         | 165 bps ✓    |
+| $3M+        | $330,975    | **$31,650** ✗         | 265 bps         | 265 bps ✓    |
+
+The SRO 2024+ scale has **8 bands** (not 7), with a $1M threshold splitting the old $600K–$1.8M band. Brackets $50K–$100K and $100K–$300K are **flat-fee only** (0 bps marginal) in the current scale.
+
+Additional errors:
+
+- `vacantSurchargeBps: 200` (2% of site value): VRLT from 2025 is 1% of **capital improved value**, not 2% of site value — both the rate and the base are wrong.
+- `absenteeSurchargeBps: 400`: SRO publishes a separate absentee owner rate table (e.g., $50K–$100K absentee = $2,500 + 4% of excess over $50K); whether this is equivalent to "general + 4% of aggregate" requires per-band verification.
+- `status: "published"` is fraudulent per the lifecycle in `tax-rule-versioning.md`; no real legal review occurred.
+
+**Expected behaviour**
+Land tax brackets in fy2026.json match SRO VIC 2024+ published rates (retrieved from `sro.vic.gov.au/land-tax-current-rates`). All rates carry a real source citation with retrieval date and pass the legal-review lifecycle before reaching `published` status.
+
+**Reproduction steps**
+
+1. Read `packages/engine/src/tax/ruleset/data/fy2026.json` → note `landTax.vic.individualBrackets`.
+2. Fetch `sro.vic.gov.au/land-tax-current-rates` → compare band-by-band.
+3. Observe: $360K aggregate yields $7,335 from fy2026.json vs $1,530 from SRO actual ($1,350 + 0.3% × $60K).
+
+**First-seen commit / context**
+Introduced in Day 5 work (fy2026.json authored by AI session with stale training data). Carried forward unchanged to Day 6.
+
+**Initial hypothesis**
+AI-authored rates were drawn from stale training knowledge of an older SRO scale (pre-2024, possibly pre-2019) that used marginal components in lower bands and dramatically different flat fees for mid-range bands. The `status: "published"` was set without completing the lifecycle process.
+
+**Blast radius**
+ALL VIC land tax outputs for ALL users. Every scenario with a VIC property will show incorrect land tax — likely 2–10× too high for mid-range aggregates ($300K–$1.8M), and incorrect for all ranges due to marginal components in lower bands. Corrupts hold/sell comparison, cashflow projections, and after-tax return calculations that consume land tax. 391 engine tests currently pass but are validating against the wrong golden values (confirmed-wrong garbage-in = garbage-out).
+
+**Disclosure considerations**
+Development phase only; no users affected. No customer comms required at this stage.
 
 ---
 

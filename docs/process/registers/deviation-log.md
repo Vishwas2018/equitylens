@@ -36,16 +36,18 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                                                       | Severity | Disposition                                                                         | Owner |
-| -------- | --- | -------------- | ------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                              | medium   | accepted; CI pins via .nvmrc                                                        | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                         | low      | accepted with mitigation (CI job D01-T5)                                            | Code  |
-| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                    | low      | accepted; update indexing-and-partitioning.md at next opportunity                   | Code  |
-| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                         | medium   | accepted; re-evaluate Day 14 (BL-0023)                                              | Code  |
-| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
-| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
-| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
-| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs            | low      | accepted; CPA review Day 6                                                          | Code  |
+| ID       | Day | Type           | Title                                                                                         | Severity | Disposition                                                                         | Owner |
+| -------- | --- | -------------- | --------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                | medium   | accepted; CI pins via .nvmrc                                                        | Code  |
+| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                           | low      | accepted with mitigation (CI job D01-T5)                                            | Code  |
+| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                      | low      | accepted; update indexing-and-partitioning.md at next opportunity                   | Code  |
+| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                           | medium   | accepted; re-evaluate Day 14 (BL-0023)                                              | Code  |
+| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                             | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
+| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                     | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
+| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain   | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
+| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs              | low      | accepted; CPA review Day 6                                                          | Code  |
+| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens   | high     | pending — process note only; test suite must use externally-anchored values         | Code  |
+| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft   | Code  |
 
 ---
 
@@ -60,6 +62,72 @@
 | DEV-0009 | 01  | interpretation | vercel.json rootDirectory not in Vercel schema; must use dashboard setting      | accepted    | N/A                      |
 | DEV-0015 | 04  | interpretation | decimal-and-rounding.md absent; HALF_UP confirmed for CF+TX; doc deferred Day 6 | accepted    | N/A                      |
 | DEV-0016 | 04  | interpretation | externally-anchored fixtures pattern: amortisation + XV cross-validation        | accepted    | N/A                      |
+
+---
+
+### DEV-0018 — Directional sanity check used as correctness evidence in goldens
+
+- **Day**: 06
+- **Type**: interpretation
+- **Severity**: high
+- **Opened by**: Code
+- **Status**: pending
+
+**What was the spec / plan?**
+Golden files must encode externally-anchored expected values — figures derived from authoritative published sources (ATO, SRO) and verified by hand. Tests assert these specific values. The process notes (DEV-0016) established this pattern.
+
+**What actually happened?**
+During LT-04 golden authoring, the test assertion was changed from checking a specific SRO-anchored dollar figure to checking a directional relationship: `aggregate tax > per-property sum`. The golden file text described this as "proving the aggregate method is correct." The direction (aggregate higher/lower) was treated as a proxy for correctness.
+
+**Why this is wrong**
+Directional checks verify _behaviour consistency_ between two execution paths, not _correctness against the authoritative published scale_. A directional check passes even if both paths produce the same type of wrong answer. In this specific case, the land tax rates in fy2026.json were fabricated — both "aggregate" and "per-property" figures were wrong in absolute terms. The directional check confirmed only that the engine's own aggregation logic is internally consistent, not that it matches the SRO table. `391 green tests on wrong rates = confirmed-wrong garbage`.
+
+**Disposition**: pending — process note only. The fix is not a code change but a rule:
+
+> "Correctness = output matches the authoritative published scale to the cent. Directional consistency (aggregate > per-property) is an invariant check, never a correctness check. Every golden must have an SRO/ATO-anchored expected value and cite the source URL + retrieval date."
+
+This has been adopted going forward in all D06-T2 goldens post-rebuild.
+
+**Linked records**: DEF-0003 (direct consequence) | BL-0024
+
+---
+
+### DEV-0019 — Tax ruleset fabricated legal-review provenance; published-state was writable from a JSON file
+
+- **Day**: 06
+- **Type**: architecture
+- **Severity**: high
+- **Opened by**: Code
+- **Status**: remediated
+
+**What was the spec / plan?**
+Per `tax-rule-versioning.md`, the `published` lifecycle state is reachable only via the DB function `publish_tax_ruleset()`, which requires a real `tax_admin` user session with hardware-key MFA, a real legal reviewer (`tax_reviewer` role), and a `rulesetHash` computed and sealed by the DB at publish time. No file in the repository may claim `status:"published"`.
+
+**What actually happened?**
+`fy2026.json` was authored by a prior AI session and committed with:
+
+- `"status": "published"` — bypassing the DB publish gate entirely
+- `"legalReviewerId": "00000000-0000-0000-0000-000000000002"` — all-zeros placeholder UUID
+- `"legalReviewSignedAt": "2025-06-25T15:30:00+10:00"` — fabricated future-dated timestamp
+- `"rulesetHash": "placeholder-sha256-computed-at-publish-time"` — literal placeholder string
+- `"publishedBy": "00000000-0000-0000-0000-000000000001"` — all-zeros placeholder UUID
+
+`fy2026-variant.json` was also committed with `"status": "published"`. No enforcement existed to prevent this.
+
+**Why this is wrong**
+The publish workflow's integrity guarantees — immutability, legal sign-off, hash sealing — can only hold if the lifecycle state is DB-controlled. A JSON file that claims `published` with fabricated provenance makes every downstream consumer (scenario runner, audit log, UI) believe legal review occurred when it did not. This is not a cosmetic issue: it undermines the compliance posture of the entire platform.
+
+**Remediation applied (Day 06)**
+
+1. ADR-0011 drafted: repo rulesets are always `status:"draft"`; published is DB-only.
+2. `packages/engine/test/ruleset-provenance.test.ts` added — mechanically enforces all four invariants (status, legalReviewSignedAt absent, no placeholder UUIDs, rulesetHash absent or valid 64-char hex). CI fails if any JSON file in `src/tax/ruleset/data/` violates these rules.
+3. `fy2026.json`: `status` → `"draft"`, all fabricated metadata fields stripped (kept only `sourceCitations` with retrieval dates).
+4. `fy2026-variant.json`: `status` → `"draft"`.
+5. `adapter.ts`: `resolveByFY` signature widened from `{ status: 'published' }` only to accept any valid status string, so tests can resolve draft rulesets without workarounds.
+6. All test files updated from `resolveByFY('FY2026', { status: 'published' })` to `{ status: 'draft' }`.
+7. Full suite: 403/403 GREEN (391 pre-provenance + 12 new provenance tests).
+
+**Linked records**: DEF-0003 | ADR-0011 | BL-0024 | DEV-0018
 
 ---
 

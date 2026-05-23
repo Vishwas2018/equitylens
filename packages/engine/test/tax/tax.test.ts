@@ -22,7 +22,7 @@ import { applyNegativeGearing } from '../../src/tax/negative-gearing.js';
 import { defaultRulesetAdapter } from '../../src/tax/ruleset/index.js';
 import { applyMarginalRates } from '../../src/tax/service.js';
 
-const fy2026 = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'published' });
+const fy2026 = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'draft' });
 const { brackets } = fy2026;
 const { medicareLevy } = fy2026;
 const { negativeGearingRules } = fy2026;

@@ -43,10 +43,10 @@ describe('RB-02: same ruleset version → same output_hash (determinism)', () =>
 
 describe('RB-03: fy2026 (16%) vs fy2026-variant (17%) on identical input → different hash', () => {
   it('different brackets produce different tax AND different output_hash via runScenario', () => {
-    const fy2026v1 = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'published' });
+    const fy2026v1 = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'draft' });
 
     const variantAdapter = new RulesetAdapter([fy2026Variant as unknown as RawRuleset]);
-    const fy2026v2 = variantAdapter.resolveByFY('FY2026', { status: 'published' });
+    const fy2026v2 = variantAdapter.resolveByFY('FY2026', { status: 'draft' });
 
     const income = 4_500_000n; // $45,000 — in the 16% vs 17% bracket
 
@@ -95,7 +95,7 @@ describe('RB-04: output_hash encodes ruleset_version', () => {
 describe('RB-05: variant ruleset loads and resolves without error', () => {
   it('fy2026-variant.json passes validation with version FY2026.2', () => {
     const adapter = new RulesetAdapter([fy2026Variant as unknown as RawRuleset]);
-    const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+    const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
     expect(ruleset.version).toBe('FY2026.2');
     expect(ruleset.financialYear).toBe('FY2026');

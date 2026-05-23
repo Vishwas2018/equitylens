@@ -39,7 +39,7 @@ function makeMinimalRuleset(overrides: Partial<RawRuleset> = {}): RawRuleset {
   return {
     $schema: 'https://schemas.equitylens.au/ruleset/v3',
     version: 'TEST.1',
-    status: 'published',
+    status: 'draft',
     jurisdiction: 'AUS',
     financialYear: 'FY2026',
     effectiveFrom: '2025-07-01',
@@ -87,18 +87,18 @@ function makeMinimalRuleset(overrides: Partial<RawRuleset> = {}): RawRuleset {
 // RS-01 — resolveByFY happy path returns a Ruleset with correct bracket count
 // ---------------------------------------------------------------------------
 
-describe('RS-01 — resolveByFY returns processed ruleset for published FY', () => {
+describe('RS-01 — resolveByFY returns processed ruleset for draft FY', () => {
   const adapter = new RulesetAdapter([makeMinimalRuleset()]);
 
-  it('resolves FY2026 published ruleset', () => {
-    const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  it('resolves FY2026 draft ruleset', () => {
+    const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
     expect(ruleset.financialYear).toBe('FY2026');
     expect(ruleset.version).toBe('TEST.1');
-    expect(ruleset.status).toBe('published');
+    expect(ruleset.status).toBe('draft');
   });
 
   it('brackets array has same length as raw input', () => {
-    const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+    const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
     expect(ruleset.brackets).toHaveLength(2);
   });
 });
@@ -114,7 +114,7 @@ describe('RS-01 — resolveByFY returns processed ruleset for published FY', () 
 
 describe('RS-02 — bracket previousThresholdCents derived from sequence', () => {
   const adapter = new RulesetAdapter([makeMinimalRuleset()]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('first bracket has previousThresholdCents = 0n', () => {
     expect(ruleset.brackets[0]?.previousThresholdCents).toBe(0n);
@@ -142,7 +142,7 @@ describe('RS-02 — bracket previousThresholdCents derived from sequence', () =>
 
 describe('RS-03 — medicareLevy thresholds are BigInt', () => {
   const adapter = new RulesetAdapter([makeMinimalRuleset()]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('singleThresholdCents = 2716800n', () => {
     expect(ruleset.medicareLevy.singleThresholdCents).toBe(2_716_800n);
@@ -166,11 +166,11 @@ describe('RS-04 — resolveByFY throws on unknown financialYear', () => {
   const adapter = new RulesetAdapter([makeMinimalRuleset()]);
 
   it('throws RangeError for FY2099', () => {
-    expect(() => adapter.resolveByFY('FY2099', { status: 'published' })).toThrow(RangeError);
+    expect(() => adapter.resolveByFY('FY2099', { status: 'draft' })).toThrow(RangeError);
   });
 
   it('error message mentions the FY', () => {
-    expect(() => adapter.resolveByFY('FY2099', { status: 'published' })).toThrow('FY2099');
+    expect(() => adapter.resolveByFY('FY2099', { status: 'draft' })).toThrow('FY2099');
   });
 });
 
@@ -178,16 +178,16 @@ describe('RS-04 — resolveByFY throws on unknown financialYear', () => {
 // RS-05 — resolveByFY throws when no published ruleset exists for a FY
 // ---------------------------------------------------------------------------
 
-describe('RS-05 — resolveByFY throws when FY exists but has no published ruleset', () => {
-  const draftRuleset = makeMinimalRuleset({ status: 'draft' } as Partial<RawRuleset>);
-  const adapter = new RulesetAdapter([draftRuleset]);
+describe('RS-05 — resolveByFY throws when FY exists but has no ruleset with the requested status', () => {
+  const publishedRuleset = makeMinimalRuleset({ status: 'published' } as Partial<RawRuleset>);
+  const adapter = new RulesetAdapter([publishedRuleset]);
 
-  it('throws RangeError for draft-only FY', () => {
-    expect(() => adapter.resolveByFY('FY2026', { status: 'published' })).toThrow(RangeError);
+  it('throws RangeError when only published exists but draft is requested', () => {
+    expect(() => adapter.resolveByFY('FY2026', { status: 'draft' })).toThrow(RangeError);
   });
 
-  it('error message mentions "published"', () => {
-    expect(() => adapter.resolveByFY('FY2026', { status: 'published' })).toThrow('published');
+  it('error message mentions "draft"', () => {
+    expect(() => adapter.resolveByFY('FY2026', { status: 'draft' })).toThrow('draft');
   });
 });
 
@@ -195,13 +195,13 @@ describe('RS-05 — resolveByFY throws when FY exists but has no published rules
 // RS-06 — multiple rulesets for same FY: last published wins
 // ---------------------------------------------------------------------------
 
-describe('RS-06 — last published ruleset wins when multiple registered for same FY', () => {
+describe('RS-06 — last draft ruleset wins when multiple registered for same FY', () => {
   const v1 = makeMinimalRuleset({ version: 'TEST.1' } as Partial<RawRuleset>);
   const v2 = makeMinimalRuleset({ version: 'TEST.2' } as Partial<RawRuleset>);
   const adapter = new RulesetAdapter([v1, v2]);
 
-  it('resolves to the last registered published version', () => {
-    const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  it('resolves to the last registered draft version', () => {
+    const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
     expect(ruleset.version).toBe('TEST.2');
   });
 });
@@ -358,7 +358,7 @@ describe('RS-08 — VIC land tax brackets convert to BigInt', () => {
     },
   } as Partial<RawRuleset>);
   const adapter = new RulesetAdapter([withLandTax]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('individualBrackets are present', () => {
     expect(ruleset.landTax?.vic?.individualBrackets).toHaveLength(2);
@@ -407,7 +407,7 @@ describe('RS-08b — VIC config without optional surcharge fields', () => {
     },
   } as Partial<RawRuleset>);
   const adapter = new RulesetAdapter([withMinimalVic]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('absenteeSurchargeBps is absent when not in raw JSON', () => {
     expect(ruleset.landTax?.vic?.absenteeSurchargeBps).toBeUndefined();
@@ -428,7 +428,7 @@ describe('RS-08b — VIC config without optional surcharge fields', () => {
 
 describe('RS-09 — landTax is optional; absent in ruleset → undefined', () => {
   const adapter = new RulesetAdapter([makeMinimalRuleset()]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('landTax is undefined when not in raw JSON', () => {
     expect(ruleset.landTax).toBeUndefined();
@@ -445,7 +445,7 @@ describe('RS-09 — landTax is optional; absent in ruleset → undefined', () =>
 // ---------------------------------------------------------------------------
 
 describe('RS-10 — defaultRulesetAdapter resolves actual FY2026 ruleset', () => {
-  const ruleset = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('version is FY2026.1', () => {
     expect(ruleset.version).toBe('FY2026.1');
@@ -557,7 +557,7 @@ describe('RS-11 — MLS surchargeBrackets thresholds are BigInt', () => {
     },
   } as Partial<RawRuleset>);
   const adapter = new RulesetAdapter([withMls]);
-  const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+  const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
 
   it('surchargeBrackets[0].thresholdCents is BigInt', () => {
     expect(typeof ruleset.medicareLevy.surchargeBrackets[0]?.thresholdCents).toBe('bigint');
@@ -577,7 +577,7 @@ describe('RS-12 — empty adapter throws on any resolveByFY call', () => {
   const adapter = new RulesetAdapter([]);
 
   it('throws RangeError for any FY', () => {
-    expect(() => adapter.resolveByFY('FY2026', { status: 'published' })).toThrow(RangeError);
+    expect(() => adapter.resolveByFY('FY2026', { status: 'draft' })).toThrow(RangeError);
   });
 });
 
@@ -598,7 +598,7 @@ describe('RS-13 — runtime assertions fire on JSON.parse-style unknown input', 
   const goodJson = JSON.stringify({
     $schema: 'https://schemas.equitylens.au/ruleset/v3',
     version: 'TEST.1',
-    status: 'published',
+    status: 'draft',
     jurisdiction: 'AUS',
     financialYear: 'FY2026',
     effectiveFrom: '2025-07-01',
@@ -639,7 +639,7 @@ describe('RS-13 — runtime assertions fire on JSON.parse-style unknown input', 
   it('valid JSON round-trips to a working Ruleset', () => {
     const parsed = JSON.parse(goodJson) as unknown as RawRuleset;
     const adapter = new RulesetAdapter([parsed]);
-    const ruleset = adapter.resolveByFY('FY2026', { status: 'published' });
+    const ruleset = adapter.resolveByFY('FY2026', { status: 'draft' });
     expect(ruleset.version).toBe('TEST.1');
     expect(ruleset.brackets).toHaveLength(2);
   });
@@ -657,10 +657,10 @@ describe('RS-13 — runtime assertions fire on JSON.parse-style unknown input', 
     expect(() => new RulesetAdapter([obj as unknown as RawRuleset])).toThrow(TypeError);
   });
 
-  it('JSON with status "draft" is loaded but resolveByFY("published") throws', () => {
-    const obj = JSON.parse(goodJson.replace('"published"', '"draft"')) as unknown as RawRuleset;
+  it('JSON with status "published" is loaded but resolveByFY("draft") throws', () => {
+    const obj = JSON.parse(goodJson.replace('"draft"', '"published"')) as unknown as RawRuleset;
     const adapter = new RulesetAdapter([obj]);
-    expect(() => adapter.resolveByFY('FY2026', { status: 'published' })).toThrow(RangeError);
+    expect(() => adapter.resolveByFY('FY2026', { status: 'draft' })).toThrow(RangeError);
   });
 
   it('JSON with wrong FY format throws at construction', () => {

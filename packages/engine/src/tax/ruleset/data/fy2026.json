@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.equitylens.au/ruleset/v3",
   "version": "FY2026.1",
-  "status": "published",
+  "status": "draft",
   "jurisdiction": "VIC",
   "financialYear": "FY2026",
   "effectiveFrom": "2025-07-01",
@@ -100,14 +100,9 @@
   },
   "metadata": {
     "sourceCitations": [
-      "https://www.ato.gov.au/rates/individual-income-tax-rates/",
-      "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates",
-      "https://www.sro.vic.gov.au/land-tax-current-rates"
-    ],
-    "publishedBy": "00000000-0000-0000-0000-000000000001",
-    "publishedAt": "2025-07-01T00:00:00+10:00",
-    "legalReviewerId": "00000000-0000-0000-0000-000000000002",
-    "legalReviewSignedAt": "2025-06-25T15:30:00+10:00",
-    "rulesetHash": "placeholder-sha256-computed-at-publish-time"
+      "https://www.ato.gov.au/rates/individual-income-tax-rates/ (retrieved 2026-05-22)",
+      "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates (retrieved 2026-05-22)",
+      "https://www.sro.vic.gov.au/land-tax-current-rates (retrieved 2026-05-22)"
+    ]
   }
 }

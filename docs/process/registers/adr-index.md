@@ -41,19 +41,20 @@ Do **not** open an ADR for:
 
 ## Index
 
-| ID       | Title                                                                | State    | Day    | Linked                                        |
-| -------- | -------------------------------------------------------------------- | -------- | ------ | --------------------------------------------- |
-| ADR-0000 | Template (do not modify)                                             | n/a      | —      | —                                             |
-| ADR-0001 | Money represented as bigint cents end-to-end                         | accepted | pre-D1 | `/engine/financial-calc-engine.md`            |
-| ADR-0002 | Deterministic engine in TypeScript; AI never computes                | accepted | pre-D1 | `/architecture/ai-integration.md`             |
-| ADR-0003 | Supabase region locked to `ap-southeast-2`                           | accepted | pre-D1 | `/architecture/security-and-compliance.md`    |
-| ADR-0004 | Scenario results immutable, pinned to engine + ruleset versions      | accepted | pre-D1 | `/engine/tax-rule-versioning.md`              |
-| ADR-0005 | Tax rulesets versioned in DB with publish-locks                      | accepted | pre-D1 | `/engine/tax-rule-versioning.md`              |
-| ADR-0006 | Audit logs hash-chained and partitioned monthly                      | accepted | pre-D1 | `/database/indexing-and-partitioning.md`      |
-| ADR-0007 | RLS on every tenant-scoped table, no service-role bypass in app code | accepted | pre-D1 | `/database/rls-policies.sql`                  |
-| ADR-0008 | PII masking gateway in front of every LLM call                       | accepted | pre-D1 | `/architecture/ai-integration.md`             |
-| ADR-0009 | OKLCH design tokens; Inter Variable with tnum                        | accepted | pre-D1 | `/ui-ux/design-system.md`                     |
-| ADR-0010 | Reports rendered by workers, not inline; presigned-URL delivery      | accepted | pre-D1 | `/reports-exports/scheduling-and-delivery.md` |
+| ID       | Title                                                                | State    | Day    | Linked                                               |
+| -------- | -------------------------------------------------------------------- | -------- | ------ | ---------------------------------------------------- |
+| ADR-0000 | Template (do not modify)                                             | n/a      | —      | —                                                    |
+| ADR-0001 | Money represented as bigint cents end-to-end                         | accepted | pre-D1 | `/engine/financial-calc-engine.md`                   |
+| ADR-0002 | Deterministic engine in TypeScript; AI never computes                | accepted | pre-D1 | `/architecture/ai-integration.md`                    |
+| ADR-0003 | Supabase region locked to `ap-southeast-2`                           | accepted | pre-D1 | `/architecture/security-and-compliance.md`           |
+| ADR-0004 | Scenario results immutable, pinned to engine + ruleset versions      | accepted | pre-D1 | `/engine/tax-rule-versioning.md`                     |
+| ADR-0005 | Tax rulesets versioned in DB with publish-locks                      | accepted | pre-D1 | `/engine/tax-rule-versioning.md`                     |
+| ADR-0006 | Audit logs hash-chained and partitioned monthly                      | accepted | pre-D1 | `/database/indexing-and-partitioning.md`             |
+| ADR-0007 | RLS on every tenant-scoped table, no service-role bypass in app code | accepted | pre-D1 | `/database/rls-policies.sql`                         |
+| ADR-0008 | PII masking gateway in front of every LLM call                       | accepted | pre-D1 | `/architecture/ai-integration.md`                    |
+| ADR-0009 | OKLCH design tokens; Inter Variable with tnum                        | accepted | pre-D1 | `/ui-ux/design-system.md`                            |
+| ADR-0010 | Reports rendered by workers, not inline; presigned-URL delivery      | accepted | pre-D1 | `/reports-exports/scheduling-and-delivery.md`        |
+| ADR-0011 | Tax rulesets committed to the repo are always status:draft           | proposed | Day 06 | DEF-0003, DEV-0019, `/engine/tax-rule-versioning.md` |
 
 ---
 

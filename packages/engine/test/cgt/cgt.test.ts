@@ -17,7 +17,7 @@ import type { DisposalInput } from '../../src/cgt/types.js';
 import { defaultRulesetAdapter } from '../../src/tax/ruleset/index.js';
 import { applyMarginalRates } from '../../src/tax/service.js';
 
-const ruleset = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'published' });
+const ruleset = defaultRulesetAdapter.resolveByFY('FY2026', { status: 'draft' });
 
 // ── Shared base input ──────────────────────────────────────────────────────────
 

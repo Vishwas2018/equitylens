@@ -29,7 +29,20 @@ export class RulesetAdapter {
     }
   }
 
-  resolveByFY(fy: string, options: { status: 'published' }): Ruleset {
+  resolveByFY(
+    fy: string,
+    options: { status: 'draft' | 'staged' | 'published' | 'retired' },
+  ): Ruleset {
+    if (
+      process.env['NODE_ENV'] === 'production' &&
+      options.status !== 'published' &&
+      process.env['ALLOW_DRAFT_RULESETS'] !== 'true'
+    ) {
+      throw new Error(
+        `RulesetAdapter: resolving a "${options.status}" ruleset is forbidden in production ` +
+          `(NODE_ENV=production). Set ALLOW_DRAFT_RULESETS=true to opt-in explicitly.`,
+      );
+    }
     const candidates = this.registry.get(fy);
     if (candidates === undefined || candidates.length === 0) {
       throw new RangeError(`RulesetAdapter: no ruleset found for financial year "${fy}"`);
