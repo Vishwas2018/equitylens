@@ -50,6 +50,7 @@
 | DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file                         | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft              | Code  |
 | DEV-0020 | 06  | interpretation | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value           | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary   | Code  |
 | DEV-0021 | 06  | interpretation | Medicare levy low-income thresholds unverified; secondary source shows $27,222/$45,907 vs fy2026.json $27,168/$45,840 | medium   | pending — ATO returns 403; requires human verification before TX-11 boundary tests are trusted | Code  |
+| DEV-0022 | 07  | interpretation | CGT XV anchor dollar-amount cross-check blocked by ATO 403; CG-XV tests use legislation-anchored expected values only | medium   | pending — ITAA 1997 rates confirmed; human ATO access needed for published-dollar-amount check | Code  |
 
 ---
 
@@ -152,6 +153,56 @@ The engine now throws if `isVacantResidential=true` AND `vacantSurchargeBps > 0`
 
 **Tests added**
 `LT-VRLT-throw` in `land-tax.test.ts`: asserts throw on absent CIV (VRLT-liable), and no-throw on absent CIV (non-VRLT holding). LT-07 updated to use CIV=$250K vs site=$200K to prove CIV is used as base.
+
+---
+
+### DEV-0022 — CGT XV anchor dollar-amount cross-check blocked by ATO 403
+
+- **Day**: 07
+- **Type**: interpretation
+- **Severity**: medium
+- **Opened by**: Code
+- **Status**: pending — requires human ATO access to resolve
+
+**What was the spec / plan?**
+CGT golden test fixtures (CG-XV class) must reconcile to ≥2 independent ATO worked examples to the cent — expected values should not be derived from self-computed figures. Same bar as land tax XV anchors (SRO-published dollar amounts) and Medicare levy XV anchors (ATO-published threshold values).
+
+**What actually happened?**
+ATO returns HTTP 403 for all CGT-related pages in automated access:
+
+- `ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/cgt-discount`
+- `ato.gov.au/individuals-and-families/investments-and-assets/capital-gains-tax/how-to-work-out-your-capital-gain-or-loss`
+- `ato.gov.au/forms-and-instructions/capital-gains-tax-2024`
+- `moneysmart.gov.au/investments-and-returns/capital-gains-tax`
+
+The three existing CGT golden derivations (cgt-golden-01/02/03) cite ITAA 1997 s115-25, s115-100, s110-45 as authority. Their expected values are derived by applying those legislated rules to self-constructed scenarios — equivalent methodology to TX-XV-01/02 (Treasury Laws Amendment Act 2024 bracket rates applied to self-constructed scenarios).
+
+**What IS verified (legislation-anchored)**
+
+- Individual discount rate: 50% — ITAA 1997 s115-100 (exact percentage, primary legislation)
+- SMSF discount rate: 33⅓% — ITAA 1997 s115-100 (exact percentage, primary legislation)
+- Company discount: 0% — ITAA 1997 (no discount available for companies)
+- Minimum holding period: >12 months (implemented as 366 days) — ITAA 1997 s115-25
+- Loss-before-discount ordering — ITAA 1997 s115-100
+- Capital loss carry-forward, not against ordinary income — ITAA 1997 s104-10
+- Cost base elements (s110-25) and exclusions (s110-45)
+
+**What is NOT verified**
+ATO-published worked examples with specific dollar amounts that can be independently checked against the engine. The gap is a citation/cross-check gap, NOT a correctness gap — all rates and rules are from primary legislation.
+
+**Impact**
+No correctness risk: CGT discount rates and ordering rules are in primary legislation and cannot change without an Act of Parliament. The gap is that an independent human reviewer cannot point to an ATO publication and say "the engine produces the same dollar figure the ATO shows." This matters for BL-0024 (tax-advisor sign-off) and BL-0025 (deploy gate).
+
+**Action required**
+Human access to ATO CGT examples — any of:
+
+- ATO CGT Guide (NAT 4151 or current equivalent)
+- ATO individual tax return instructions CGT supplement
+- ATO online CGT calculator (for a specific worked scenario)
+
+Confirm ≥2 worked examples to the cent against engine output; add CG-XV tests citing the source + retrieval date. See BL-0028.
+
+**Linked records**: BL-0028 | BL-0024 | BL-0025
 
 ---
 

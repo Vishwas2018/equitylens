@@ -442,6 +442,66 @@ Full cashflow + income tax pipeline: rent income CF-01..CF-12, marginal rate bra
 
 ---
 
+## Day 6 — 2026-05-23 — Engine: CGT + VIC Land Tax + Property Tests
+
+**Day status**: slip
+
+**Primary goal**
+Complete engine: CGT disposal modelling, VIC land tax aggregation, property-based tests, ATO/SRO XV fixtures, perf budgets.
+
+**Achieved**
+
+- D06-Track-A — Provenance hardening — ruleset draft-only guard (status:"draft" enforced in all repo JSONs), `ruleset-provenance.test.ts` 12-test suite, `resolveByFY` production THROW on non-published status, `fy2026-variant.json` ADR-0011 annotation, DEV-0018/DEV-0019 logged — commit `83569e1`
+- D06-T3 — VIC land tax rebuild — `LandTaxEngine.ts` with correct 8-band SRO 2024+ scale (replacing fabricated 7-band scale), flat+marginal hybrid `applyVicScale`, absentee surcharge on aggregate, VRLT on CIV (throws on absent CIV — DEV-0020), 48 tests (LT-01..LT-VRLT-throw), 3 SRO XV anchors to the cent ($360K→$1,530, $650K→$2,550, $750K→$3,150), 2 golden derivation files — commit `5b5ea1c [D06-T3]`
+- D06-T4 — Income tax + Medicare re-verification — Stage 3 brackets confirmed against Treasury Laws Amendment (Cost of Living Tax Cuts) Act 2024, 3 TX-XV anchors added (TX-XV-01: $120K→$26,788; TX-XV-02: $180K→$47,938; TX-XV-03: $150K Medicare→$3,000), field-scoped `sourceCitations` in fy2026.json, DEV-0021 opened, BL-0027 opened — commit `7be05c9 [D06-T4]`
+
+**Not achieved (rolled forward)**
+
+- CGT engine (CG-01..CG-12) — SEV1 DEF-0003 response consumed Day 6 — disposition: Day 7 P0 (blocks API scenario run wiring)
+- Property-based test families (5,000 iterations each) — not started — disposition: Day 7 if CGT completes, else P1 backlog
+- ATO/SRO XV-21..XV-40 systematic sweep — partially addressed (TX-XV-01..03 + LT-XV-01..03 added; remaining XV fixtures not run) — disposition: Day 7 alongside CGT
+- Engine perf budgets (≤50ms p95) — not measured — disposition: Day 14 hardening
+
+**Registers touched**
+
+- Backlog: opened `BL-0025` (P0, M — ruleset status surface + UI disclaimer + deploy gate), `BL-0026` (P1, XS — move test-only rulesets), `BL-0027` (P1, XS — verify Medicare thresholds; blocks BL-0024 + BL-0025)
+- Defects: opened `DEF-0003` (sev1 — fabricated land tax provenance + rates) → resolved same day
+- Deviations: opened `DEV-0018` (land tax scale replaced), `DEV-0019` (ruleset always draft), `DEV-0020` (VRLT throw on absent CIV — accepted low), `DEV-0021` (Medicare threshold unverified — pending medium)
+- ADRs: ADR-0011 proposed → accepted at Day 6 closeout
+
+**Checkpoints**
+
+- Day-level: 421/421 engine tests GREEN; typecheck ✅; lint ✅
+- Coverage: engine ≥95% maintained (Tracks A+B+C net +60 tests across multiple files)
+- Perf signals: not measured (deferred Day 14)
+
+**Notable decisions**
+
+- DEF-0003 treated as a class defect, not a data defect — full 3-track provenance + correctness response; directional invariants were NOT used as correctness checks (rule enforced)
+- VRLT uses CIV (capital improved value), not site value — SRO 2025+ assessment basis; throw-on-absent chosen over silent fallback (DEV-0020); LT-07 confirms CIV is used over site value
+- Medicare levy phase-in band: engine is cliff (all-or-nothing at threshold); confirmed no TX golden has income in contamination zone [$27,168, $27,222); TX-XV-03 threshold-independent
+- fy2026.json Medicare thresholds not corrected despite secondary source showing $27,222/$45,907 — etax.com.au is not authoritative; ATO access required (BL-0027 gates publish)
+- ADR-0011 accepted: repo rulesets always `status:"draft"`; published only via DB function; BL-0025 is the structural enforcement
+
+**Surprises / lessons**
+
+- Fabricated provenance (placeholder reviewer, future-dated signature) surfaced a class risk in the engine's trust model; the correct response was a full audit, not a data patch
+- VRLT CIV vs site-value distinction was under-specified in the original engine design; SRO 2025+ changed the assessment basis — silent substitution would have understated VRLT for all affected holdings
+- ATO blocks all automated URL access (HTTP 403); Medicare levy page, income tax rates page, and MLS page all inaccessible — primary legislation (Treasury Laws Amendment Act 2024, Medicare Levy Act 1986 s.6) is the correct authoritative fallback for legislation-stable values
+
+**Carried forward to Day 7**
+
+- CGT engine (P0 — blocks API scenario run path): CG-01..CG-12, ATO XV anchors, golden derivations
+- Property-based tests (P1 — deferred if CGT takes full day)
+- BL-0027: human must access ATO Medicare levy page to confirm FY2026 thresholds; update fy2026.json + TX-11 if values differ from $27,168/$45,840
+
+**Evidence**
+
+- Checkpoints: `prompts/day-06/checkpoints/D06-T3.txt`, `prompts/day-06/checkpoints/D06-T4.txt`
+- Start/end tags: `day-05-end` → `day-06-end` @ `7be05c9`
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
