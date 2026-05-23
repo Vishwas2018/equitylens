@@ -36,19 +36,20 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                                                                       | Severity | Disposition                                                                                  | Owner |
-| -------- | --- | -------------- | ----------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                              | medium   | accepted; CI pins via .nvmrc                                                                 | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                                         | low      | accepted with mitigation (CI job D01-T5)                                                     | Code  |
-| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                                    | low      | accepted; update indexing-and-partitioning.md at next opportunity                            | Code  |
-| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                                         | medium   | accepted; re-evaluate Day 14 (BL-0023)                                                       | Code  |
-| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                                  | Code  |
-| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern                 | Code  |
-| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain                 | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12)          | Code  |
-| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs                            | low      | accepted; CPA review Day 6                                                                   | Code  |
-| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens                 | high     | pending — process note only; test suite must use externally-anchored values                  | Code  |
-| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file               | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft            | Code  |
-| DEV-0020 | 06  | interpretation | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary | Code  |
+| ID       | Day | Type           | Title                                                                                                                 | Severity | Disposition                                                                                    | Owner |
+| -------- | --- | -------------- | --------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                                        | medium   | accepted; CI pins via .nvmrc                                                                   | Code  |
+| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                                                   | low      | accepted with mitigation (CI job D01-T5)                                                       | Code  |
+| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                                              | low      | accepted; update indexing-and-partitioning.md at next opportunity                              | Code  |
+| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                                                   | medium   | accepted; re-evaluate Day 14 (BL-0023)                                                         | Code  |
+| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                                                     | low      | accepted; 0003 migration adds column cleanly; no schema gap                                    | Code  |
+| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                                             | low      | accepted; magic links disabled per Supabase config; token is correct pattern                   | Code  |
+| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain                           | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12)            | Code  |
+| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs                                      | low      | accepted; CPA review Day 6                                                                     | Code  |
+| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens                           | high     | pending — process note only; test suite must use externally-anchored values                    | Code  |
+| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file                         | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft              | Code  |
+| DEV-0020 | 06  | interpretation | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value           | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary   | Code  |
+| DEV-0021 | 06  | interpretation | Medicare levy low-income thresholds unverified; secondary source shows $27,222/$45,907 vs fy2026.json $27,168/$45,840 | medium   | pending — ATO returns 403; requires human verification before TX-11 boundary tests are trusted | Code  |
 
 ---
 
@@ -151,6 +152,45 @@ The engine now throws if `isVacantResidential=true` AND `vacantSurchargeBps > 0`
 
 **Tests added**
 `LT-VRLT-throw` in `land-tax.test.ts`: asserts throw on absent CIV (VRLT-liable), and no-throw on absent CIV (non-VRLT holding). LT-07 updated to use CIV=$250K vs site=$200K to prove CIV is used as base.
+
+---
+
+### DEV-0021 — Medicare levy low-income thresholds unverified; secondary source discrepancy
+
+- **Day**: 06
+- **Type**: interpretation
+- **Severity**: medium
+- **Opened by**: Code
+- **Status**: pending — requires human ATO access to resolve
+
+**What was the spec / plan?**
+fy2026.json `singleThresholdCents` / `familyThresholdCents` should reflect the ATO-published
+Medicare levy low-income reduction thresholds for FY2026 (2025-26).
+
+**What actually happened?**
+ATO returns HTTP 403 for all Medicare levy pages in automated access. The only citation in
+fy2026.json for these fields was the MLS (Medicare Levy Surcharge) URL, which covers a
+different concept. A secondary source (etax.com.au, queried for 2025-26) returned:
+
+- Single threshold: $27,222 (vs fy2026.json: $27,168 — discrepancy: +$54)
+- Family threshold: $45,907 (vs fy2026.json: $45,840 — discrepancy: +$67)
+
+Since the Medicare levy low-income threshold is indexed upward each year and cannot decrease,
+fy2026.json's $27,168 may be a value from an earlier year (possibly FY2025 or fabricated).
+
+**Impact**
+Engine applies 2% of total income once income > threshold (cliff, no shading-in zone).
+Any income in the range [$27,168, actual threshold) would be incorrectly taxed by EquityLens.
+Dollar error: up to 2% × (threshold − $27,168). If true threshold is $27,222, max error = $1.08.
+
+**Action required**
+Human access to:
+https://www.ato.gov.au/individuals-and-families/medicare-levy/how-much-medicare-levy-you-pay
+Confirm the FY2026 (2025-26) single and family thresholds; update fy2026.json; re-run TX-11.
+
+**Tests flagged**
+TX-11 ("$27,168 exactly → 0 levy") tests the engine boundary logic correctly but does not
+verify the threshold value. TX-XV-03 was designed to be threshold-independent (income $150K).
 
 ---
 

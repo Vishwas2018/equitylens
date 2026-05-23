@@ -106,9 +106,11 @@
   },
   "metadata": {
     "sourceCitations": [
-      "https://www.ato.gov.au/rates/individual-income-tax-rates/ (retrieved 2026-05-22)",
-      "https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates (retrieved 2026-05-22)",
-      "https://www.sro.vic.gov.au/land-tax-current-rates (retrieved 2026-05-22)"
+      "marginalRates: Treasury Laws Amendment (Cost of Living Tax Cuts) Act 2024 (No. 1, 2024); ATO: https://www.ato.gov.au/rates/individual-income-tax-rates/ (retrieved 2026-05-22, returns 403 — legislation is authoritative source)",
+      "medicareLevy.rateBps: Medicare Levy Act 1986 s.6 (2% rate)",
+      "medicareLevy.singleThresholdCents + familyThresholdCents: ATO Medicare levy low-income threshold page — https://www.ato.gov.au/individuals-and-families/medicare-levy/how-much-medicare-levy-you-pay (retrieved 2026-05-22, returns 403 — see DEV-0021: value unverified, secondary source discrepancy found)",
+      "medicareLevy.surchargeBrackets: https://www.ato.gov.au/individuals-and-families/medicare-and-private-health-insurance/medicare-levy-surcharge/medicare-levy-surcharge-income-thresholds-and-rates (retrieved 2026-05-22)",
+      "landTax.vic: https://www.sro.vic.gov.au/land-tax-current-rates (retrieved 2026-05-22)"
     ]
   }
 }

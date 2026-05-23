@@ -181,6 +181,43 @@ describe('TX-14: MLS — has private hospital cover', () => {
   });
 });
 
+// ── TX-XV-01..TX-XV-03: External anchors ─────────────────────────────────────
+// Source: tx-golden-01-income-tax-derivation.md, tx-golden-02-medicare-derivation.md
+// Income tax: Treasury Laws Amendment (Cost of Living Tax Cuts) Act 2024 (Stage 3).
+// Medicare levy rate: Medicare Levy Act 1986 s.6 (2%).
+// TX-XV-03 uses income ($150K) far above any plausible threshold — threshold-independent.
+
+describe('TX-XV-01: $120,000 income → $26,788 (Band 3, Stage 3 brackets)', () => {
+  // Band 2: mulDiv(2,680,000, 1600, 10000) = 428,800c
+  // Band 3: mulDiv(7,500,000, 3000, 10000) = 2,250,000c
+  // Total: 428,800 + 2,250,000 = 2,678,800c = $26,788
+  const result = applyMarginalRates(12_000_000n, brackets); // $120,000
+
+  it('income tax = 2,678,800 cents ($26,788)', () => {
+    expect(result).toBe(2_678_800n);
+  });
+});
+
+describe('TX-XV-02: $180,000 income → $47,938 (Band 4, Stage 3 brackets)', () => {
+  // Band 2: 428,800c
+  // Band 3: mulDiv(9,000,000, 3000, 10000) = 2,700,000c (full band)
+  // Band 4: mulDiv(4,500,000, 3700, 10000) = 1,665,000c
+  // Total: 428,800 + 2,700,000 + 1,665,000 = 4,793,800c = $47,938
+  const result = applyMarginalRates(18_000_000n, brackets); // $180,000
+
+  it('income tax = 4,793,800 cents ($47,938)', () => {
+    expect(result).toBe(4_793_800n);
+  });
+});
+
+describe('TX-XV-03: Medicare levy $150,000 single → $3,000 (2% rate, threshold-independent)', () => {
+  // mulDiv(15,000,000, 200, 10000) = 300,000c. Income far above threshold.
+  // This anchor tests the 2% rate regardless of the exact threshold value (see DEV-0021).
+  it('Medicare levy = 300,000 cents ($3,000)', () => {
+    expect(computeMedicareLevy(15_000_000n, medicareLevy, false)).toBe(300_000n);
+  });
+});
+
 // ── TX-15: Negative gearing ───────────────────────────────────────────────────
 
 describe('TX-15: applyNegativeGearing', () => {
