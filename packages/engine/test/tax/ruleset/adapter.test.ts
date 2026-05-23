@@ -519,8 +519,8 @@ describe('RS-10 — defaultRulesetAdapter resolves actual FY2026 ruleset', () =>
     expect(tier?.rateBps).toBe(150);
   });
 
-  it('VIC land tax individualBrackets present (7 brackets)', () => {
-    expect(ruleset.landTax?.vic?.individualBrackets).toHaveLength(7);
+  it('VIC land tax individualBrackets present (8 brackets)', () => {
+    expect(ruleset.landTax?.vic?.individualBrackets).toHaveLength(8);
   });
 
   it('VIC absenteeSurchargeBps = 400', () => {

@@ -61,41 +61,47 @@
           "previousThresholdCents": "5000000",
           "thresholdCents": "10000000",
           "flatCents": "50000",
-          "marginalBps": 10
+          "marginalBps": 0
         },
         {
           "previousThresholdCents": "10000000",
           "thresholdCents": "30000000",
           "flatCents": "97500",
-          "marginalBps": 30
+          "marginalBps": 0
         },
         {
           "previousThresholdCents": "30000000",
           "thresholdCents": "60000000",
-          "flatCents": "697500",
-          "marginalBps": 60
+          "flatCents": "135000",
+          "marginalBps": 30
         },
         {
           "previousThresholdCents": "60000000",
+          "thresholdCents": "100000000",
+          "flatCents": "225000",
+          "marginalBps": 60
+        },
+        {
+          "previousThresholdCents": "100000000",
           "thresholdCents": "180000000",
-          "flatCents": "2497500",
+          "flatCents": "465000",
           "marginalBps": 90
         },
         {
           "previousThresholdCents": "180000000",
           "thresholdCents": "300000000",
-          "flatCents": "13297500",
+          "flatCents": "1185000",
           "marginalBps": 165
         },
         {
           "previousThresholdCents": "300000000",
           "thresholdCents": "9007199254740992",
-          "flatCents": "33097500",
+          "flatCents": "3165000",
           "marginalBps": 265
         }
       ],
       "absenteeSurchargeBps": 400,
-      "vacantSurchargeBps": 200
+      "vacantSurchargeBps": 100
     }
   },
   "metadata": {

@@ -36,18 +36,19 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                                                         | Severity | Disposition                                                                         | Owner |
-| -------- | --- | -------------- | --------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                | medium   | accepted; CI pins via .nvmrc                                                        | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                           | low      | accepted with mitigation (CI job D01-T5)                                            | Code  |
-| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                      | low      | accepted; update indexing-and-partitioning.md at next opportunity                   | Code  |
-| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                           | medium   | accepted; re-evaluate Day 14 (BL-0023)                                              | Code  |
-| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                             | low      | accepted; 0003 migration adds column cleanly; no schema gap                         | Code  |
-| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                     | low      | accepted; magic links disabled per Supabase config; token is correct pattern        | Code  |
-| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain   | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12) | Code  |
-| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs              | low      | accepted; CPA review Day 6                                                          | Code  |
-| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens   | high     | pending — process note only; test suite must use externally-anchored values         | Code  |
-| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft   | Code  |
+| ID       | Day | Type           | Title                                                                                                       | Severity | Disposition                                                                                  | Owner |
+| -------- | --- | -------------- | ----------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                              | medium   | accepted; CI pins via .nvmrc                                                                 | Code  |
+| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                                         | low      | accepted with mitigation (CI job D01-T5)                                                     | Code  |
+| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                                    | low      | accepted; update indexing-and-partitioning.md at next opportunity                            | Code  |
+| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                                         | medium   | accepted; re-evaluate Day 14 (BL-0023)                                                       | Code  |
+| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                                           | low      | accepted; 0003 migration adds column cleanly; no schema gap                                  | Code  |
+| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                                   | low      | accepted; magic links disabled per Supabase config; token is correct pattern                 | Code  |
+| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain                 | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12)          | Code  |
+| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs                            | low      | accepted; CPA review Day 6                                                                   | Code  |
+| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens                 | high     | pending — process note only; test suite must use externally-anchored values                  | Code  |
+| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file               | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft            | Code  |
+| DEV-0020 | 06  | interpretation | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary | Code  |
 
 ---
 
@@ -128,6 +129,28 @@ The publish workflow's integrity guarantees — immutability, legal sign-off, ha
 7. Full suite: 403/403 GREEN (391 pre-provenance + 12 new provenance tests).
 
 **Linked records**: DEF-0003 | ADR-0011 | BL-0024 | DEV-0018
+
+---
+
+### DEV-0020 — VRLT CIV fallback: throw on absent CIV rather than substituting site value
+
+- **Day**: 06
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+`LandHolding.capitalImprovedValueCents` was added as optional. The initial implementation fell back to `siteValueCents` when CIV was absent on a VRLT-liable holding (`CIV ?? siteValueCents`).
+
+**Why the fallback is wrong**
+CIV (capital improved value = site value + improvements) is always ≥ site value. Substituting site value when CIV is absent silently understates VRLT — a wrong tax figure is returned with no signal to the caller. This is the same class of defect as the fabricated-rate issue in DEF-0003: wrong numbers presented as correct.
+
+**Decision**
+The engine now throws if `isVacantResidential=true` AND `vacantSurchargeBps > 0` AND `capitalImprovedValueCents` is absent. Callers must supply CIV for every VRLT-liable holding. When the VIC config is absent (`vacantSurchargeBps=0`), no throw — CIV is not needed because VRLT is not charged.
+
+**Tests added**
+`LT-VRLT-throw` in `land-tax.test.ts`: asserts throw on absent CIV (VRLT-liable), and no-throw on absent CIV (non-VRLT holding). LT-07 updated to use CIV=$250K vs site=$200K to prove CIV is used as base.
 
 ---
 
