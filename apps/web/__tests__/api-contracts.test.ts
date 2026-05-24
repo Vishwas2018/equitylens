@@ -6,6 +6,16 @@
  *   1. Unauthenticated requests return 401 (tenancy: not logged in).
  *   2. Authenticated requests return the expected response shape.
  *   3. Malformed input returns 422 with field-level errors.
+ *   4. APP-LAYER scoping: user_id is always passed to .eq() on every
+ *      resource read (query-assertion tests). This proves the app layer
+ *      cannot accidentally drop the filter due to a refactor.
+ *
+ * WHAT THESE TESTS DO NOT COVER: Postgres-level RLS isolation. A query
+ * bug that bypasses the app-layer user_id filter AND the Postgres RLS
+ * policy simultaneously would not be caught here. True RLS isolation
+ * requires an integration test that hits a real Supabase instance with a
+ * second user's JWT attempting a cross-tenant fetch. That lives in
+ * tests/integration/ (Day 13 hardening scope, BL-0029).
  *
  * Real RLS tenancy (cross-org isolation) is enforced by Postgres at the DB
  * layer; the contract here verifies the API layer feeds the right org_id
@@ -543,5 +553,102 @@ describe('GET /api/scenario-results/[id]', () => {
     expect(json.data.result_payload).toHaveProperty('ruleset_status');
     expect(json.data).toHaveProperty('engine_version');
     expect(json.data).toHaveProperty('status');
+  });
+});
+
+// ── Query-assertion tests: app-layer user_id scoping ──────────────────────────
+//
+// These tests verify that user_id is ALWAYS included in the query's .eq() chain
+// for every resource-fetch route. A refactor that accidentally drops the filter
+// would fail here before reaching Postgres RLS.
+//
+// Scope: app-layer only. Postgres RLS isolation (cross-JWT, real DB) is tracked
+// as BL-0029, targeting Day 13 integration hardening.
+
+describe('query-assertion: user_id scoping is always applied', () => {
+  /**
+   * Builds a spy-chain where every .eq() call is recorded.
+   * The chain self-returns so arbitrary depth works.
+   * Terminal methods resolve with the given result.
+   */
+  function makeEqSpy(terminalResult: unknown) {
+    const eqCalls: Array<[string, unknown]> = [];
+    const chain: Record<string, unknown> = {};
+    chain['select'] = () => chain;
+    chain['is'] = () => chain;
+    chain['order'] = () => chain;
+    chain['insert'] = () => chain;
+    chain['eq'] = (field: string, value: unknown) => {
+      eqCalls.push([field, value]);
+      return chain;
+    };
+    chain['single'] = () => Promise.resolve(terminalResult);
+    chain['maybeSingle'] = () => Promise.resolve(terminalResult);
+    return { chain, eqCalls };
+  }
+
+  it('GET /api/scenarios/[id] passes user_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: null, error: { message: 'not found' } });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/scenarios/[id]/route');
+    await GET(makeRequest('GET'), { params: { id: 'scen-any' } });
+
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
+  });
+
+  it('GET /api/scenario-results/[id] passes user_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: null, error: { message: 'not found' } });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/scenario-results/[id]/route');
+    await GET(makeRequest('GET'), { params: { id: 'res-any' } });
+
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
+  });
+
+  it('POST /api/scenarios/[id]/run passes user_id to scenario fetch', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: null, error: { message: 'not found' } });
+    mockFrom.mockReturnValue(chain);
+
+    const { POST } = await import('../app/api/scenarios/[id]/run/route');
+    await POST(makeRequest('POST'), { params: { id: 'scen-any' } });
+
+    // Scenario fetch is the first DB call; user_id must be in its eq chain.
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
+  });
+
+  it('GET /api/properties passes org_id (not user_id) to query', async () => {
+    // Properties are org-scoped, not user-scoped; verify org_id is the tenant filter.
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { eqCalls } = makeEqSpy({ data: [], error: null });
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: (field: string, value: unknown) => {
+          eqCalls.push([field, value]);
+          return {
+            is: () => ({
+              order: () => Promise.resolve({ data: [], error: null }),
+            }),
+          };
+        },
+      }),
+    });
+
+    const { GET } = await import('../app/api/properties/route');
+    await GET();
+
+    const orgIdFilter = eqCalls.find(([field]) => field === 'org_id');
+    expect(orgIdFilter).toBeDefined();
+    expect(orgIdFilter![1]).toBe(AUTH_SESSION.orgId);
   });
 });
