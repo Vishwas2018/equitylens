@@ -1,0 +1,30 @@
+@import "tailwindcss";
+@import "@equitylens/design-tokens/tokens.css";
+
+/* ── Base ── */
+html {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--fg-default);
+  line-height: var(--leading-normal);
+  min-height: 100dvh;
+}
+
+/* ── Focus ring ── */
+*:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-ring-focus);
+}
+
+/* ── Tabular numerals for financial data ── */
+.font-numeric {
+  font-family: var(--font-numeric);
+  font-feature-settings: 'tnum' 1, 'ss01' 1, 'cv11' 1;
+  letter-spacing: var(--tracking-numeric);
+}
