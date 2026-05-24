@@ -619,9 +619,18 @@ Ship the web app foundation: design tokens, Tailwind v4 shell, styled auth pages
 
 **Evidence**
 
-- Start/end tags: `day-07-end` @ `402a94b` → `day-08-end` @ `138be86`
-- Web tests: 30/30 (`placeholder`, `session`, `eslint-no-hardcoded-hex`, `api-contracts`)
+- Start/end tags: `day-07-end` @ `402a94b` → `day-08-end` @ `a1efae9`
+- Web tests: 34/34 (`placeholder`, `session`, `eslint-no-hardcoded-hex`, `api-contracts` incl. query-assertion suite)
 - Engine tests: 421/421
+
+### Correction — 2026-05-24
+
+Post-entry commits added after initial day-08-end tag:
+
+- `d7e2b62` — test(web): 4 query-assertion tests added proving `user_id`/`org_id` filters always applied; BL-0029 documented (Postgres RLS isolation integration tests, Day 13 scope)
+- `a1efae9` — fix(web): root `.eslintrc.cjs` `pathGroups` for `@/**` added; 5 auth/org pages import order corrected. Root cause: lint-staged ran ESLint from repo root where `@/` was not classified as `internal`, producing opposite ordering requirement to `apps/web` context.
+
+`day-08-end` tag moved from `4297a76` (docs entry) → `a1efae9` (final clean state).
 
 ---
 
