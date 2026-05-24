@@ -3,9 +3,9 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { acceptInvite } from '../../../../server/actions/org/acceptInvite';
-
 import { Button } from '@/components/ui/button';
+
+import { acceptInvite } from '../../../../server/actions/org/acceptInvite';
 
 export default function AcceptInvitePage() {
   const router = useRouter();

@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { signUp } from '../../../server/actions/auth/signUp';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+import { signUp } from '../../../server/actions/auth/signUp';
 
 export default function SignUpPage() {
   const router = useRouter();

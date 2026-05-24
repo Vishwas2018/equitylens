@@ -3,10 +3,10 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { createOrg } from '../../../../server/actions/org/createOrg';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+import { createOrg } from '../../../../server/actions/org/createOrg';
 
 export default function NewOrgPage() {
   const router = useRouter();

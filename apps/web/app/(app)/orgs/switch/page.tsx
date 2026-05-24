@@ -3,9 +3,9 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { switchOrg } from '../../../../server/actions/org/switchOrg';
-
 import { Button } from '@/components/ui/button';
+
+import { switchOrg } from '../../../../server/actions/org/switchOrg';
 
 export default function SwitchOrgPage() {
   const router = useRouter();
