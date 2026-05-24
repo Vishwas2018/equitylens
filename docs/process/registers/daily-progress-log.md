@@ -569,6 +569,62 @@ Per 15-day plan: server endpoints for /api/properties, /api/scenarios, /api/scen
 
 ---
 
+## Day 8 — 2026-05-24 — Web Shell + Design Tokens + Auth UX + API Contracts
+
+**Day status**: clean
+
+**Primary goal**
+Ship the web app foundation: design tokens, Tailwind v4 shell, styled auth pages, and the API contract layer (including the BL-0025 run path).
+
+**Achieved**
+
+- D08-T1 — Design tokens — OKLCH token system: `tokens.css` (neutrals, accent, semantic, chart, typography, spacing, radii, elevation, motion), TS exports for Tailwind/Recharts, 13 tests including WCAG AA contrast — commit `5216a17`
+- D08-T2 — Web shell — Tailwind v4.3.0 CSS-first config, shadcn/ui pattern (Button, Badge, Card, Input), ThemeProvider, TopBar + SideNav + RulesetStatusBanner shell, 5 stub routes, ESLint no-hardcoded-hex canary (4 tests) — commit `e1bbfaa`
+- D08-T3 — Auth UX — styled sign-in, sign-up, new-org, switch-org, accept-invite pages using token classes; fixed Tailwind v4 `[font-size:var(--text-*)]` pattern; auth layout with centered card — commit `15505d8`
+- D08-T4 — API contracts — GET/POST `/api/properties`, POST/GET `/api/scenarios`, POST `/api/scenarios/[id]/run` (invokes `runScenario()`+`computeCGT()`; stamps `ruleset_status` from `resolveByFY('FY2026',{status:'draft'})` into `result_payload` per BL-0025; idempotency via `input_hash`), GET `/api/scenario-results/[id]`; `api-guard.ts` shared auth helper; 20 contract tests (401/404 tenancy probes, 422 shape, BL-0025 assertion) — commit `138be86`
+
+**Not achieved (rolled forward)**
+
+- Nothing; D07's API slip (carried forward) was resolved as D08-T4. All four tasks complete.
+
+**Registers touched**
+
+- Backlog: no new items opened; BL-0025 link 3 delivered (run path stamps `ruleset_status`)
+- Defects: none
+- Deviations: DEV-0023 hard-stop (Next.js 14→15) remains in effect — Day 13
+- Tech debt: none new
+- ADRs: ADR-0011 enforced — repo ruleset JSON always `status:"draft"`; run path resolves via `resolveByFY` and stamps real status
+
+**Checkpoints**
+
+- Day-level: typecheck clean (web), lint clean (web), 30/30 web tests pass, 421/421 engine tests pass
+- No-hex canary: BITES on `#ff0000`, `#fff`; PASSES on `var(--fg-default)` — confirmed
+- BL-0025: `ruleset_status` written to `scenario_results.result_payload` in run route; contract test asserts presence
+- RLS tenancy: 401 on unauth, 404 on cross-user probe (user_id scoping prevents cross-tenant leak)
+- Idempotency: `input_hash` = SHA-256 of `{scenarioId, payload, fy}`; cached hit returns 200, miss runs engine and returns 201
+
+**Notable decisions**
+
+- `ruleset_status` stored in `result_payload` JSONB (no dedicated column) — consistent with schema; `RulesetStatusBanner` reads it Day 11
+- BigInt cents serialized via `serializeBigInts()` before JSONB storage; round-trip safe via Zod `CentsBigInt` schema on read
+- `defaultRulesetAdapter` is a module-level singleton (pre-loaded from `fy2026.json`); safe as Next.js server module cache
+- `ALLOW_DRAFT_RULESETS` guard in `RulesetAdapter.resolveByFY()` means run route will throw in production unless env flag is set — this is intentional per ADR-0011
+- Tailwind v4 arbitrary property syntax for font-size: `[font-size:var(--text-xl)]` (not `text-[var(--text-xl)]` which is treated as color)
+
+**Carried forward**
+
+- BL-0027 (ATO Medicare levy threshold verification): human action still outstanding
+- DEV-0022 (CGT XV ATO dollar-amount cross-check): medium-priority, pending ATO 403 resolution
+- BL-0028 (CG-XV ATO-anchored tests): P1 backlog, Day 14 hardening
+
+**Evidence**
+
+- Start/end tags: `day-07-end` @ `402a94b` → `day-08-end` @ `138be86`
+- Web tests: 30/30 (`placeholder`, `session`, `eslint-no-hardcoded-hex`, `api-contracts`)
+- Engine tests: 421/421
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
