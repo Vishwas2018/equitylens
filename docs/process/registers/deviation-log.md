@@ -36,21 +36,22 @@
 
 ## Open Deviations
 
-| ID       | Day | Type           | Title                                                                                                                 | Severity | Disposition                                                                                    | Owner |
-| -------- | --- | -------------- | --------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- | ----- |
-| DEV-0002 | 01  | tech-choice    | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                                        | medium   | accepted; CI pins via .nvmrc                                                                   | Code  |
-| DEV-0006 | 01  | interpretation | `header-pattern` not a commitlint built-in; replaced with grep hook                                                   | low      | accepted with mitigation (CI job D01-T5)                                                       | Code  |
-| DEV-0010 | 02  | interpretation | Postgres version: spec says 16, Supabase managed runs 17                                                              | low      | accepted; update indexing-and-partitioning.md at next opportunity                              | Code  |
-| DEV-0011 | 02  | tech-choice    | pg_partman unavailable on managed Postgres; default partitions used                                                   | medium   | accepted; re-evaluate Day 14 (BL-0023)                                                         | Code  |
-| DEV-0012 | 03  | scope          | is_default column added via migration 0003; absent from 0001 spec                                                     | low      | accepted; 0003 migration adds column cleanly; no schema gap                                    | Code  |
-| DEV-0013 | 03  | interpretation | invite token is a one-time membership grant, not a magic-link sign-in URL                                             | low      | accepted; magic links disabled per Supabase config; token is correct pattern                   | Code  |
-| DEV-0014 | 03  | architecture   | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain                           | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12)            | Code  |
-| DEV-0017 | 05  | interpretation | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs                                      | low      | accepted; CPA review Day 6                                                                     | Code  |
-| DEV-0018 | 06  | interpretation | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens                           | high     | pending — process note only; test suite must use externally-anchored values                    | Code  |
-| DEV-0019 | 06  | architecture   | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file                         | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft              | Code  |
-| DEV-0020 | 06  | interpretation | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value           | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary   | Code  |
-| DEV-0021 | 06  | interpretation | Medicare levy low-income thresholds unverified; secondary source shows $27,222/$45,907 vs fy2026.json $27,168/$45,840 | medium   | pending — ATO returns 403; requires human verification before TX-11 boundary tests are trusted | Code  |
-| DEV-0022 | 07  | interpretation | CGT XV anchor dollar-amount cross-check blocked by ATO 403; CG-XV tests use legislation-anchored expected values only | medium   | pending — ITAA 1997 rates confirmed; human ATO access needed for published-dollar-amount check | Code  |
+| ID       | Day | Type            | Title                                                                                                                 | Severity | Disposition                                                                                        | Owner |
+| -------- | --- | --------------- | --------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------- | ----- |
+| DEV-0002 | 01  | tech-choice     | Node 24 / pnpm 10 local dev vs spec Node ^20.14.0 / pnpm 9.4.0                                                        | medium   | accepted; CI pins via .nvmrc                                                                       | Code  |
+| DEV-0006 | 01  | interpretation  | `header-pattern` not a commitlint built-in; replaced with grep hook                                                   | low      | accepted with mitigation (CI job D01-T5)                                                           | Code  |
+| DEV-0010 | 02  | interpretation  | Postgres version: spec says 16, Supabase managed runs 17                                                              | low      | accepted; update indexing-and-partitioning.md at next opportunity                                  | Code  |
+| DEV-0011 | 02  | tech-choice     | pg_partman unavailable on managed Postgres; default partitions used                                                   | medium   | accepted; re-evaluate Day 14 (BL-0023)                                                             | Code  |
+| DEV-0012 | 03  | scope           | is_default column added via migration 0003; absent from 0001 spec                                                     | low      | accepted; 0003 migration adds column cleanly; no schema gap                                        | Code  |
+| DEV-0013 | 03  | interpretation  | invite token is a one-time membership grant, not a magic-link sign-in URL                                             | low      | accepted; magic links disabled per Supabase config; token is correct pattern                       | Code  |
+| DEV-0014 | 03  | architecture    | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch hash chain                           | low      | accepted; atomic fix deferred to SECURITY DEFINER pg function (TD-0009, pre-Day 12)                | Code  |
+| DEV-0017 | 05  | interpretation  | HALF_UP per-step vs ATO floor-to-dollar; coincide for FY2026 whole-dollar inputs                                      | low      | accepted; CPA review Day 6                                                                         | Code  |
+| DEV-0018 | 06  | interpretation  | Directional sanity check (aggregate > per-property) used as correctness evidence in goldens                           | high     | pending — process note only; test suite must use externally-anchored values                        | Code  |
+| DEV-0019 | 06  | architecture    | Tax ruleset JSON fabricated legal-review provenance; published-state was writable from a file                         | high     | remediated — ADR-0011 + provenance guard test; all rulesets reset to status:draft                  | Code  |
+| DEV-0020 | 06  | interpretation  | VRLT CIV fallback: engine throws on absent CIV for VRLT-liable holdings rather than substituting site value           | low      | accepted — silent understatement is worse than a loud failure; throw is the correct boundary       | Code  |
+| DEV-0021 | 06  | interpretation  | Medicare levy low-income thresholds unverified; secondary source shows $27,222/$45,907 vs fy2026.json $27,168/$45,840 | medium   | pending — ATO returns 403; requires human verification before TX-11 boundary tests are trusted     | Code  |
+| DEV-0022 | 07  | interpretation  | CGT XV anchor dollar-amount cross-check blocked by ATO 403; CG-XV tests use legislation-anchored expected values only | medium   | pending — ITAA 1997 rates confirmed; human ATO access needed for published-dollar-amount check     | Code  |
+| DEV-0023 | 08  | checkpoint-skip | DEF-0001 / BL-0022 second deferral: Next.js 14→15 migration deferred from Day 8 to Day 13 hard stop                   | medium   | accepted — per-CVE basis recorded below; audit-exceptions extended to 2026-05-30; hard stop Day 13 | Opus  |
 
 ---
 
@@ -242,6 +243,42 @@ Confirm the FY2026 (2025-26) single and family thresholds; update fy2026.json; r
 **Tests flagged**
 TX-11 ("$27,168 exactly → 0 levy") tests the engine boundary logic correctly but does not
 verify the threshold value. TX-XV-03 was designed to be threshold-independent (income $150K).
+
+---
+
+### DEV-0023 — DEF-0001 / BL-0022 second deferral: Next.js 14→15 migration deferred Day 8 → Day 13
+
+- **Day**: 08
+- **Type**: checkpoint-skip
+- **Severity**: medium
+- **Opened by**: Opus
+- **Status**: accepted — **hard stop Day 13 (2026-05-30). No further deferral.**
+
+**What was the spec / plan?**
+`DEF-0001` opened Day 1. First deferral was D02-T1 with audit-exception `until: 2026-05-27` (Day 8). BL-0022 (P0) targets the Next.js 14→15 migration at Day 8 to resolve 7 high-severity CVEs.
+
+**What actually happened?**
+Migration not performed on Day 8. Day 8 scoped to Web Shell + Design Tokens + Auth UX. The 14→15 migration is M-effort and would have consumed Day 8 capacity required to unblock Days 9–11 (frontend cascade). See Day 8 plan §5.
+
+**Per-CVE basis for continued deferral** (checkable assertions, not summaries):
+
+| GHSA ID             | Description                                           | Our exposure        | Checkable basis                                                                                                                                                                | Risk level |
+| ------------------- | ----------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| GHSA-36qx-fr4f-26g5 | Middleware/proxy bypass via i18n Pages Router         | **NOT EXPLOITABLE** | `apps/web/pages/` directory does not exist; `next.config.mjs` contains no `i18n` key (verified 2026-05-24)                                                                     | None       |
+| GHSA-c4j6-fc7j-m34r | SSRF via WebSocket origin validation in custom server | **NOT EXPLOITABLE** | App Router only; no custom WebSocket server; production Next.js on Vercel edge has no exposed WebSocket server. Grep `apps/web/server/` for `WebSocket` or `ws` → zero results | None       |
+| GHSA-mwv6-3258-q52c | DoS via RSC payload deserialization                   | **APPLICABLE**      | App Router + Server Components used throughout. No mitigation beyond Vercel edge rate-limiting. Risk accepted under exception.                                                 | Medium     |
+| GHSA-5j59-xgg2-r9c4 | DoS via RSC payload deserialization                   | **APPLICABLE**      | Same as above                                                                                                                                                                  | Medium     |
+| GHSA-h25m-26qc-wcjf | DoS via RSC payload deserialization                   | **APPLICABLE**      | Same as above                                                                                                                                                                  | Medium     |
+| GHSA-q4gf-8mx6-v5v3 | DoS via RSC payload deserialization                   | **APPLICABLE**      | Same as above                                                                                                                                                                  | Medium     |
+| GHSA-8h8q-6873-q5fj | DoS via RSC payload deserialization                   | **APPLICABLE**      | Same as above                                                                                                                                                                  | Medium     |
+
+**Net exposure**: 5 DoS CVEs remain genuinely applicable. SSRF and i18n bypass are structurally not reachable. The 5 DoS CVEs have no code-level mitigation in 14.x; the risk window is Days 8–13 in development (no public users).
+
+**Audit-exceptions extended**: `until` field updated from `2026-05-27` to `2026-05-30` for all 7 entries. Day 13 is the hard stop — no exception extension is permissible beyond this date.
+
+**Consequence if Day 13 migration fails**: DEF-0001 escalates to sev1. Production deployment is blocked. This is accepted as a structural constraint, not a risk to be deferred again.
+
+**Linked records**: DEF-0001 | BL-0022 | `.audit-exceptions.json`
 
 ---
 

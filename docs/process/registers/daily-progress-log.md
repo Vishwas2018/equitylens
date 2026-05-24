@@ -500,6 +500,73 @@ Complete engine: CGT disposal modelling, VIC land tax aggregation, property-base
 - Checkpoints: `prompts/day-06/checkpoints/D06-T3.txt`, `prompts/day-06/checkpoints/D06-T4.txt`
 - Start/end tags: `day-05-end` → `day-06-end` @ `7be05c9`
 
+### Correction — 2026-05-24
+
+**Source of error**: The Day 6 log entry was written as part of commit `402a94b [D07-T1]` on 2026-05-23 20:10, after all Day 6 commits were already in the tree. Despite this, the log listed CGT as "Not achieved (rolled forward)." This was wrong.
+
+**Correction**: D06-T1 (CGT engine) WAS achieved on Day 6. Commit `f3203ee [D06-T1]` (2026-05-22 15:29) delivered `packages/engine/src/cgt/`, `packages/engine/test/cgt/cgt.test.ts` (776 lines, CG-01..CG-12 green), and three golden derivation files (`cgt-golden-01`, `-02`, `-03`) anchored to ITAA 1997 (s115-25, s115-100, s110-45). The CGT engine checkpoint at `D06-T1.txt` confirms all CG-01..CG-12 tests passed. Human reviewed and approved.
+
+**Why the error occurred**: The DEF-0003 sev1 (fabricated VIC land tax rates) was discovered after the CGT commit. The day was restructured into a Track-A response, and the log author listed CGT under "Not achieved" because the day-end context was dominated by the provenance crisis. The CGT commit pre-dated the crisis.
+
+**Corrected achieved list for Day 6** (supplement — original text stands):
+
+- D06-T1 — CGT engine — `CGTEngine.ts`, `cost-base.ts`, `types.ts`; CG-01..CG-12 (776-line test file); 3 golden derivation files anchored to ITAA 1997; checkpoint at `D06-T1.txt` — commit `f3203ee`
+
+**Corrected not-achieved list for Day 6**: CGT was achieved. The remaining unachieved items are:
+
+- Property-based test families — not started — rolled to Day 9 P1 backlog (BL-0009 scope)
+- ATO/SRO XV-21..XV-40 systematic sweep — partial only
+- Engine perf budgets — deferred Day 14
+
+**Tag status**: `day-06-end` tag referenced in original entry (`@ 7be05c9`) was not applied to the repo at write time. Applied as part of `process: Day 6/7 reconciliation` commit on 2026-05-24.
+
+---
+
+## Day 7 — 2026-05-23 — API Contracts: Properties, Scenarios, Results
+
+**Day status**: slip
+
+**Primary goal**
+Per 15-day plan: server endpoints for /api/properties, /api/scenarios, /api/scenarios/:id/run, /api/scenario-results/:id; Zod schemas; RLS probes; integration tests.
+
+**Achieved**
+
+- D07-T1 — Process closeout — opened `DEV-0022` (CGT XV anchor blocked by ATO 403), opened `BL-0028` (CG-XV tests needed against ATO worked examples); recorded Day 6 progress log (log subsequently found to contain the CGT error corrected above) — commit `402a94b`
+- CGT engine verified — D06-T1 commit `f3203ee` reviewed and approved by human at Day 6/7 boundary; CGT is complete
+
+**Not achieved (rolled forward)**
+
+- API contracts — primary Day 7 deliverable — zero commits; `apps/web/app/api/properties` and `apps/web/app/api/scenarios` do not exist — disposition: add to Day 8 as afternoon track (D08-T4), or run as D09-T0 before dashboard work; call required before Day 9 planning
+- Property-based test families (5,000-iteration each) — not started — disposition: P1 backlog (BL-0009); deferred to Day 14 hardening if not addressed earlier
+- ATO XV sweep — not continued beyond TX-XV-01..03 and LT-XV-01..03 added in Day 6
+
+**Registers touched**
+
+- Backlog: opened `BL-0028` (P1, XS — CG-XV ATO-anchored tests)
+- Defects: none
+- Deviations: opened `DEV-0022` (medium, pending — CGT XV anchor dollar-amount cross-check blocked by ATO 403)
+
+**Checkpoints**
+
+- Day-level: no new CI run; engine tests from Day 6 carry forward GREEN (421/421)
+- Coverage: engine ≥95% maintained; no new tests added
+- API contracts: not built — checkpoint not reachable
+
+**Notable decisions**
+
+- API contracts are the cascade bottleneck for Day 9 (portfolio data). Day 9 cannot show real API data without them. This must be resolved in the Day 8 session plan or acknowledged as a Day 9 first-task before dashboard work.
+
+**Carried forward**
+
+- API contracts (P0 for Day 9 data): must schedule before Day 9 planning
+- Property-based tests: P1 backlog
+- BL-0027 (ATO Medicare threshold verification): human action still outstanding
+
+**Evidence**
+
+- No new checkpoint files — Day 7 was process-only
+- Start/end tags: `day-06-end` @ `7be05c9` → `day-07-end` @ `402a94b`
+
 ---
 
 ## Conventions
