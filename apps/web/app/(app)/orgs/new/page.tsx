@@ -5,6 +5,9 @@ import { useState } from 'react';
 
 import { createOrg } from '../../../../server/actions/org/createOrg';
 
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
 export default function NewOrgPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -14,13 +17,11 @@ export default function NewOrgPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     const fd = new FormData(e.currentTarget);
     const result = await createOrg(
       fd.get('name') as string,
       (fd.get('abn') as string) || undefined,
     );
-
     if (result.error) {
       setError(result.error);
     } else {
@@ -30,23 +31,22 @@ export default function NewOrgPage() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        maxWidth: 360,
-        margin: '80px auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
-      <h1>New organisation</h1>
-      <input name="name" placeholder="Organisation name" required />
-      <input name="abn" placeholder="ABN (optional, 11 digits)" pattern="\d{11}" />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit" disabled={loading}>
-        {loading ? 'Creating…' : 'Create'}
-      </button>
-    </form>
+    <div className="mx-auto max-w-sm">
+      <h1 className="mb-[var(--space-5)] [font-size:var(--text-2xl)] font-semibold text-[var(--fg-default)]">
+        New organisation
+      </h1>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--space-4)]">
+        <Input name="name" placeholder="Organisation name" required />
+        <Input name="abn" placeholder="ABN (optional, 11 digits)" pattern="\d{11}" />
+        {error && (
+          <p className="[font-size:var(--text-sm)] text-[var(--fg-negative)]" role="alert">
+            {error}
+          </p>
+        )}
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Creating…' : 'Create'}
+        </Button>
+      </form>
+    </div>
   );
 }

@@ -5,6 +5,8 @@ import { useState } from 'react';
 
 import { switchOrg } from '../../../../server/actions/org/switchOrg';
 
+import { Button } from '@/components/ui/button';
+
 export default function SwitchOrgPage() {
   const router = useRouter();
   const params = useSearchParams();
@@ -27,20 +29,29 @@ export default function SwitchOrgPage() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: '80px auto' }}>
-      <h1>Switch organisation</h1>
+    <div className="mx-auto max-w-sm">
+      <h1 className="mb-[var(--space-5)] [font-size:var(--text-2xl)] font-semibold text-[var(--fg-default)]">
+        Switch organisation
+      </h1>
       {orgId ? (
-        <>
-          <p>
-            Switch to org: <code>{orgId}</code>
+        <div className="flex flex-col gap-[var(--space-4)]">
+          <p className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">
+            Switch to:{' '}
+            <code className="rounded-[var(--radius-xs)] bg-[var(--bg-muted)] px-1.5 py-0.5 [font-size:var(--text-xs)] text-[var(--fg-default)]">
+              {orgId}
+            </code>
           </p>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
-          <button onClick={handleSwitch} disabled={loading}>
+          {error && (
+            <p className="[font-size:var(--text-sm)] text-[var(--fg-negative)]" role="alert">
+              {error}
+            </p>
+          )}
+          <Button onClick={handleSwitch} disabled={loading}>
             {loading ? 'Switching…' : 'Confirm switch'}
-          </button>
-        </>
+          </Button>
+        </div>
       ) : (
-        <p>No org specified.</p>
+        <p className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">No org specified.</p>
       )}
     </div>
   );

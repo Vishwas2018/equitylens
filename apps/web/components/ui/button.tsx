@@ -21,9 +21,9 @@ const buttonVariants = cva(
         danger: 'bg-[var(--color-negative-500)] text-[var(--fg-on-accent)] hover:opacity-90',
       },
       size: {
-        sm: 'h-8  px-3 text-[var(--text-sm)]  gap-1.5',
-        md: 'h-9  px-4 text-[var(--text-md)]  gap-2',
-        lg: 'h-11 px-6 text-[var(--text-lg)]  gap-2',
+        sm: 'h-8  px-3 [font-size:var(--text-sm)]  gap-1.5',
+        md: 'h-9  px-4 [font-size:var(--text-md)]  gap-2',
+        lg: 'h-11 px-6 [font-size:var(--text-lg)]  gap-2',
         icon: 'h-9  w-9',
       },
     },

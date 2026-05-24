@@ -18,7 +18,7 @@ export function TopBar({ orgName, className }: TopBarProps) {
       {/* Logo */}
       <div className="flex items-center gap-[var(--space-2)]">
         <BarChart3 size={20} className="text-[var(--color-accent-600)]" aria-hidden="true" />
-        <span className="text-[var(--text-md)] font-semibold text-[var(--fg-default)]">
+        <span className="[font-size:var(--text-md)] font-semibold text-[var(--fg-default)]">
           EquityLens
         </span>
       </div>
@@ -29,7 +29,7 @@ export function TopBar({ orgName, className }: TopBarProps) {
           <span className="mx-[var(--space-3)] text-[var(--fg-subtle)]" aria-hidden="true">
             /
           </span>
-          <span className="text-[var(--text-sm)] text-[var(--fg-muted)]">{orgName}</span>
+          <span className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">{orgName}</span>
         </>
       )}
     </header>

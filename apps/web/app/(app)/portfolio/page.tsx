@@ -9,10 +9,10 @@ export default function PortfolioPage() {
         <Building2 size={32} className="text-[var(--fg-subtle)]" aria-hidden="true" />
       </div>
       <div className="flex flex-col gap-[var(--space-2)]">
-        <h1 className="text-[var(--text-2xl)] font-semibold text-[var(--fg-default)]">
+        <h1 className="[font-size:var(--text-2xl)] font-semibold text-[var(--fg-default)]">
           No properties yet
         </h1>
-        <p className="max-w-sm text-[var(--text-sm)] text-[var(--fg-muted)]">
+        <p className="max-w-sm [font-size:var(--text-sm)] text-[var(--fg-muted)]">
           Add your first investment property to start tracking equity, cash flow, and CGT scenarios.
         </p>
       </div>

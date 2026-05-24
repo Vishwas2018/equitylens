@@ -1,9 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { signUp } from '../../../server/actions/auth/signUp';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -14,10 +18,8 @@ export default function SignUpPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     const fd = new FormData(e.currentTarget);
     const result = await signUp(fd.get('email') as string, fd.get('password') as string);
-
     if (result.error) {
       setError(result.error);
     } else {
@@ -27,30 +29,49 @@ export default function SignUpPage() {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        maxWidth: 360,
-        margin: '80px auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-      }}
-    >
-      <h1>Create account</h1>
-      <input name="email" type="email" placeholder="Email" required autoComplete="email" />
-      <input
-        name="password"
-        type="password"
-        placeholder="Password (min 12 chars)"
-        required
-        minLength={12}
-        autoComplete="new-password"
-      />
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      <button type="submit" disabled={loading}>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-[var(--space-5)]">
+      {/* Heading */}
+      <div className="flex flex-col gap-[var(--space-1)]">
+        <h1 className="[font-size:var(--text-xl)] font-semibold text-[var(--fg-default)]">
+          Create account
+        </h1>
+        <p className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">
+          Start analysing your property investments
+        </p>
+      </div>
+
+      {/* Fields */}
+      <div className="flex flex-col gap-[var(--space-3)]">
+        <Input name="email" type="email" placeholder="Email" required autoComplete="email" />
+        <Input
+          name="password"
+          type="password"
+          placeholder="Password (min 12 characters)"
+          required
+          minLength={12}
+          autoComplete="new-password"
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="[font-size:var(--text-sm)] text-[var(--fg-negative)]" role="alert">
+          {error}
+        </p>
+      )}
+
+      {/* Submit */}
+      <Button type="submit" disabled={loading} className="w-full">
         {loading ? 'Creating account…' : 'Create account'}
-      </button>
+      </Button>
+
+      {/* Footer */}
+      <p className="text-center [font-size:var(--text-sm)] text-[var(--fg-muted)]">
+        Already have an account?{' '}
+        <Link href="/sign-in" className="text-[var(--color-accent-600)] hover:underline">
+          Sign in
+        </Link>
+      </p>
     </form>
   );
 }

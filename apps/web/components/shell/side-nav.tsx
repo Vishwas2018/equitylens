@@ -38,7 +38,7 @@ export function SideNav({ className }: SideNavProps) {
                 href={href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex items-center gap-[var(--space-2)] rounded-[var(--radius-sm)] px-[var(--space-3)] py-[var(--space-2)] text-[var(--text-sm)] transition-colors duration-[var(--motion-duration-quick)]',
+                  'flex items-center gap-[var(--space-2)] rounded-[var(--radius-sm)] px-[var(--space-3)] py-[var(--space-2)] [font-size:var(--text-sm)] transition-colors duration-[var(--motion-duration-quick)]',
                   active
                     ? 'bg-[var(--color-accent-600)]/10 text-[var(--color-accent-600)] font-medium'
                     : 'text-[var(--fg-muted)] hover:bg-[var(--bg-muted)] hover:text-[var(--fg-default)]',

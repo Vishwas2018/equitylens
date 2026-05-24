@@ -21,7 +21,7 @@ export function RulesetStatusBanner({ status, rulesetLabel = 'FY2026' }: Ruleset
         className="shrink-0 text-[var(--color-warning-500)]"
         aria-hidden="true"
       />
-      <p className="text-[var(--text-xs)] text-[var(--color-warning-500)]">
+      <p className="[font-size:var(--text-xs)] text-[var(--color-warning-500)]">
         <span className="font-semibold">Draft ruleset ({rulesetLabel}).</span> Tax calculations are
         estimates only — results will change when the ruleset is published.
       </p>
