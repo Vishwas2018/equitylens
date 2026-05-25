@@ -268,6 +268,43 @@ describe('POST /api/properties', () => {
   });
 });
 
+// ── GET /api/scenarios ─────────────────────────────────────────────────────────
+
+describe('GET /api/scenarios', () => {
+  it('returns 401 when unauthenticated', async () => {
+    mockGetApiSession.mockResolvedValue(null);
+    const { GET } = await import('../app/api/scenarios/route');
+    const res = await GET();
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json).toHaveProperty('error');
+  });
+
+  it('returns data array when authenticated', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const rows = [
+      {
+        id: 'scen-1',
+        label: 'CGT 2026',
+        property_id: null,
+        portfolio_id: null,
+        pinned: false,
+        created_at: '2026-01-01',
+      },
+    ];
+    mockFrom.mockReturnValue(makeListChain({ data: rows, error: null }));
+
+    const { GET } = await import('../app/api/scenarios/route');
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('data');
+    expect(Array.isArray(json.data)).toBe(true);
+    expect(json.data[0]).toHaveProperty('id');
+    expect(json.data[0]).toHaveProperty('label');
+  });
+});
+
 // ── POST /api/scenarios ────────────────────────────────────────────────────────
 
 describe('POST /api/scenarios', () => {
@@ -636,6 +673,19 @@ describe('query-assertion: user_id scoping is always applied', () => {
     await POST(makeRequest('POST'), { params: { id: 'scen-any' } });
 
     // Scenario fetch is the first DB call; user_id must be in its eq chain.
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
+  });
+
+  it('GET /api/scenarios passes user_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/scenarios/route');
+    await GET();
+
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
     expect(userIdFilter).toBeDefined();
     expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);

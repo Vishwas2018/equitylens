@@ -4,6 +4,21 @@ import { z } from 'zod';
 import { getApiSession, unauthorised } from '../../../server/auth/api-guard';
 import { getRlsAwareClient } from '../../../server/db/client';
 
+export async function GET() {
+  const sess = await getApiSession();
+  if (!sess) return unauthorised();
+
+  const client = getRlsAwareClient(sess.accessToken);
+  const { data, error } = await client
+    .from('scenarios')
+    .select('id, label, property_id, portfolio_id, pinned, created_at')
+    .eq('user_id', sess.userId)
+    .order('created_at', { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ data: data ?? [] });
+}
+
 const CreateScenarioSchema = z.object({
   label: z.string().min(1),
   property_id: z.string().uuid().optional(),

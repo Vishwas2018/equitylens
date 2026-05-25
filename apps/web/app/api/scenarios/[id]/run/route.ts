@@ -112,8 +112,11 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
     return NextResponse.json({ data: cached });
   }
 
-  // Resolve ruleset — stamps real status (ADR-0011: repo JSONs are always 'draft').
-  const ruleset = defaultRulesetAdapter.resolveByFY(FINANCIAL_YEAR, { status: 'draft' });
+  // Resolve ruleset — read FY from stored payload so the form's selection drives it;
+  // fall back to FINANCIAL_YEAR constant when payload predates this field.
+  const storedFy = (scenario.input_payload as Record<string, unknown>)['fy'];
+  const fy = typeof storedFy === 'string' ? storedFy : FINANCIAL_YEAR;
+  const ruleset = defaultRulesetAdapter.resolveByFY(fy, { status: 'draft' });
 
   // Run the engine — deterministic, no ambient clock or randomness.
   const clock = new FixedClock(asOfMs);
