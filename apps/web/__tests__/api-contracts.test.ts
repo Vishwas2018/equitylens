@@ -140,6 +140,19 @@ function makeFluentChain(terminalResult: unknown) {
   return chain;
 }
 
+/** Like makeFluentChain but .order() is the terminal (for list endpoints). */
+function makeListChain(terminalResult: unknown) {
+  const chain: Record<string, unknown> = {};
+  const fluent = () => chain;
+  chain['select'] = fluent;
+  chain['eq'] = fluent;
+  chain['is'] = fluent;
+  chain['single'] = fluent;
+  chain['maybeSingle'] = fluent;
+  chain['order'] = () => Promise.resolve(terminalResult);
+  return chain;
+}
+
 // ── GET /api/properties ────────────────────────────────────────────────────────
 
 describe('GET /api/properties', () => {
@@ -576,14 +589,15 @@ describe('query-assertion: user_id scoping is always applied', () => {
     const chain: Record<string, unknown> = {};
     chain['select'] = () => chain;
     chain['is'] = () => chain;
-    chain['order'] = () => chain;
     chain['insert'] = () => chain;
     chain['eq'] = (field: string, value: unknown) => {
       eqCalls.push([field, value]);
       return chain;
     };
+    // Terminal on both single (detail routes) and order (list routes).
     chain['single'] = () => Promise.resolve(terminalResult);
     chain['maybeSingle'] = () => Promise.resolve(terminalResult);
+    chain['order'] = () => Promise.resolve(terminalResult);
     return { chain, eqCalls };
   }
 
@@ -650,5 +664,170 @@ describe('query-assertion: user_id scoping is always applied', () => {
     const orgIdFilter = eqCalls.find(([field]) => field === 'org_id');
     expect(orgIdFilter).toBeDefined();
     expect(orgIdFilter![1]).toBe(AUTH_SESSION.orgId);
+  });
+
+  it('GET /api/portfolios passes org_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/portfolios/route');
+    await GET();
+
+    const orgIdFilter = eqCalls.find(([field]) => field === 'org_id');
+    expect(orgIdFilter).toBeDefined();
+    expect(orgIdFilter![1]).toBe(AUTH_SESSION.orgId);
+  });
+
+  it('GET /api/portfolios/[id]/summary passes user_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: null, error: { message: 'not found' } });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/portfolios/[id]/summary/route');
+    await GET(makeRequest('GET'), { params: { id: 'port-any' } });
+
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
+  });
+
+  it('GET /api/properties/[id] passes org_id to query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const { chain, eqCalls } = makeEqSpy({ data: null, error: { message: 'not found' } });
+    mockFrom.mockReturnValue(chain);
+
+    const { GET } = await import('../app/api/properties/[id]/route');
+    await GET(makeRequest('GET'), { params: { id: 'prop-any' } });
+
+    const orgIdFilter = eqCalls.find(([field]) => field === 'org_id');
+    expect(orgIdFilter).toBeDefined();
+    expect(orgIdFilter![1]).toBe(AUTH_SESSION.orgId);
+  });
+});
+
+// ── GET /api/portfolios ────────────────────────────────────────────────────────
+
+describe('GET /api/portfolios', () => {
+  it('returns 401 when unauthenticated', async () => {
+    mockGetApiSession.mockResolvedValue(null);
+    const { GET } = await import('../app/api/portfolios/route');
+    const res = await GET();
+    expect(res.status).toBe(401);
+    const json = await res.json();
+    expect(json).toHaveProperty('error');
+  });
+
+  it('returns data array when authenticated', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const rows = [
+      { id: 'port-1', name: 'My portfolio', created_at: '2026-01-01', updated_at: '2026-01-01' },
+    ];
+    mockFrom.mockReturnValue(makeListChain({ data: rows, error: null }));
+
+    const { GET } = await import('../app/api/portfolios/route');
+    const res = await GET();
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('data');
+    expect(Array.isArray(json.data)).toBe(true);
+  });
+});
+
+// ── GET /api/portfolios/[id]/summary ──────────────────────────────────────────
+
+describe('GET /api/portfolios/[id]/summary', () => {
+  it('returns 401 when unauthenticated', async () => {
+    mockGetApiSession.mockResolvedValue(null);
+    const { GET } = await import('../app/api/portfolios/[id]/summary/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'port-1' } });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 404 when portfolio not found (cross-tenant probe)', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
+
+    const { GET } = await import('../app/api/portfolios/[id]/summary/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'port-other-user' } });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns summary KPI shape when found', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const summary = {
+      portfolio_id: 'port-1',
+      user_id: AUTH_SESSION.userId,
+      active_properties: 2,
+      total_value_cents: 160000000,
+      total_debt_cents: 80000000,
+      estimated_equity_cents: 80000000,
+    };
+    mockFrom.mockReturnValue(makeFluentChain({ data: summary, error: null }));
+
+    const { GET } = await import('../app/api/portfolios/[id]/summary/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'port-1' } });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('data');
+    expect(json.data).toHaveProperty('active_properties');
+    expect(json.data).toHaveProperty('estimated_equity_cents');
+    expect(json.data).toHaveProperty('total_value_cents');
+    expect(json.data).toHaveProperty('total_debt_cents');
+  });
+});
+
+// ── GET /api/properties/[id] ──────────────────────────────────────────────────
+
+describe('GET /api/properties/[id]', () => {
+  it('returns 401 when unauthenticated', async () => {
+    mockGetApiSession.mockResolvedValue(null);
+    const { GET } = await import('../app/api/properties/[id]/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'prop-1' } });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 404 when property not found (cross-tenant probe)', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
+
+    const { GET } = await import('../app/api/properties/[id]/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'prop-other-org' } });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns property data shape when found', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const property = {
+      id: 'prop-1',
+      portfolio_id: 'port-1',
+      address_line1: '1 Test St',
+      address_line2: null,
+      suburb: 'Melbourne',
+      state: 'VIC',
+      postcode: '3000',
+      property_type: 'residential',
+      purchase_date: '2020-01-15',
+      purchase_price_cents: 80000000,
+      stamp_duty_paid_cents: 3200000,
+      acquisition_costs_cents: 500000,
+      current_estimated_value_cents: 95000000,
+      ownership_kind: 'individual',
+      status: 'active',
+      notes: null,
+      created_at: '2026-01-01',
+      updated_at: '2026-01-01',
+    };
+    mockFrom.mockReturnValue(makeFluentChain({ data: property, error: null }));
+
+    const { GET } = await import('../app/api/properties/[id]/route');
+    const res = await GET(makeRequest('GET'), { params: { id: 'prop-1' } });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('data');
+    expect(json.data).toHaveProperty('id');
+    expect(json.data).toHaveProperty('purchase_price_cents');
+    expect(json.data).toHaveProperty('current_estimated_value_cents');
+    expect(json.data).toHaveProperty('status');
   });
 });
