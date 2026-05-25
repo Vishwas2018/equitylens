@@ -636,7 +636,7 @@ Post-entry commits added after initial day-08-end tag:
 
 ## Day 9 — 2026-05-25 — Portfolio Overview + Property Detail
 
-**Day status**: in progress
+**Day status**: clean
 
 **Primary goal**
 Portfolio overview and property detail surfaces render real data — KPI tiles, equity forecast chart, 30-year cashflow forecast, assumptions panel.
@@ -649,11 +649,15 @@ Portfolio overview and property detail surfaces render real data — KPI tiles, 
 
 **Achieved**
 
-_(filling during day)_
+- D09-T1 — Registers: BL-0029 opened as P0 launch blocker + Day 9 log opened — commit `9de7369`
+- D09-T2 — API routes + server data layer for portfolios + property detail — `getPortfolios`, `getPortfolioSummary`, `getProperties`, `getProperty` all through `api-guard.ts`; 3 new API route handlers; 35 api-contract tests — commit `571ed66`
+- D09-T3 — `<Money>` + `<Chart>` foundation — AU currency formatter (tabular-nums), Recharts wrapper (`isAnimationActive=false`, companion table, projection marker, palette), 7 money unit tests — commit `a70f4fe`
+- D09-T4 — Portfolio overview page — KPI tiles (equity/value/debt/LVR), 10-year equity forecast chart, property table with clickable rows, empty state, financial disclaimer — commit `5de2029`
+- D09-T5 — Property detail page — cross-tenant `notFound()`, property header, 30-year equity + cashflow forecast charts side-by-side, assumptions/cost-base panel, financial disclaimer — commit `52964cd`
 
 **Not achieved (rolled forward)**
 
-_(none yet)_
+- None
 
 **Registers touched**
 
@@ -665,7 +669,10 @@ _(none yet)_
 
 **Checkpoints**
 
-_(filling during day)_
+- TypeScript: clean (0 errors, `apps/web` strict flags: `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`)
+- ESLint: clean (0 warnings, 0 errors)
+- Tests: 52/52 passing (5 test files — placeholder, money, session, eslint-no-hardcoded-hex, api-contracts)
+- All new routes confirmed through `api-guard.ts` chokepoint — no per-route hand-rolled user filters
 
 **Notable decisions**
 
@@ -681,7 +688,7 @@ _(filling during day)_
 
 **Evidence**
 
-- Start/end tags: `day-08-end` @ `f133a9d` → `day-09-end` @ _(pending)_
+- Start/end tags: `day-08-end` @ `f133a9d` → `day-09-end` @ `52964cd`
 
 ---
 
