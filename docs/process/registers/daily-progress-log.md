@@ -690,6 +690,63 @@ Portfolio overview and property detail surfaces render real data — KPI tiles, 
 
 - Start/end tags: `day-08-end` @ `f133a9d` → `day-09-end` @ `52964cd`
 
+### Correction — 2026-05-25
+
+Evidence SHA incorrect: `day-09-end` tag was applied to `5ed7b63` (D09-T6 log commit), not `52964cd` (D09-T5 property detail commit). The tag SHA above is wrong; the correct end-of-day anchor is `5ed7b63`. Source of error: evidence section written before the closeout commit was made.
+
+---
+
+## Day 10 — 2026-05-25 — Scenario Lab UI
+
+**Day status**: in progress
+
+**Primary goal**
+Scenario Lab UI surfaces real CGT computation — list, create, run, and result display; BL-0025 provisional warning on every result.
+
+**Carry-in constraints (from Day 10 plan approval)**
+
+1. All new data routes through `api-guard.ts` — same chokepoint as D9
+2. D10-T4: ruleset selector submits FY stored in `input_payload`; run stamps `ruleset_status` off `resolveByFY()` return — FY2026 is a value default, not a hard literal
+3. D10-T5: provisional/draft warning required on ALL result displays where `ruleset_status !== 'published'` (BL-0025 link-4 surface — first user-facing tax numbers)
+4. BL-0029 P0 still open — D10 routes ride on untested-in-depth RLS until Day 13
+
+**Achieved**
+
+_(filling during day)_
+
+**Not achieved (rolled forward)**
+
+_(none yet)_
+
+**Registers touched**
+
+- Backlog: none new
+- Defects: none
+- Deviations: none
+- Tech debt: none new
+- ADRs: none
+
+**Checkpoints**
+
+_(filling during day)_
+
+**Notable decisions**
+
+- RSC pages call `server/data/scenarios.ts` directly (no HTTP round-trip) — same D9 pattern
+- Form (D10-T4) is a client component rendered inside a server wrapper that pre-fetches properties
+- Run is triggered client-side: create → run → redirect to detail page
+- `fy` stored in `input_payload` so run route reads it rather than hardcoding; FY2026 remains the default
+
+**Carried forward**
+
+- BL-0027 (ATO Medicare levy threshold verification): human action outstanding
+- BL-0028 (CG-XV ATO-anchored tests): P1 backlog
+- BL-0029 (RLS isolation integration tests): P0 launch blocker, Day 13
+
+**Evidence**
+
+- Start/end tags: `day-09-end` @ `5ed7b63` → `day-10-end` @ _(pending)_
+
 ---
 
 ## Conventions
