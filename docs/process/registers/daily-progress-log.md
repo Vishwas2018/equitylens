@@ -756,7 +756,7 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 **Evidence**
 
-- Start/end tags: `day-09-end` @ `5ed7b63` → `day-10-end` @ _(pending — D10-T6)_
+- Start/end tags: `day-09-end` @ `5ed7b63` → `day-10-end` @ `6b76ec0`
 
 ---
 
