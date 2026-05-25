@@ -634,6 +634,57 @@ Post-entry commits added after initial day-08-end tag:
 
 ---
 
+## Day 9 — 2026-05-25 — Portfolio Overview + Property Detail
+
+**Day status**: in progress
+
+**Primary goal**
+Portfolio overview and property detail surfaces render real data — KPI tiles, equity forecast chart, 30-year cashflow forecast, assumptions panel.
+
+**Carry-in constraints (from Day 8 approval)**
+
+1. All new data routes go through `api-guard.ts` — single audited chokepoint, no per-route hand-rolled `user_id` filters
+2. BL-0029 (RLS isolation) elevated to **P0 launch blocker** — registered in backlog; every D9–D12 route rides on untested-in-depth RLS until Day 13 hardening
+3. Publish gates BL-0027 + BL-0028 unchanged (both ATO-403-blocked, human action required)
+
+**Achieved**
+
+_(filling during day)_
+
+**Not achieved (rolled forward)**
+
+_(none yet)_
+
+**Registers touched**
+
+- Backlog: opened `BL-0029` (P0, S — Postgres RLS isolation integration tests, launch blocker)
+- Defects: none
+- Deviations: none
+- Tech debt: none new
+- ADRs: none
+
+**Checkpoints**
+
+_(filling during day)_
+
+**Notable decisions**
+
+- Server components call shared server-side data functions (`server/data/`) that use `getApiSession()` + `getRlsAwareClient()` directly — same api-guard chokepoint, no HTTP round-trip
+- `<Chart>` wrapper enforces `isAnimationActive=false` + companion `<table>` for a11y on every chart
+- Projected (future) data rendered with `strokeDasharray` + hatched fill per data-viz-guidelines.md §6
+
+**Carried forward**
+
+- BL-0027 (ATO Medicare levy threshold verification): human action still outstanding
+- BL-0028 (CG-XV ATO-anchored tests): P1 backlog
+- BL-0029 (RLS isolation integration tests): P0 launch blocker, Day 13
+
+**Evidence**
+
+- Start/end tags: `day-08-end` @ `f133a9d` → `day-09-end` @ _(pending)_
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
