@@ -698,7 +698,7 @@ Evidence SHA incorrect: `day-09-end` tag was applied to `5ed7b63` (D09-T6 log co
 
 ## Day 10 — 2026-05-25 — Scenario Lab UI
 
-**Day status**: in progress
+**Day status**: clean
 
 **Primary goal**
 Scenario Lab UI surfaces real CGT computation — list, create, run, and result display; BL-0025 provisional warning on every result.
@@ -712,11 +712,15 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 **Achieved**
 
-_(filling during day)_
+- D10-T1 — Day 10 log opened + Day 9 evidence SHA corrected (52964cd → 5ed7b63) — commit `68091f5`
+- D10-T2 — `server/data/scenarios.ts` (`getScenarios`, `getScenario`, `getLatestScenarioResult`); `GET /api/scenarios` (user_id scoped, api-guard); run route updated to read `fy` from `input_payload` (FY2026 fallback); 3 new contract tests + 1 query-assertion test (38 total) — commit `707176f`
+- D10-T3 — `/scenarios` list page: scenario table, empty state, "New scenario" CTA — commit `4f1c737`
+- D10-T4 — `/scenarios/new`: server wrapper pre-fetches properties; client form captures label, property selector, FY ruleset selector, disposal fields (acquisition/disposal dates, proceeds, costs, entity type, income-producing, pre-CGT checkboxes); POSTs to `POST /api/scenarios` → `POST /api/scenarios/[id]/run` → redirects to detail — commit `4f1c737` (same lint-staged sweep)
+- D10-T5 — `/scenarios/[id]`: `getScenario` + `getLatestScenarioResult` via server data layer; cross-tenant `notFound()`; `ProvisionalWarning` banner (role="alert") rendered on every result path where `ruleset_status !== 'published'`; CGT summary, per-owner breakdown table, ruleset metadata; `RunTrigger` client component when no result exists — commit `4f1c737`
 
 **Not achieved (rolled forward)**
 
-_(none yet)_
+- None
 
 **Registers touched**
 
@@ -728,7 +732,14 @@ _(none yet)_
 
 **Checkpoints**
 
-_(filling during day)_
+- TypeScript: clean (0 errors; strict flags `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes` throughout)
+- ESLint: clean (0 warnings, 0 errors)
+- Tests: 55/55 passing (5 files — placeholder, money, session, eslint-no-hardcoded-hex, api-contracts)
+  - api-contracts: 38 tests (+3 vs D9; new: GET /api/scenarios 401+200, GET /api/scenarios query-assertion user_id)
+- D10-T4 confirm: form submits `fy` field in `input_payload`; run route reads `(input_payload as Record)['fy']` and passes to `resolveByFY()` — FY2026 is fallback constant, not always-hardcoded
+- D10-T5 confirm: `ProvisionalWarning` renders on every code path where `ruleset_status !== 'published'` (currently always); uses `role="alert"`; no bare tax number rendered without it
+- Cross-tenant 404: `getScenario` uses `.eq('user_id', sess.userId)` — mismatch returns `notFound()` with no existence hint
+- All new routes through `api-guard.ts`: `GET /api/scenarios` calls `getApiSession()` + returns `unauthorised()` if null; `getScenario`/`getLatestScenarioResult` use `getRlsAwareClient(sess.accessToken)`
 
 **Notable decisions**
 
@@ -745,7 +756,7 @@ _(filling during day)_
 
 **Evidence**
 
-- Start/end tags: `day-09-end` @ `5ed7b63` → `day-10-end` @ _(pending)_
+- Start/end tags: `day-09-end` @ `5ed7b63` → `day-10-end` @ _(pending — D10-T6)_
 
 ---
 
