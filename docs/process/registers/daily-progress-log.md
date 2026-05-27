@@ -871,6 +871,50 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ---
 
+## Day 13 — 2026-05-27 — RLS Isolation Tests + Next.js 14→15 CVE Migration
+
+**Day status**: in-progress
+
+**Primary goal**: Close BL-0029 (P0 launch blocker — Postgres RLS cross-tenant JWT isolation); land DEV-0023 Next.js 14→15 migration (hard stop today — no further deferral).
+
+**Carry-in constraints**
+
+1. BL-0029 P0 LAUNCH BLOCKER — must close Day 13; spans all D9–D12 tables
+2. DEV-0023 HARD STOP — Next.js 14→15 CVE migration must land today; breach of this constraint is not acceptable
+3. All new data routes through `api-guard.ts` — single audited chokepoint
+4. Technique B probe MUST bypass app-level user_id scoping — RLS alone must block the cross-tenant read; if `getRlsAwareClient`'s filter is still in the path it re-tests app scoping, not RLS
+5. Stripe tasks (T4–T6 from original plan) → Day 14 as approved
+
+**Achieved**
+
+- D13-T1 — open log; BL-0029 → in_plan; BL-0022 → in_plan; DEV-0023 hard stop noted — this commit
+
+**Not achieved (rolled forward)**
+
+- (in progress)
+
+**Registers touched**
+
+- Backlog: `BL-0029` → in_plan (Day 13, D13-T2/T3); `BL-0022` → in_plan (Day 13, D13-T-CVE)
+
+**Checkpoints**
+
+- (to be filled at closeout)
+
+**Notable decisions**
+
+- (to be filled at closeout)
+
+**Carried forward to Day 14**
+
+- (to be filled at closeout)
+
+**Evidence**
+
+- Start/end tags: `day-12-end` @ `9132d14` → `day-13-end` @ TBD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
