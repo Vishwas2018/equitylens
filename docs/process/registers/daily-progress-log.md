@@ -867,7 +867,7 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 **Evidence**
 
-- Start/end tags: `day-12-start` @ `003156e` → `day-12-end` @ (this commit + tag)
+- Start/end tags: `day-12-start` @ `003156e` → `day-12-end` @ `9132d14`
 
 ---
 
