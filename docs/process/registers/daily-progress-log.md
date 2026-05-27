@@ -760,6 +760,41 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ---
 
+## Day 11 — 2026-05-27 — AI Gateway, PII Masking, Explanation Surface
+
+**Day status**: in progress
+
+**Primary goal**: Wire Anthropic tool-use gateway with PII masking (TFN hard-refuse, card/email/mobile mask), grounding gate (fail-closed on >1% divergence), and expose a doubly-provisional AI explanation surface on the scenario detail page.
+
+**Achieved**
+_(filling end-of-day)_
+
+**Not achieved (rolled forward)**
+_(filling end-of-day)_
+
+**Registers touched**
+
+- Backlog: opened `BL-0030`
+
+**Checkpoints**
+_(filling end-of-day)_
+
+**Notable decisions**
+
+- Q1=A: OpenAI fallback is structural stub only — marked BL-0030 because it has never been functionally exercised
+- Q2=B (override): `tool_choice: { type: 'tool', name }` strict schema — "valid-but-wrong JSON passing Zod is the failure that reaches the user; constrain at source"
+- Q5=A + TFN exception: email/mobile/address/card → mask with tokens; TFN → 422 hard refuse, not mask-and-send
+- Q3 (modified): grounding gate is fail-closed (suppress explanation, show 'explanation unavailable') in addition to logging; >1% divergence = suppressed; Day 14 adds the counter
+- D11-T5 badge: AI explanation badge inherits ProvisionalWarning framing — draft-rules + model-generated = doubly provisional
+
+**Carried forward**
+_(filling end-of-day)_
+
+**Evidence**
+_(filling end-of-day)_
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.

@@ -49,6 +49,35 @@
 | BL-0027 | Verify FY2026 Medicare low-income thresholds against ATO; correct fy2026.json if wrong                     | P1       | XS     | DEV-0021                                           | proposed | Blocks BL-0024 sign-off and BL-0025 deploy gate; fy2026.json MUST NOT reach `published` with an unverified threshold                                                         |
 | BL-0028 | Add CG-XV tests anchored to ≥2 ATO worked examples; gate CGT publish on verified dollar-amount cross-check | P1       | XS     | DEV-0022                                           | proposed | Blocks BL-0024 sign-off and BL-0025 deploy gate; CGT ruleset MUST NOT reach `published` without ATO dollar-amount cross-check or documented human verification               |
 | BL-0029 | Postgres RLS isolation integration tests — cross-tenant JWT probe against real Supabase                    | P0       | S      | D08-T4 (app-layer scoping only)                    | proposed | **LAUNCH BLOCKER.** App-layer `user_id`/`org_id` filters are the only tested tenancy net until this lands. Every D9–D12 route rides on untested-in-depth RLS. Target Day 13. |
+| BL-0030 | OpenAI fallback in AI gateway — structural stub, never functionally exercised                              | P1       | S      | D11-T3 (Q1=A decision)                             | proposed | Fallback path exists in code but has never been run against real OpenAI API; unknown whether it produces a valid, grounded explanation. Functionally test before RC.         |
+
+---
+
+### BL-0030 — OpenAI fallback in AI gateway: structural stub, never functionally exercised
+
+- **Priority**: P1
+- **Effort**: S (2–4h)
+- **Status**: proposed
+- **Origin**: D11-T3 — Q1=A decision accepted structural-only fallback; fallback branch exists in `gateway.ts` but calls no real OpenAI endpoint in tests
+
+**Description**
+
+`server/ai/gateway.ts` contains a structural OpenAI fallback path (reached when Anthropic returns a non-retryable error). This path has never been invoked against a real OpenAI endpoint; all gateway tests mock the Anthropic client. Before RC:
+
+1. Provision an OpenAI key in the staging environment
+2. Write at least one integration test that forces the Anthropic client to fail and verifies the fallback produces a grounded, schema-valid explanation
+3. Confirm the `fallback_used = true` flag is written to `ai_interactions`
+
+**Why this matters**: If the fallback fires in production and is broken, the user sees an unhandled error instead of the 'explanation unavailable' suppression path.
+
+**Acceptance criteria**
+
+- [ ] Fallback path exercised against real OpenAI (staging)
+- [ ] `fallback_used = true` in `ai_interactions` on fallback path
+- [ ] Grounding gate still applies on fallback response
+- [ ] No regression in existing unit tests
+
+**Linked records**: D11-T3 | BL-0029
 
 ---
 
