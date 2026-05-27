@@ -73,6 +73,12 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    env:
+      # Required for BL-0029 technique B (JWT decode probe in jwt-probe.test.ts).
+      # Without these the describe.skipIf guard fires and the probe silently skips.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-deps
