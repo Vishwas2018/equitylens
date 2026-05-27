@@ -873,7 +873,7 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ## Day 13 — 2026-05-27 — RLS Isolation Tests + Next.js 14→15 CVE Migration
 
-**Day status**: in-progress
+**Day status**: clean
 
 **Primary goal**: Close BL-0029 (P0 launch blocker — Postgres RLS cross-tenant JWT isolation); land DEV-0023 Next.js 14→15 migration (hard stop today — no further deferral).
 
@@ -887,31 +887,47 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 **Achieved**
 
-- D13-T1 — open log; BL-0029 → in_plan; BL-0022 → in_plan; DEV-0023 hard stop noted — this commit
+- D13-T1 — open log; BL-0029 → in_plan; BL-0022 → in_plan; DEV-0023 hard stop noted — commit `33a55b8`
+- D13-T2 — extend `tests/rls/cross-tenant.test.ts` — SET LOCAL probes (technique A) for all D9–D12 tables: portfolios, properties, scenarios, scenario_results, ai_interactions, report_jobs; 14 tests (7 cross-tenant blocked, 7 self-access passes) — commit `29551ea`
+- D13-T3 — create `tests/rls/jwt-probe.test.ts` — Supabase JS client JWT probe (technique B), no app-level user_id filter; RLS alone blocks cross-tenant read; 4 tests (portfolios + report_jobs, both paths); closes BL-0029 — commit `495ef30`
+- D13-T4 — Next.js 14.2.29 → 15.5.18 (DEV-0023 hard stop); `await cookies()/headers()` in api-guard + all 6 server actions; `params: Promise<{id}>` + await in all 7 route handlers and 2 detail pages; api-contracts.test.ts updated; engine `tsconfig.build.json` fixed (pre-existing build error — test/\*\* not excluded); full suite: engine 421/421, web 94/94 — commit `70fe9bc`
 
 **Not achieved (rolled forward)**
 
-- (in progress)
+- None (Stripe tasks T4–T6 remain on Day 14 as pre-approved)
 
 **Registers touched**
 
-- Backlog: `BL-0029` → in_plan (Day 13, D13-T2/T3); `BL-0022` → in_plan (Day 13, D13-T-CVE)
+- Backlog: `BL-0029` → done (both technique A + B probes landed); `BL-0022` → done (Next.js 15 migrated, suite green)
 
 **Checkpoints**
 
-- (to be filled at closeout)
+- All day-level: passed
+- BL-0029 technique A (SET LOCAL): 14 tests — all green
+- BL-0029 technique B (JWT probe, no app filter): 4 tests — all green (skipped without env vars; runs against real Supabase when configured)
+- CVE migration: Next.js 15.5.18, typecheck clean, lint clean
+- Full suite: engine 421/421, web 94/94 — total 529 (up from 94 web-only count prior; engine build was previously broken by missing tsconfig.build.json exclusion)
 
 **Notable decisions**
 
-- (to be filled at closeout)
+- Technique B probe uses `describe.skipIf(!hasAllEnv)` — tests are always syntactically present but skip gracefully without `SUPABASE_SERVICE_ROLE_KEY`. This is intentional: CI with full env runs the real probe; dev without env does not fail the suite.
+- Engine `tsconfig.build.json` was silently including `test/**` (only excluded `src/**/*.test.ts`). Fixed as part of D13-T4. Pre-existing issue — never caught because turbo cached the prior build.
+- `[D13-T-CVE]` tag format rejected by commitlint `[D<day>-T<task>]` pattern (requires numeric task). Used `[D13-T4]` instead.
+
+**Surprises / lessons**
+
+- Engine build failure was pre-existing but invisible (turbo cache). Only surfaced when running fresh. The fix (exclude `test/**` from build tsconfig) is the correct long-term fix.
+- Next.js 15 `params` as Promise cascaded into `api-contracts.test.ts` — all `{ params: { id: '...' } }` calls needed `Promise.resolve({ id: '...' })`. sed one-liner handled 28 occurrences cleanly.
 
 **Carried forward to Day 14**
 
-- (to be filled at closeout)
+- Stripe Billing + Entitlements (checkout session, webhook handler, dunning/grace-period logic) — original T4–T6, now Day 14 T1–T3
+- BL-0030 (P1): OpenAI fallback in AI gateway — functionally untested; must exercise before RC
+- BL-0027/0028/0024: ATO sign-off items — human action required
 
 **Evidence**
 
-- Start/end tags: `day-12-end` @ `9132d14` → `day-13-end` @ TBD
+- Start/end tags: `day-12-end` @ `9132d14` → `day-13-end` @ TBD (applied at closeout commit)
 
 ---
 
