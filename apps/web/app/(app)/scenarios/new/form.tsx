@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -315,12 +316,12 @@ export function ScenarioNewForm({ properties }: Props) {
         >
           {submitting ? 'Creating…' : 'Create & run scenario'}
         </button>
-        <a
+        <Link
           href="/scenarios"
           className="[font-size:var(--text-sm)] text-[var(--fg-muted)] hover:underline"
         >
           Cancel
-        </a>
+        </Link>
       </div>
     </form>
   );

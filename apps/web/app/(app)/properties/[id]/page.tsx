@@ -69,14 +69,15 @@ function Disclaimer() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function PropertyDetailPage({ params }: Props) {
+  const { id } = await params;
   const sess = await getApiSession();
   if (!sess) redirect('/sign-in');
 
-  const { data: property, error } = await getProperty(params.id, sess);
+  const { data: property, error } = await getProperty(id, sess);
 
   // Cross-tenant probe returns 404 — org_id scoping ensures no hint of existence.
   if (error || !property) return notFound();

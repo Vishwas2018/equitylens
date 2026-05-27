@@ -13,7 +13,7 @@ export async function switchOrg(
   ip?: string,
   userAgent?: string,
 ): Promise<SwitchOrgResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

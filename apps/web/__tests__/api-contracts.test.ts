@@ -365,7 +365,7 @@ describe('GET /api/scenarios/[id]', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { GET } = await import('../app/api/scenarios/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'scen-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -381,7 +381,7 @@ describe('GET /api/scenarios/[id]', () => {
       }),
     });
     const { GET } = await import('../app/api/scenarios/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'scen-missing' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'scen-missing' }) });
     expect(res.status).toBe(404);
   });
 
@@ -406,7 +406,7 @@ describe('GET /api/scenarios/[id]', () => {
       }),
     });
     const { GET } = await import('../app/api/scenarios/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'scen-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toHaveProperty('data');
@@ -444,7 +444,7 @@ describe('POST /api/scenarios/[id]/run', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -460,7 +460,9 @@ describe('POST /api/scenarios/[id]/run', () => {
       }),
     });
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-other-org' } });
+    const res = await POST(makeRequest('POST'), {
+      params: Promise.resolve({ id: 'scen-other-org' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -484,7 +486,7 @@ describe('POST /api/scenarios/[id]/run', () => {
       }),
     });
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(422);
   });
 
@@ -506,7 +508,7 @@ describe('POST /api/scenarios/[id]/run', () => {
     // Second call: idempotency check (.maybeSingle) — returns cached hit
     mockFrom.mockImplementationOnce(() => makeFluentChain({ data: cached, error: null }));
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.data).toHaveProperty('result_payload');
@@ -540,7 +542,7 @@ describe('POST /api/scenarios/[id]/run', () => {
     mockFrom.mockImplementationOnce(() => makeFluentChain({ data: insertedResult, error: null }));
 
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
 
     expect(res.status).toBe(201);
     const json = await res.json();
@@ -557,7 +559,7 @@ describe('GET /api/scenario-results/[id]', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { GET } = await import('../app/api/scenario-results/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'res-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'res-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -573,7 +575,9 @@ describe('GET /api/scenario-results/[id]', () => {
       }),
     });
     const { GET } = await import('../app/api/scenario-results/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'res-other-user' } });
+    const res = await GET(makeRequest('GET'), {
+      params: Promise.resolve({ id: 'res-other-user' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -600,7 +604,7 @@ describe('GET /api/scenario-results/[id]', () => {
       }),
     });
     const { GET } = await import('../app/api/scenario-results/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'res-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'res-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toHaveProperty('data');
@@ -650,7 +654,7 @@ describe('query-assertion: user_id scoping is always applied', () => {
     mockFrom.mockReturnValue(chain);
 
     const { GET } = await import('../app/api/scenarios/[id]/route');
-    await GET(makeRequest('GET'), { params: { id: 'scen-any' } });
+    await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'scen-any' }) });
 
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
     expect(userIdFilter).toBeDefined();
@@ -663,7 +667,7 @@ describe('query-assertion: user_id scoping is always applied', () => {
     mockFrom.mockReturnValue(chain);
 
     const { GET } = await import('../app/api/scenario-results/[id]/route');
-    await GET(makeRequest('GET'), { params: { id: 'res-any' } });
+    await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'res-any' }) });
 
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
     expect(userIdFilter).toBeDefined();
@@ -676,7 +680,7 @@ describe('query-assertion: user_id scoping is always applied', () => {
     mockFrom.mockReturnValue(chain);
 
     const { POST } = await import('../app/api/scenarios/[id]/run/route');
-    await POST(makeRequest('POST'), { params: { id: 'scen-any' } });
+    await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-any' }) });
 
     // Scenario fetch is the first DB call; user_id must be in its eq chain.
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
@@ -741,7 +745,7 @@ describe('query-assertion: user_id scoping is always applied', () => {
     mockFrom.mockReturnValue(chain);
 
     const { GET } = await import('../app/api/portfolios/[id]/summary/route');
-    await GET(makeRequest('GET'), { params: { id: 'port-any' } });
+    await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'port-any' }) });
 
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
     expect(userIdFilter).toBeDefined();
@@ -754,7 +758,7 @@ describe('query-assertion: user_id scoping is always applied', () => {
     mockFrom.mockReturnValue(chain);
 
     const { GET } = await import('../app/api/properties/[id]/route');
-    await GET(makeRequest('GET'), { params: { id: 'prop-any' } });
+    await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'prop-any' }) });
 
     const orgIdFilter = eqCalls.find(([field]) => field === 'org_id');
     expect(orgIdFilter).toBeDefined();
@@ -796,7 +800,7 @@ describe('GET /api/portfolios/[id]/summary', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { GET } = await import('../app/api/portfolios/[id]/summary/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'port-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'port-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -805,7 +809,9 @@ describe('GET /api/portfolios/[id]/summary', () => {
     mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
 
     const { GET } = await import('../app/api/portfolios/[id]/summary/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'port-other-user' } });
+    const res = await GET(makeRequest('GET'), {
+      params: Promise.resolve({ id: 'port-other-user' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -822,7 +828,7 @@ describe('GET /api/portfolios/[id]/summary', () => {
     mockFrom.mockReturnValue(makeFluentChain({ data: summary, error: null }));
 
     const { GET } = await import('../app/api/portfolios/[id]/summary/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'port-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'port-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toHaveProperty('data');
@@ -839,7 +845,7 @@ describe('GET /api/properties/[id]', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { GET } = await import('../app/api/properties/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'prop-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'prop-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -848,7 +854,9 @@ describe('GET /api/properties/[id]', () => {
     mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
 
     const { GET } = await import('../app/api/properties/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'prop-other-org' } });
+    const res = await GET(makeRequest('GET'), {
+      params: Promise.resolve({ id: 'prop-other-org' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -877,7 +885,7 @@ describe('GET /api/properties/[id]', () => {
     mockFrom.mockReturnValue(makeFluentChain({ data: property, error: null }));
 
     const { GET } = await import('../app/api/properties/[id]/route');
-    const res = await GET(makeRequest('GET'), { params: { id: 'prop-1' } });
+    const res = await GET(makeRequest('GET'), { params: Promise.resolve({ id: 'prop-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toHaveProperty('data');
@@ -926,7 +934,7 @@ describe('POST /api/scenarios/[id]/explain', () => {
   it('returns 401 when unauthenticated', async () => {
     mockGetApiSession.mockResolvedValue(null);
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(401);
   });
 
@@ -935,7 +943,9 @@ describe('POST /api/scenarios/[id]/explain', () => {
     // Scenario fetch returns null (cross-tenant or missing)
     mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-missing' } });
+    const res = await POST(makeRequest('POST'), {
+      params: Promise.resolve({ id: 'scen-missing' }),
+    });
     expect(res.status).toBe(404);
   });
 
@@ -958,7 +968,7 @@ describe('POST /api/scenarios/[id]/explain', () => {
       }),
     );
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(422);
   });
 
@@ -989,7 +999,7 @@ describe('POST /api/scenarios/[id]/explain', () => {
       },
     });
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json).toHaveProperty('explanation');
@@ -1018,7 +1028,7 @@ describe('POST /api/scenarios/[id]/explain', () => {
       reason: 'grounding_fail',
     });
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    const res = await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-1' }) });
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.suppressed).toBe(true);
@@ -1048,7 +1058,7 @@ describe('query-assertion: POST /api/scenarios/[id]/explain passes user_id to sc
       }),
     });
     const { POST } = await import('../app/api/scenarios/[id]/explain/route');
-    await POST(makeRequest('POST'), { params: { id: 'scen-any' } });
+    await POST(makeRequest('POST'), { params: Promise.resolve({ id: 'scen-any' }) });
     const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
     expect(userIdFilter).toBeDefined();
     expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);

@@ -63,7 +63,8 @@ function serializeBigInts(value: unknown): unknown {
   return value;
 }
 
-export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sess = await getApiSession();
   if (!sess) return unauthorised();
 
@@ -72,7 +73,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const { data: scenario, error: scenarioErr } = await client
     .from('scenarios')
     .select('id, input_payload, user_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', sess.userId)
     .single();
 
@@ -94,7 +95,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 
   // Idempotency: hash the raw payload + FY to key the result.
   const inputHash = outputHash({
-    scenarioId: params.id,
+    scenarioId: id,
     payload: scenario.input_payload,
     fy: FINANCIAL_YEAR,
   });
@@ -103,7 +104,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const { data: cached } = await client
     .from('scenario_results')
     .select('*')
-    .eq('scenario_id', params.id)
+    .eq('scenario_id', id)
     .eq('input_hash', inputHash)
     .eq('status', 'completed')
     .maybeSingle();
@@ -121,7 +122,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   // Run the engine — deterministic, no ambient clock or randomness.
   const clock = new FixedClock(asOfMs);
   const scenarioInputs = {
-    scenarioId: params.id,
+    scenarioId: id,
     asOfMs,
     horizonYears,
     disposal: scenario.input_payload, // raw for logging; parsed form used in compute
@@ -146,7 +147,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   const { data: inserted, error: insertErr } = await admin
     .from('scenario_results')
     .insert({
-      scenario_id: params.id,
+      scenario_id: id,
       user_id: sess.userId,
       tax_rule_set_id: ruleset.version,
       input_hash: inputHash,

@@ -8,7 +8,7 @@ export interface SignOutResult {
 }
 
 export async function signOut(ip?: string, userAgent?: string): Promise<SignOutResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

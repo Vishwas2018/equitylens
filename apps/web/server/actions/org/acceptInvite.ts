@@ -16,7 +16,7 @@ export async function acceptInvite(
   ip?: string,
   userAgent?: string,
 ): Promise<AcceptInviteResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

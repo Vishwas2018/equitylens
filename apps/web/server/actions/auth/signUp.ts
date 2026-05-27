@@ -13,7 +13,7 @@ export async function signUp(
   ip?: string,
   userAgent?: string,
 ): Promise<SignUpResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   await appendAuditEntry({

@@ -15,7 +15,7 @@ export async function createOrg(
   ip?: string,
   userAgent?: string,
 ): Promise<CreateOrgResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();

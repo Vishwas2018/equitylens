@@ -54,19 +54,20 @@ function ResultRow({ label, value }: { label: string; value: React.ReactNode }) 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 interface Props {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ScenarioDetailPage({ params }: Props) {
+  const { id } = await params;
   const sess = await getApiSession();
   if (!sess) redirect('/sign-in');
 
-  const { data: scenario, error } = await getScenario(params.id, sess);
+  const { data: scenario, error } = await getScenario(id, sess);
 
   // Cross-tenant probe returns 404 — user_id scoping ensures no hint of existence.
   if (error || !scenario) return notFound();
 
-  const { data: result } = await getLatestScenarioResult(params.id, sess);
+  const { data: result } = await getLatestScenarioResult(id, sess);
 
   const payload = result?.result_payload;
 

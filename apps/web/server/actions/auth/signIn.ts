@@ -18,7 +18,7 @@ export async function signIn(
   userAgent?: string,
 ): Promise<SignInResult> {
   // Resolve IP from Vercel's X-Forwarded-For header; fall back to loopback for local dev.
-  const headerStore = headers();
+  const headerStore = await headers();
   const ip =
     headerStore.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     headerStore.get('x-real-ip') ??
@@ -35,7 +35,7 @@ export async function signIn(
     return { error: 'Too many sign-in attempts. Please try again later.', retryAfter };
   }
 
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   await appendAuditEntry({

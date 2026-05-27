@@ -5,7 +5,8 @@ import { getRlsAwareClient, getSupabaseAdmin } from '../../../../server/db/clien
 
 const PRESIGNED_URL_TTL_SECONDS = 7 * 24 * 60 * 60;
 
-export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const sess = await getApiSession();
   if (!sess) return unauthorised();
 
@@ -15,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     .select(
       'id, template_id, format, status, artifact_key, presigned_url, presigned_url_expires_at, output_hash, requested_at, completed_at, error_detail',
     )
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', sess.userId)
     .single();
 
@@ -41,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       await admin
         .from('report_jobs')
         .update({ presigned_url: signed.signedUrl, presigned_url_expires_at: newExpiry })
-        .eq('id', params.id);
+        .eq('id', id);
 
       return NextResponse.json({
         data: { ...job, presigned_url: signed.signedUrl, presigned_url_expires_at: newExpiry },

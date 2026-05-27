@@ -24,7 +24,7 @@ export async function inviteMember(
   ip?: string,
   userAgent?: string,
 ): Promise<InviteMemberResult> {
-  const supabase = createActionClient();
+  const supabase = await createActionClient();
   const {
     data: { session },
   } = await supabase.auth.getSession();
