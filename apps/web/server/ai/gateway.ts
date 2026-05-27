@@ -9,6 +9,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { z } from 'zod';
 
 import type { ScenarioResultPayload, ScenarioResultRow } from '../data/scenarios';
@@ -127,13 +128,68 @@ function simpleHash(s: string): string {
   return (h >>> 0).toString(16);
 }
 
-// ── OpenAI fallback (structural stub — BL-0030) ───────────────────────────────
+// ── OpenAI fallback ───────────────────────────────────────────────────────────
 
-async function callOpenAiFallback(_maskedPrompt: string): Promise<Explanation | null> {
-  // BL-0030: Structural stub only — has never been run against a real OpenAI endpoint.
-  // Before RC: provision OPENAI_API_KEY in staging, add integration test,
-  // verify grounding gate still applies, and fallback_used=true reaches ai_interactions.
-  return null;
+const OPENAI_FALLBACK_MODEL = 'gpt-4o-mini';
+
+const OPENAI_TOOL_DEF = {
+  type: 'function' as const,
+  function: {
+    name: 'provide_cgt_explanation',
+    description: 'Return a structured plain-English explanation of the CGT calculation.',
+    parameters: {
+      type: 'object',
+      properties: {
+        summary: {
+          type: 'string',
+          description: 'Plain text 2–4 sentence overview of the CGT outcome.',
+        },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              label: { type: 'string' },
+              value: { type: 'string' },
+              note: { type: 'string' },
+            },
+            required: ['label', 'value'],
+          },
+        },
+        disclaimer: {
+          type: 'string',
+          description:
+            'Must note that this is an AI-generated estimate under draft rules and must not be relied upon for tax decisions.',
+        },
+      },
+      required: ['summary', 'items', 'disclaimer'],
+    },
+  },
+};
+
+async function callOpenAiFallback(maskedPrompt: string): Promise<Explanation | null> {
+  const apiKey = process.env['OPENAI_API_KEY'];
+  if (!apiKey) return null;
+
+  try {
+    const client = new OpenAI({ apiKey });
+    const response = await client.chat.completions.create({
+      model: OPENAI_FALLBACK_MODEL,
+      max_tokens: 1024,
+      tool_choice: { type: 'function', function: { name: 'provide_cgt_explanation' } },
+      tools: [OPENAI_TOOL_DEF],
+      messages: [{ role: 'user', content: maskedPrompt }],
+    });
+
+    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+    if (!toolCall || toolCall.type !== 'function') return null;
+
+    const raw: unknown = JSON.parse(toolCall.function.arguments);
+    const parsed = ExplanationSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }
 
 // ── Interaction logger (admin client — bypasses RLS for append-only log) ───────
