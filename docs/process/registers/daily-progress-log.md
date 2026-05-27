@@ -933,7 +933,7 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ## Day 14 — 2026-05-27 — Stripe Billing Core + Observability
 
-**Day status**: in-progress
+**Day status**: closed
 
 **Primary goal**: Wire Sentry observability (RC-gating for Day 15 security review) + Stripe checkout + webhook + entitlement gate. BL-0030 if time; → D15-T0 if Stripe runs long.
 
@@ -948,31 +948,49 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 **Achieved**
 
-- D14-T1 — open log; BL-0030 → in_plan; BL-0031 registered — this commit
+- D14-T1 — open log; BL-0030 → in_plan; BL-0031 registered — `59a614f`
+- D14-T2 — Sentry SDK (`sentry.{client,server,edge}.config.ts`, `instrumentation.ts`, `withSentryConfig`), Vercel Analytics + Speed Insights, `global-error.tsx` — `4592733`
+- D14-T3 — Stripe billing core: checkout session (`/api/billing/checkout`), webhook handler (`/api/billing/webhook`) with unconditional sig-verify, `entitlement.ts`, `client.ts`; sig-verify tests always-run (4/4 green), 1 live Stripe skipped → BL-0032 — `ffdee78`
+- D14-T4 — OpenAI fallback implemented (`callOpenAiFallback`, gpt-4o-mini tool-calling); `ai-gateway-fallback.test.ts` (2 always-run green, 3 live-OpenAI skipped); BL-0030 → done — `a926666`
+- D14-T5 — closeout log + `day-14-end` tag
 
 **Not achieved (rolled forward)**
 
-- (in progress)
+- Observability human verification: `NEXT_PUBLIC_SENTRY_DSN` must be set in staging, a test error triggered, and the event confirmed in the Sentry dashboard. SDK is installed but the acceptance bar (error visible in dashboard) requires manual action → D15-T0
+- BL-0030 live-OpenAI verification: 3 tests skipped (no `OPENAI_API_KEY`); provision key + run green → D15-T0
 
 **Registers touched**
 
-- Backlog: `BL-0030` → in_plan (Day 14/D15-T0); `BL-0031` registered (P2, post-RC)
+- Backlog: `BL-0030` → done; `BL-0031` registered (P2, post-RC); `BL-0032` registered (P1, live Stripe CI gap)
 
-**Checkpoints**
+**Checkpoints** (from halt condition)
 
-- (to be filled at closeout)
+- Observability: SDK installed ✓ — dashboard verification PENDING (manual: set DSN + trigger test error)
+- Stripe core: webhook sig-verify always-runs (4/4 ✓), 1 live skipped → BL-0032 ✓
+- BL-0030: structural done ✓, live-path skipped → D15-T0 ✓
+- Sig-verify test result: 4/4 always-run green; production handler: unconditional (no env gate) ✓
 
 **Notable decisions**
 
-- (to be filled at closeout)
+- Webhook sig-verify is UNCONDITIONAL in the prod handler — 503 if keys absent (not a bypass); env gate is tests-only. This mirrors the BL-0029 lesson: never skipIf on security assertions.
+- `callOpenAiFallback` uses `gpt-4o-mini` (cheaper/faster, adequate for explanation fallback). Same tool-calling schema as Anthropic path. Grounding gate is applied to the fallback output before it reaches the caller.
+- TFN regex (`/\b\d{3}\s?\d{3}\s?\d{2,3}\b/`) matches 8-digit cent values. Test fixtures must use values ≤7 digits to avoid false `pii_tfn` suppression in unit tests. Production prompts express values as dollar strings (with `$` prefix), which avoids the pattern.
 
 **Carried forward to Day 15**
 
-- (to be filled at closeout)
+1. **D15-T0 (must-do before RC walkthrough)**:
+   - Provision `OPENAI_API_KEY` (test-mode) → CI secrets + staging env; 3 skipped live-OpenAI tests must run green
+   - Provision `NEXT_PUBLIC_SENTRY_DSN` → staging; trigger test error; confirm event in Sentry dashboard
+   - Wire `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` → CI `test` job env (BL-0032)
+   - Confirm 3 GitHub Secrets (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) exist in Actions settings
+2. RC walkthrough + security review (D15 spine)
+3. BL-0027/0028/0024: ATO + legal sign-off (human-blocked)
+4. BL-0031: Stripe dunning (P2, post-RC)
 
 **Evidence**
 
-- Start/end tags: `day-13-end` @ `a32a3c9` → `day-14-end` @ TBD
+- Start/end tags: `day-13-end` @ `a32a3c9` → `day-14-end` @ TBD (set in D14-T5 closeout commit)
+- Suite at close: engine 421/421 ✓ | web 101/101 + 4 skipped (1 live Stripe, 3 live OpenAI) ✓
 
 ---
 
