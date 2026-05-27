@@ -54,6 +54,12 @@ vi.mock('../server/db/client', () => ({
   })),
 }));
 
+// Mock the AI gateway to isolate route handler logic from Anthropic API calls.
+const mockExplainScenario = vi.fn();
+vi.mock('../server/ai/gateway', () => ({
+  explainScenario: mockExplainScenario,
+}));
+
 // Mock the engine to avoid loading JSON rulesets in tests.
 vi.mock('@equitylens/engine', () => ({
   defaultRulesetAdapter: {
@@ -879,5 +885,172 @@ describe('GET /api/properties/[id]', () => {
     expect(json.data).toHaveProperty('purchase_price_cents');
     expect(json.data).toHaveProperty('current_estimated_value_cents');
     expect(json.data).toHaveProperty('status');
+  });
+});
+
+// ── POST /api/scenarios/[id]/explain ─────────────────────────────────────────
+
+const MOCK_SCENARIO = {
+  id: 'scen-1',
+  label: 'CGT 2026',
+  property_id: null,
+  portfolio_id: null,
+  input_payload: {},
+  pinned: false,
+  created_at: '2026-01-01',
+};
+
+const MOCK_RESULT = {
+  id: 'res-1',
+  scenario_id: 'scen-1',
+  tax_rule_set_id: 'FY2026.1',
+  engine_version: '0.1.0',
+  status: 'completed',
+  result_payload: {
+    daysHeld: 365,
+    isPreCgtAsset: false,
+    totalCostBaseCents: '60000000',
+    netProceedsCents: '82500000',
+    grossGainCents: '22500000',
+    isCapitalLoss: false,
+    discountEligible: true,
+    owners: [],
+    ruleset_status: 'draft',
+    output_hash: 'abc123',
+  },
+  duration_ms: 5,
+  created_at: '2026-01-01',
+};
+
+describe('POST /api/scenarios/[id]/explain', () => {
+  it('returns 401 when unauthenticated', async () => {
+    mockGetApiSession.mockResolvedValue(null);
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 404 when scenario not found', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    // Scenario fetch returns null (cross-tenant or missing)
+    mockFrom.mockReturnValue(makeFluentChain({ data: null, error: { message: 'not found' } }));
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    const res = await POST(makeRequest('POST'), { params: { id: 'scen-missing' } });
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 422 when no completed result exists', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    // Scenario fetch succeeds; result fetch returns null (no completed run yet)
+    mockFrom.mockImplementationOnce(() => makeFluentChain({ data: MOCK_SCENARIO, error: null }));
+    mockFrom.mockImplementationOnce(() =>
+      // getLatestScenarioResult uses .order() as terminal
+      ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              eq: () => ({
+                order: () => Promise.resolve({ data: [], error: null }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    );
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    expect(res.status).toBe(422);
+  });
+
+  it('returns 200 with explanation on success', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    mockFrom.mockImplementationOnce(() => makeFluentChain({ data: MOCK_SCENARIO, error: null }));
+    mockFrom.mockImplementationOnce(() => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            eq: () => ({
+              order: () => Promise.resolve({ data: [MOCK_RESULT], error: null }),
+            }),
+          }),
+        }),
+      }),
+    }));
+    mockExplainScenario.mockResolvedValue({
+      ok: true,
+      suppressed: false,
+      explanation: {
+        summary: 'Your property sale generated a capital gain.',
+        items: [
+          { label: 'Gross gain', value: '$225,000' },
+          { label: 'CGT discount', value: '$112,500' },
+        ],
+        disclaimer: 'This is an AI-generated estimate under draft FY2026 rules.',
+      },
+    });
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty('explanation');
+    expect(json.explanation).toHaveProperty('summary');
+    expect(json.explanation).toHaveProperty('items');
+    expect(json.explanation).toHaveProperty('disclaimer');
+  });
+
+  it('returns 200 suppressed=true when grounding fails', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    mockFrom.mockImplementationOnce(() => makeFluentChain({ data: MOCK_SCENARIO, error: null }));
+    mockFrom.mockImplementationOnce(() => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            eq: () => ({
+              order: () => Promise.resolve({ data: [MOCK_RESULT], error: null }),
+            }),
+          }),
+        }),
+      }),
+    }));
+    mockExplainScenario.mockResolvedValue({
+      ok: true,
+      suppressed: true,
+      reason: 'grounding_fail',
+    });
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    const res = await POST(makeRequest('POST'), { params: { id: 'scen-1' } });
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.suppressed).toBe(true);
+    expect(json.reason).toBe('grounding_fail');
+  });
+});
+
+// ── Query-assertion: explain route passes user_id to scenario fetch ────────────
+
+describe('query-assertion: POST /api/scenarios/[id]/explain passes user_id to scenario fetch', () => {
+  it('passes user_id to getScenario query', async () => {
+    mockGetApiSession.mockResolvedValue(AUTH_SESSION);
+    const eqCalls: Array<[string, unknown]> = [];
+    mockFrom.mockReturnValue({
+      select: () => ({
+        eq: (field: string, value: unknown) => {
+          eqCalls.push([field, value]);
+          return {
+            eq: (f2: string, v2: unknown) => {
+              eqCalls.push([f2, v2]);
+              return {
+                single: () => Promise.resolve({ data: null, error: { message: 'not found' } }),
+              };
+            },
+          };
+        },
+      }),
+    });
+    const { POST } = await import('../app/api/scenarios/[id]/explain/route');
+    await POST(makeRequest('POST'), { params: { id: 'scen-any' } });
+    const userIdFilter = eqCalls.find(([field]) => field === 'user_id');
+    expect(userIdFilter).toBeDefined();
+    expect(userIdFilter![1]).toBe(AUTH_SESSION.userId);
   });
 });
