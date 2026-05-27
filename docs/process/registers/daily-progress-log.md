@@ -812,7 +812,7 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ## Day 12 — 2026-05-27 — Reports & Exports + Worker Queue
 
-**Day status**: in progress
+**Day status**: clean
 
 **Primary goal**: PDF and CSV exports for `portfolio-summary`, `cashflow-annual`, and `cgt-disposal` templates; QStash worker queue; Supabase Storage presigned URLs; `/reports` inbox UI.
 
@@ -821,17 +821,34 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 > Create an `exports` bucket in the Supabase Storage dashboard (project → Storage → New bucket → name: `exports`, private, RLS enabled). Without this bucket, worker uploads will fail with a 404 on storage. This is a one-time manual action; it cannot be automated from the migration layer.
 
 **Achieved**
-_(filling end-of-day)_
+
+- D12-T1 — DB migration 0005 + deviation log + human prerequisite note — `report_jobs` extended with `org_id`, `idempotency_key`, `queue_name`, `artifact_key`, `presigned_url`, `presigned_url_expires_at`, `output_hash`; status renamed `queued/succeeded`; DEV-0024 logged — commit `003156e`
+- D12-T2 — `@react-pdf/renderer` + `@upstash/qstash` installed; queue service (`server/reports/queue.ts`) — enqueues to QStash, no-op in dev — commit `cb7f943`
+- D12-T3 — three CSV renderers + two PDF renderers + disclaimer/identification modules — disclaimer sentinel (`EquityLens Pty Ltd`) embedded structurally in every artifact: CSV via `#` comment block, PDF via `Document.author` metadata (info dict, uncompressed) + visible footer — `assertDisclaimerPresent()` throws `MissingDisclaimerError` before bytes are returned — commits `acadc4f`
+- D12-T4 — `POST /api/exports/worker` — QStash consumer, Node.js runtime (DEV-0024); state machine `queued → running → succeeded | failed`; uploads to Supabase Storage `exports` bucket; issues 7-day presigned URL — commit `3e850d1`
+- D12-T5 — `POST /api/exports` (idempotency key SHA-256, enqueue), `GET /api/exports` (list, limit 50, RLS-scoped), `GET /api/exports/[id]` (fetch; refreshes presigned URL within 1 hour of expiry) — commit `e0ab48f`
+- D12-T6 — `/reports` inbox RSC page — status badges (queued/running/succeeded/failed), download link active when succeeded + not expired, "Link expired" when past TTL, empty state — commit `048d346`
+- D12-T7 — content-assertion tests (`__tests__/reports.test.ts`) — 9 tests: 3 CSV disclaimer, 3 CSV round-trip, 2 PDF via `renderArtifact`, 1 structural enforcement (`MissingDisclaimerError` throws when sentinel absent); fixed PDF assertion bug (compressed content streams — sentinel moved to `Document.author`); typecheck + lint clean; 94/94 tests pass — this commit
+
+**Bug fixed mid-day (D12-T7)**
+
+`assertDisclaimerPresent` for PDFs used `bytes.toString('utf8')` on the raw PDF buffer. `@react-pdf/renderer` compresses content streams with FlateDecode, so the footer text was not detectable as plaintext — the check always threw `MissingDisclaimerError`, meaning every PDF export would have failed in production. Fix: embed `author="EquityLens Pty Ltd"` in the `Document` component; this lands in the PDF info dictionary (stored uncompressed), making it reliably detectable. The visible footer disclaimer remains on every page unchanged.
 
 **Not achieved (rolled forward)**
-_(filling end-of-day)_
+
+- None — all 7 tasks complete
 
 **Registers touched**
 
 - Deviations: opened `DEV-0024` (worker host: Next.js route vs Supabase Edge Function)
+- Backlog: `BL-0029` (P0, RLS integration tests) → Day 13
 
 **Checkpoints**
-_(filling end-of-day)_
+
+- D12-T7: 94/94 tests pass (7 test files)
+- `npx tsc --noEmit`: clean
+- `npx eslint . --max-warnings 0`: clean
+- PDF disclaimer structural check: repaired (content-assertion tests now red if sentinel removed)
 
 **Notable decisions**
 
@@ -840,12 +857,17 @@ _(filling end-of-day)_
 - Q3=A: content-assertion golden tests (disclaimer presence checked per template, per format)
 - Q4=A: Supabase Storage presigned URL, 7-day expiry; bucket = named human prerequisite
 - Disclaimer travels INSIDE the artifact — no figure renders without it (link-4 leaving the building)
+- PDF sentinel anchored in `Document.author` (info dict) not content stream (compressed); comment in `render.ts` explains the invariant
 
-**Carried forward**
-_(filling end-of-day)_
+**Carried forward to Day 13**
+
+- BL-0029 (P0 launch blocker): Postgres RLS cross-tenant JWT isolation integration tests
+- BL-0030 (P1): OpenAI fallback must be functionally tested before RC
+- BL-0027/0028: ATO-403 blocked (human action)
 
 **Evidence**
-_(filling end-of-day)_
+
+- Start/end tags: `day-12-start` @ `003156e` → `day-12-end` @ (this commit + tag)
 
 ---
 
