@@ -762,36 +762,51 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ## Day 11 — 2026-05-27 — AI Gateway, PII Masking, Explanation Surface
 
-**Day status**: in progress
+**Day status**: clean
 
 **Primary goal**: Wire Anthropic tool-use gateway with PII masking (TFN hard-refuse, card/email/mobile mask), grounding gate (fail-closed on >1% divergence), and expose a doubly-provisional AI explanation surface on the scenario detail page.
 
 **Achieved**
-_(filling end-of-day)_
+
+- D11-T1 — open log + register BL-0030 — Day 11 log opened; BL-0030 (OpenAI fallback structural stub, never functionally exercised) registered as P1 — commit `dc439b9`
+- D11-T2 — PII masking module + 24-canary suite — `server/ai/pii-mask.ts`; TFN hard-refuse including split-across-tokens canary (T-02); cards masked before TFN scan (T-03 — no false positive); 24/24 canaries pass — commit `b54e99c`
+- D11-T3 — install `@anthropic-ai/sdk` + create `gateway.ts` — Anthropic `tool_choice: { type: 'tool', name }` strict schema; grounding gate fail-closed (ratio-based, >1% divergence → suppressed); admin-client `ai_interactions` append-only log; structural OpenAI fallback stub (BL-0030) — commit `f1f69bd`
+- D11-T4 — `POST /api/scenarios/[id]/explain` route + contract tests — routes through `api-guard.ts`; 404 on missing/cross-tenant scenario, 422 on no completed result, 200 suppressed on grounding/TFN failure; +6 contract tests (44 total, all pass) — commit `08af6f2`
+- D11-T5 — `AiExplanation` client component + page wiring — doubly-provisional badge ("AI estimate · FY2026 draft rules") always shown in all states; idle/loading/suppressed/error/done state machine; TFN/grounding suppression shows 'explanation unavailable' without leaking reason — commit `d69e013`
+- D11-T6 — full typecheck + lint + tests — tsc clean, eslint clean (3 errors fixed: import/order, 2× no-useless-escape), 85/85 tests pass (was 55 after D10, +30)
 
 **Not achieved (rolled forward)**
-_(filling end-of-day)_
+
+- None — all 6 tasks complete
 
 **Registers touched**
 
 - Backlog: opened `BL-0030`
 
 **Checkpoints**
-_(filling end-of-day)_
+
+- D11-T2 confirm: T-02 (TFN with spaces) and T-03 (card-before-TFN) mandatory canaries both pass
+- D11-T5 confirm: badge always shown in all 5 states; doubly provisional framing maintained
+- Route confirm: explain route calls `getApiSession()` + `getScenario(id, sess)` (user_id scoped); query-assertion test verifies user_id in `.eq()` chain
+- Coverage: 85 tests (55 → 85); tsc + eslint clean
 
 **Notable decisions**
 
-- Q1=A: OpenAI fallback is structural stub only — marked BL-0030 because it has never been functionally exercised
-- Q2=B (override): `tool_choice: { type: 'tool', name }` strict schema — "valid-but-wrong JSON passing Zod is the failure that reaches the user; constrain at source"
-- Q5=A + TFN exception: email/mobile/address/card → mask with tokens; TFN → 422 hard refuse, not mask-and-send
-- Q3 (modified): grounding gate is fail-closed (suppress explanation, show 'explanation unavailable') in addition to logging; >1% divergence = suppressed; Day 14 adds the counter
-- D11-T5 badge: AI explanation badge inherits ProvisionalWarning framing — draft-rules + model-generated = doubly provisional
+- Q2=B override: `tool_choice: { type: 'tool', name }` at source; Zod validates tool input; schema failure → error surface
+- Q5 TFN exception: TFN → `{ suppressed: true, reason: 'pii_tfn' }` from gateway; UI shows 'explanation unavailable — sensitive information detected'; reason not leaked further
+- Q3 grounding: ratio-based (max/min ≤ 10x = same order of magnitude); diverge >1% → fail closed; amounts outside 10x range ignored
+- BL-0030 stub returns `null` → gateway `{ ok: false }` → route 500. Intentional: stub must not silently succeed
 
 **Carried forward**
-_(filling end-of-day)_
+
+- BL-0027 (ATO Medicare levy threshold verification): human action outstanding
+- BL-0028 (CG-XV ATO-anchored tests): P1 backlog
+- BL-0029 (RLS isolation integration tests): P0 launch blocker, Day 13; audit scope now spans D9–D11 routes
+- BL-0030 (OpenAI fallback): P1, functionally test before RC
 
 **Evidence**
-_(filling end-of-day)_
+
+- Start/end tags: `day-10-end` @ `6b76ec0` → `day-11-end` @ `<filled after tag>`
 
 ---
 
