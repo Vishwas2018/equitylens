@@ -810,6 +810,45 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ---
 
+## Day 12 — 2026-05-27 — Reports & Exports + Worker Queue
+
+**Day status**: in progress
+
+**Primary goal**: PDF and CSV exports for `portfolio-summary`, `cashflow-annual`, and `cgt-disposal` templates; QStash worker queue; Supabase Storage presigned URLs; `/reports` inbox UI.
+
+**Human prerequisite (BLOCKING before presigned URLs work in staging)**:
+
+> Create an `exports` bucket in the Supabase Storage dashboard (project → Storage → New bucket → name: `exports`, private, RLS enabled). Without this bucket, worker uploads will fail with a 404 on storage. This is a one-time manual action; it cannot be automated from the migration layer.
+
+**Achieved**
+_(filling end-of-day)_
+
+**Not achieved (rolled forward)**
+_(filling end-of-day)_
+
+**Registers touched**
+
+- Deviations: opened `DEV-0024` (worker host: Next.js route vs Supabase Edge Function)
+
+**Checkpoints**
+_(filling end-of-day)_
+
+**Notable decisions**
+
+- Q1=A: Next.js route worker (DEV-0024 logged)
+- Q2=A: @react-pdf/renderer
+- Q3=A: content-assertion golden tests (disclaimer presence checked per template, per format)
+- Q4=A: Supabase Storage presigned URL, 7-day expiry; bucket = named human prerequisite
+- Disclaimer travels INSIDE the artifact — no figure renders without it (link-4 leaving the building)
+
+**Carried forward**
+_(filling end-of-day)_
+
+**Evidence**
+_(filling end-of-day)_
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
