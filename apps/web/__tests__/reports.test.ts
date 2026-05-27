@@ -177,6 +177,9 @@ describe('CSV round-trip data', () => {
 });
 
 // ── PDF: disclaimer present ───────────────────────────────────────────────────
+// Sentinel is verified via the PDF info-dict /Author field (Document.author in
+// pdf.tsx), not the visible footer text — those can diverge. Footer-text
+// guarantee requires a render-tree assertion; deferred.
 // renderArtifact calls assertDisclaimerPresent before returning — if the
 // sentinel is absent the promise rejects. Resolution confirms sentinel found.
 
