@@ -6,6 +6,7 @@ import { Money } from '@/components/money';
 import { getApiSession } from '../../../../server/auth/api-guard';
 import { getLatestScenarioResult, getScenario } from '../../../../server/data/scenarios';
 
+import { AiExplanation } from './ai-explanation';
 import { RunTrigger } from './run-trigger';
 
 // ── BL-0025 provisional warning ───────────────────────────────────────────────
@@ -200,6 +201,17 @@ export default async function ScenarioDetailPage({ params }: Props) {
               </div>
             </section>
           )}
+
+          {/* AI explanation — doubly provisional (draft rules + model-generated) */}
+          <section
+            aria-label="AI-generated plain-English explanation"
+            className="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--bg-surface)] p-[var(--space-5)]"
+          >
+            <h2 className="mb-[var(--space-4)] [font-size:var(--text-base)] font-semibold text-[var(--fg-default)]">
+              Plain-English explanation
+            </h2>
+            <AiExplanation scenarioId={scenario.id} />
+          </section>
 
           {/* Ruleset metadata */}
           <section
