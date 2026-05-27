@@ -931,6 +931,51 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ---
 
+## Day 14 — 2026-05-27 — Stripe Billing Core + Observability
+
+**Day status**: in-progress
+
+**Primary goal**: Wire Sentry observability (RC-gating for Day 15 security review) + Stripe checkout + webhook + entitlement gate. BL-0030 if time; → D15-T0 if Stripe runs long.
+
+**Carry-in constraints**
+
+1. BL-0030 (P1) — OpenAI fallback functional test; drops to D15-T0 (DONE before RC walkthrough, not parallel)
+2. Stripe dunning → BL-0031 (P2, post-RC); not in scope today
+3. Webhook sig-verification: `stripe.webhooks.constructEvent` MUST be called unconditionally in the production handler — never env-gated; env gate is test-only
+4. Sig-verification test runs regardless (pure crypto, no live key needed, no skipIf)
+5. Live Stripe path: skipIf no `STRIPE_SECRET_KEY`; if skipped in CI → open BL (untested-in-CI, not silent green)
+6. Observability acceptance bar: test error visible in Sentry dashboard — SDK installed is not sufficient
+
+**Achieved**
+
+- D14-T1 — open log; BL-0030 → in_plan; BL-0031 registered — this commit
+
+**Not achieved (rolled forward)**
+
+- (in progress)
+
+**Registers touched**
+
+- Backlog: `BL-0030` → in_plan (Day 14/D15-T0); `BL-0031` registered (P2, post-RC)
+
+**Checkpoints**
+
+- (to be filled at closeout)
+
+**Notable decisions**
+
+- (to be filled at closeout)
+
+**Carried forward to Day 15**
+
+- (to be filled at closeout)
+
+**Evidence**
+
+- Start/end tags: `day-13-end` @ `a32a3c9` → `day-14-end` @ TBD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
