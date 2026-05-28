@@ -79,6 +79,13 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # BL-0030: live OpenAI fallback tests (3 tests in ai-gateway-fallback.test.ts).
+      # Without this key the describe.skipIf guard fires — skipped ≠ green.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # BL-0032: live Stripe checkout test (1 test in billing-webhook.test.ts).
+      # Must be a test-mode key (sk_test_...). Without it the skipIf guard fires.
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-deps
@@ -187,6 +194,9 @@ jobs:
     needs: [typecheck, lint, format-check, test, unit-engine, engine-determinism]
     env:
       BUILD_SHA: ${{ github.sha }}
+      # Sentry DSN must be present at build time so the client bundle is instrumented.
+      # Without it, NEXT_PUBLIC_SENTRY_DSN is undefined and Sentry stays disabled.
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-deps

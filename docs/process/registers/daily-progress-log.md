@@ -994,6 +994,50 @@ Scenario Lab UI surfaces real CGT computation — list, create, run, and result 
 
 ---
 
+## Day 15 — 2026-05-28 — RC Walkthrough + Security Review
+
+**Day status**: in-progress
+
+**Primary goal**: D15-T0 pre-RC gate (provision secrets, run skipped live tests, verify Sentry dashboard) → then RC walkthrough and security review.
+
+**Carry-in constraints**
+
+1. D15-T0 stack must be FULLY cleared before RC walkthrough opens
+2. BL-0030 live-OpenAI (3 tests): need `OPENAI_API_KEY` in CI
+3. BL-0032 live Stripe (1 test): need `STRIPE_SECRET_KEY` (test-mode) in CI
+4. Sentry dashboard verification: human action — trigger test error, confirm event ID
+5. Supabase secrets (3): confirm present in GitHub Actions settings
+
+**Achieved**
+
+- D15-T1 — open log; wire CI secrets for `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` (BL-0032); add `NEXT_PUBLIC_SENTRY_DSN` to build job
+
+**Not achieved (rolled forward)**
+
+- (to be filled at closeout)
+
+**Registers touched**
+
+- (to be filled at closeout)
+
+**Checkpoints**
+
+- (to be filled at closeout)
+
+**Notable decisions**
+
+- (to be filled at closeout)
+
+**Carried forward**
+
+- (to be filled at closeout)
+
+**Evidence**
+
+- Start/end tags: `day-14-end` @ `f8b448f` → `day-15-end` @ TBD
+
+---
+
 ## Conventions
 
 - The log is the **canonical** narrative; the registers are the **canonical** state. They must agree. Discrepancies are surfaced and fixed before the next day starts.
