@@ -316,9 +316,12 @@ jobs:
 
       - name: Poll Sentry Issues API and assert event receipt
         run: |
+          # Search by run_id tag (unique per run) to avoid collisions from concurrent
+          # push + pull_request triggers that both run the probe and send different events.
+          # Text search tokenises the run ID and can match other runs; tag search is exact.
           ENCODED=$(python3 -c \
-            "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" \
-            "D15 probe ${PROBE_RUN_ID}")
+            "import urllib.parse,sys; print(urllib.parse.quote('run_id:' + sys.argv[1]))" \
+            "${PROBE_RUN_ID}")
 
           # Auto-discover the correct org/project slugs from the DSN's numeric project ID.
           # SENTRY_ORG/SENTRY_PROJECT secrets may not match the DSN — use the projects
