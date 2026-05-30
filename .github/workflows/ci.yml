@@ -290,10 +290,12 @@ jobs:
           SENTRY_HOST=$(printf '%s' "${NEXT_PUBLIC_SENTRY_DSN}" | sed -E 's|https://[^@]+@([^/]+)/.*|\1|')
           SENTRY_PID=$(printf '%s' "${NEXT_PUBLIC_SENTRY_DSN}"  | sed -E 's|.*/([0-9]+)$|\1|')
 
+          # fingerprint forces a unique issue per run — prevents all CI probe events
+          # being grouped into the same Sentry issue (which would use the first run's title).
           printf '%s\n%s\n%s\n' \
             "{\"event_id\":\"${EVENT_ID}\",\"sent_at\":\"${SENT_AT}\",\"sdk\":{\"name\":\"sentry.ciprobe\",\"version\":\"1.0.0\"}}" \
             "{\"type\":\"event\",\"content_type\":\"application/json\"}" \
-            "{\"event_id\":\"${EVENT_ID}\",\"timestamp\":\"${SENT_AT}\",\"level\":\"error\",\"exception\":{\"values\":[{\"type\":\"Error\",\"value\":\"D15 probe ${RUN_ID}\"}]},\"tags\":{\"probe\":\"d15-t0\",\"run_id\":\"${RUN_ID}\"}}" \
+            "{\"event_id\":\"${EVENT_ID}\",\"timestamp\":\"${SENT_AT}\",\"level\":\"error\",\"fingerprint\":[\"D15 probe ${RUN_ID}\"],\"exception\":{\"values\":[{\"type\":\"Error\",\"value\":\"D15 probe ${RUN_ID}\"}]},\"tags\":{\"probe\":\"d15-t0\",\"run_id\":\"${RUN_ID}\"}}" \
             > /tmp/sentry-envelope.txt
 
           HTTP_STATUS=$(curl -s -o /tmp/sentry-resp.txt -w "%{http_code}" \
