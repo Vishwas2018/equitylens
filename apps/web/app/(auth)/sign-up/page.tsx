@@ -36,7 +36,7 @@ export default function SignUpPage() {
           Create account
         </h1>
         <p className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">
-          Start analysing your property investments
+          Preview the EquityLens closed beta (invite only)
         </p>
       </div>
 

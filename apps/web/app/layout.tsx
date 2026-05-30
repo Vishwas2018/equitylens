@@ -7,7 +7,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 
 export const metadata = {
   title: 'EquityLens',
-  description: 'Property investment analysis',
+  description:
+    'EquityLens beta — preview the property investment analysis experience (not for tax decisions)',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
