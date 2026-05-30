@@ -187,7 +187,15 @@ async function callOpenAiFallback(maskedPrompt: string): Promise<Explanation | n
     const raw: unknown = JSON.parse(toolCall.function.arguments);
     const parsed = ExplanationSchema.safeParse(raw);
     return parsed.success ? parsed.data : null;
-  } catch {
+  } catch (err) {
+    // Surface error class/message in test output to distinguish auth errors from
+    // format issues. Not user-visible — ai_interactions is observability-only.
+    if (process.env['NODE_ENV'] !== 'production') {
+      console.error(
+        '[gateway:openai-fallback]',
+        err instanceof Error ? `${err.constructor.name}: ${err.message}` : String(err),
+      );
+    }
     return null;
   }
 }
