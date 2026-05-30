@@ -323,12 +323,20 @@ jobs:
           # Retry up to 6×10 s = 60 s total — Sentry typically ingests within 15 s.
           COUNT=0
           RESPONSE="[]"
+          API_HTTP_STATUS="0"
           for attempt in $(seq 1 6); do
             echo "Attempt ${attempt}/6 — sleeping 10 s..."
             sleep 10
-            RESPONSE=$(curl -sf \
+            API_HTTP_STATUS=$(curl -s -o /tmp/sentry-api.txt -w "%{http_code}" \
               -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
-              "${API_URL}" 2>/dev/null || echo "[]")
+              "${API_URL}" 2>/dev/null || echo "0")
+            echo "Issues API HTTP status: ${API_HTTP_STATUS}"
+            if [ "${API_HTTP_STATUS}" = "200" ]; then
+              RESPONSE=$(cat /tmp/sentry-api.txt)
+            else
+              echo "Issues API error body: $(cat /tmp/sentry-api.txt 2>/dev/null)"
+              RESPONSE="[]"
+            fi
             COUNT=$(echo "${RESPONSE}" | python3 -c \
               "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
             if [ "${COUNT}" -ge 1 ]; then break; fi
