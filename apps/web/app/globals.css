@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@equitylens/design-tokens/tokens.css";
+@import 'tailwindcss';
+@import '@equitylens/design-tokens/tokens.css';
 
 /* ── Base ── */
 html {
@@ -25,6 +25,9 @@ body {
 /* ── Tabular numerals for financial data ── */
 .font-numeric {
   font-family: var(--font-numeric);
-  font-feature-settings: 'tnum' 1, 'ss01' 1, 'cv11' 1;
+  font-feature-settings:
+    'tnum' 1,
+    'ss01' 1,
+    'cv11' 1;
   letter-spacing: var(--tracking-numeric);
 }

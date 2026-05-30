@@ -11,10 +11,8 @@ module.exports = {
         'no-restricted-syntax': [
           'error',
           {
-            selector:
-              "Literal[value=/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]",
-            message:
-              'No raw hex colours — use CSS custom properties via var(--token) instead.',
+            selector: 'Literal[value=/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/]',
+            message: 'No raw hex colours — use CSS custom properties via var(--token) instead.',
           },
         ],
       },

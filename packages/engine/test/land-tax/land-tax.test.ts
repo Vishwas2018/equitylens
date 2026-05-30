@@ -398,7 +398,7 @@ describe('zero holdings — all zeros', () => {
 // Covers the ?? fallback branches and the brackets.length === 0 guard.
 
 describe('ruleset with no VIC land tax config — all zeros', () => {
-  const noVicRuleset = { ...ruleset, landTax: undefined } as typeof ruleset;
+  const noVicRuleset = { ...ruleset, landTax: undefined } as unknown as typeof ruleset;
   const result = computeVicLandTax(
     {
       holdings: [{ siteValueCents: 50_000_000n, isPPR: false, isVacantResidential: true }],
