@@ -989,6 +989,7 @@ describe('POST /api/scenarios/[id]/explain', () => {
     mockExplainScenario.mockResolvedValue({
       ok: true,
       suppressed: false,
+      provider: 'anthropic',
       explanation: {
         summary: 'Your property sale generated a capital gain.',
         items: [

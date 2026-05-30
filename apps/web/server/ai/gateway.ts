@@ -1,11 +1,12 @@
 /**
- * AI gateway — Anthropic tool-use with PII masking, grounding gate, and interaction logging.
+ * AI gateway — multi-provider with PII masking, grounding gate, and interaction logging.
  *
- * Design decisions (approved D11):
+ * Design decisions (approved D11/D16):
  * - Q2=B: tool_choice strict schema — prevents valid-but-wrong JSON reaching the user
- * - Q1=A: structural OpenAI fallback stub (BL-0030 — never functionally exercised)
- * - Q5: TFN → 422 hard refuse (caller checks tfnFound); card/email/mobile → masked
+ * - Q5: TFN → 422 hard refuse; card/email/mobile → masked
  * - Q3: grounding gate is fail-CLOSED: >1% divergence → suppressed, not just logged
+ * - D16-B1: Provider interface — single dispatch chokepoint; masking + grounding run
+ *   here, never inside adapters. Routing: Anthropic → OpenAI → Grok (explicit, B5).
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -17,7 +18,7 @@ import { getSupabaseAdmin } from '../db/client';
 
 import { maskPii } from './pii-mask';
 
-// ── Tool response schema ───────────────────────────────────────────────────────
+// ── Tool response schema ──────────────────────────────────────────────────────
 
 const ExplanationItemSchema = z.object({
   label: z.string(),
@@ -37,15 +38,176 @@ export type Explanation = z.infer<typeof ExplanationSchema>;
 // ── Public result type ────────────────────────────────────────────────────────
 
 export type ExplainResult =
-  | { ok: true; explanation: Explanation; suppressed: false }
+  | { ok: true; explanation: Explanation; suppressed: false; provider: string }
   | { ok: true; suppressed: true; reason: 'grounding_fail' | 'pii_tfn' }
   | { ok: false; error: string };
 
+// ── Provider interface ────────────────────────────────────────────────────────
+
+interface ProviderResult {
+  explanation: Explanation;
+  tokensIn: number;
+  tokensOut: number;
+  raw: unknown;
+}
+
+interface AiProvider {
+  readonly name: string;
+  call(maskedPrompt: string): Promise<ProviderResult | null>;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6';
 const TEMPLATE_ID = 'cgt_explanation_v1';
 const GROUNDING_TOLERANCE = 0.01;
+
+// ── Shared tool definition (same Zod schema for all providers) ────────────────
+
+const TOOL_NAME = 'provide_cgt_explanation';
+const TOOL_DESCRIPTION = 'Return a structured plain-English explanation of the CGT calculation.';
+const TOOL_PARAMS = {
+  type: 'object' as const,
+  properties: {
+    summary: {
+      type: 'string',
+      description: 'Plain text 2–4 sentence overview of the CGT outcome.',
+    },
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          label: { type: 'string' },
+          value: { type: 'string' },
+          note: { type: 'string' },
+        },
+        required: ['label', 'value'],
+      },
+    },
+    disclaimer: {
+      type: 'string',
+      description:
+        'Must note that this is an AI-generated estimate under draft rules and must not be relied upon for tax decisions.',
+    },
+  },
+  required: ['summary', 'items', 'disclaimer'],
+};
+
+// ── Anthropic adapter ─────────────────────────────────────────────────────────
+
+class AnthropicProvider implements AiProvider {
+  readonly name = 'anthropic';
+  private static readonly MODEL = 'claude-sonnet-4-6';
+
+  async call(maskedPrompt: string): Promise<ProviderResult | null> {
+    const apiKey = process.env['ANTHROPIC_API_KEY'];
+    if (!apiKey) return null;
+
+    try {
+      const client = new Anthropic({ apiKey });
+      const response = await client.messages.create({
+        model: AnthropicProvider.MODEL,
+        max_tokens: 1024,
+        tool_choice: { type: 'tool', name: TOOL_NAME },
+        tools: [{ name: TOOL_NAME, description: TOOL_DESCRIPTION, input_schema: TOOL_PARAMS }],
+        messages: [{ role: 'user', content: maskedPrompt }],
+      });
+
+      const toolBlock = response.content.find((b) => b.type === 'tool_use');
+      const parsed = ExplanationSchema.safeParse(
+        toolBlock?.type === 'tool_use' ? toolBlock.input : null,
+      );
+      if (!parsed.success) return null;
+
+      return {
+        explanation: parsed.data,
+        tokensIn: response.usage.input_tokens,
+        tokensOut: response.usage.output_tokens,
+        raw: toolBlock ?? null,
+      };
+    } catch {
+      return null;
+    }
+  }
+}
+
+// ── OpenAI-compatible adapter (shared by OpenAI and Grok) ────────────────────
+
+const OPENAI_TOOL_DEF = {
+  type: 'function' as const,
+  function: { name: TOOL_NAME, description: TOOL_DESCRIPTION, parameters: TOOL_PARAMS },
+};
+
+class OpenAICompatProvider implements AiProvider {
+  constructor(
+    readonly name: string,
+    private readonly model: string,
+    private readonly apiKeyEnv: string,
+    private readonly baseURL?: string,
+  ) {}
+
+  async call(maskedPrompt: string): Promise<ProviderResult | null> {
+    const apiKey = process.env[this.apiKeyEnv];
+    if (!apiKey) return null;
+
+    try {
+      const client = new OpenAI({ apiKey, ...(this.baseURL ? { baseURL: this.baseURL } : {}) });
+      const response = await client.chat.completions.create({
+        model: this.model,
+        max_tokens: 1024,
+        tool_choice: { type: 'function', function: { name: TOOL_NAME } },
+        tools: [OPENAI_TOOL_DEF],
+        messages: [{ role: 'user', content: maskedPrompt }],
+      });
+
+      const toolCall = response.choices[0]?.message?.tool_calls?.[0];
+      if (!toolCall || toolCall.type !== 'function') return null;
+
+      const raw: unknown = JSON.parse(toolCall.function.arguments);
+      const parsed = ExplanationSchema.safeParse(raw);
+      if (!parsed.success) return null;
+
+      return {
+        explanation: parsed.data,
+        tokensIn: response.usage?.prompt_tokens ?? 0,
+        tokensOut: response.usage?.completion_tokens ?? 0,
+        raw: { provider: this.name, tool_call: toolCall },
+      };
+    } catch (err) {
+      if (process.env['NODE_ENV'] !== 'production') {
+        console.error(
+          `[gateway:${this.name}]`,
+          err instanceof Error ? `${err.constructor.name}: ${err.message}` : String(err),
+        );
+      }
+      return null;
+    }
+  }
+}
+
+// ── Provider registry — explicit routing order (B5) ───────────────────────────
+// Default: Anthropic. Fallback: OpenAI → Grok.
+// Masking + TFN-refuse + grounding run at the chokepoint below, not here.
+
+const PROVIDERS: readonly AiProvider[] = [
+  new AnthropicProvider(),
+  new OpenAICompatProvider('openai', 'gpt-4o-mini', 'OPENAI_API_KEY'),
+  new OpenAICompatProvider('grok', 'grok-3', 'GROK_API_KEY', 'https://api.x.ai/v1'),
+];
+
+// ── Dispatch chokepoint ───────────────────────────────────────────────────────
+// Iterates providers in order; returns on first non-null result.
+// Called AFTER masking+TFN-refuse and BEFORE grounding gate.
+
+async function dispatchToProvider(
+  maskedPrompt: string,
+): Promise<{ result: ProviderResult; providerName: string } | null> {
+  for (const provider of PROVIDERS) {
+    const result = await provider.call(maskedPrompt);
+    if (result !== null) return { result, providerName: provider.name };
+  }
+  return null;
+}
 
 // ── Prompt builder ────────────────────────────────────────────────────────────
 
@@ -78,7 +240,6 @@ Use the provide_cgt_explanation tool. Dollar amounts in your response MUST be co
 // ── Grounding gate ────────────────────────────────────────────────────────────
 
 function parseDollarsToCents(value: string): number | null {
-  // Strip currency symbols, commas, spaces; keep digits and decimal point
   const digits = value.replace(/[^0-9.]/g, '');
   if (!digits) return null;
   const dollars = parseFloat(digits);
@@ -100,17 +261,14 @@ function groundingPass(explanation: Explanation, payload: ScenarioResultPayload)
 
   for (const item of explanation.items) {
     const itemCents = parseDollarsToCents(item.value);
-    if (itemCents === null || itemCents < 10_00) continue; // ignore trivially small amounts
+    if (itemCents === null || itemCents < 10_00) continue;
 
-    // Find closest engine value by ratio
     let closestRatio = Infinity;
     for (const engineVal of keyEngineCents) {
       const ratio = Math.max(itemCents, engineVal) / Math.min(itemCents, engineVal);
       if (ratio < closestRatio) closestRatio = ratio;
     }
 
-    // If item value is in the same order of magnitude as an engine value (ratio ≤ 10x)
-    // but diverges by more than the tolerance, the model hallucinated — fail closed
     if (closestRatio <= 10 && closestRatio > 1 + GROUNDING_TOLERANCE) {
       return false;
     }
@@ -128,79 +286,7 @@ function simpleHash(s: string): string {
   return (h >>> 0).toString(16);
 }
 
-// ── OpenAI fallback ───────────────────────────────────────────────────────────
-
-const OPENAI_FALLBACK_MODEL = 'gpt-4o-mini';
-
-const OPENAI_TOOL_DEF = {
-  type: 'function' as const,
-  function: {
-    name: 'provide_cgt_explanation',
-    description: 'Return a structured plain-English explanation of the CGT calculation.',
-    parameters: {
-      type: 'object',
-      properties: {
-        summary: {
-          type: 'string',
-          description: 'Plain text 2–4 sentence overview of the CGT outcome.',
-        },
-        items: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              label: { type: 'string' },
-              value: { type: 'string' },
-              note: { type: 'string' },
-            },
-            required: ['label', 'value'],
-          },
-        },
-        disclaimer: {
-          type: 'string',
-          description:
-            'Must note that this is an AI-generated estimate under draft rules and must not be relied upon for tax decisions.',
-        },
-      },
-      required: ['summary', 'items', 'disclaimer'],
-    },
-  },
-};
-
-async function callOpenAiFallback(maskedPrompt: string): Promise<Explanation | null> {
-  const apiKey = process.env['OPENAI_API_KEY'];
-  if (!apiKey) return null;
-
-  try {
-    const client = new OpenAI({ apiKey });
-    const response = await client.chat.completions.create({
-      model: OPENAI_FALLBACK_MODEL,
-      max_tokens: 1024,
-      tool_choice: { type: 'function', function: { name: 'provide_cgt_explanation' } },
-      tools: [OPENAI_TOOL_DEF],
-      messages: [{ role: 'user', content: maskedPrompt }],
-    });
-
-    const toolCall = response.choices[0]?.message?.tool_calls?.[0];
-    if (!toolCall || toolCall.type !== 'function') return null;
-
-    const raw: unknown = JSON.parse(toolCall.function.arguments);
-    const parsed = ExplanationSchema.safeParse(raw);
-    return parsed.success ? parsed.data : null;
-  } catch (err) {
-    // Surface error class/message in test output to distinguish auth errors from
-    // format issues. Not user-visible — ai_interactions is observability-only.
-    if (process.env['NODE_ENV'] !== 'production') {
-      console.error(
-        '[gateway:openai-fallback]',
-        err instanceof Error ? `${err.constructor.name}: ${err.message}` : String(err),
-      );
-    }
-    return null;
-  }
-}
-
-// ── Interaction logger (admin client — bypasses RLS for append-only log) ───────
+// ── Interaction logger ────────────────────────────────────────────────────────
 
 async function logInteraction(params: {
   userId: string;
@@ -248,8 +334,9 @@ export async function explainScenario(params: {
   const { userId, result } = params;
 
   const rawPrompt = buildPrompt(result);
-  const { masked, tfnFound } = maskPii(rawPrompt);
 
+  // ── Chokepoint: masking + TFN-refuse (before any provider dispatch) ───────
+  const { masked, tfnFound } = maskPii(rawPrompt);
   if (tfnFound) {
     return { ok: true, suppressed: true, reason: 'pii_tfn' };
   }
@@ -257,89 +344,30 @@ export async function explainScenario(params: {
   const promptHash = simpleHash(masked);
   const contextHash = result.result_payload.output_hash;
 
-  const client = new Anthropic({ apiKey: process.env['ANTHROPIC_API_KEY'] ?? '' });
-
   const t0 = Date.now();
-  let responseRaw: unknown = null;
-  let schemaValid = false;
-  let fallbackUsed = false;
-  let tokensIn = 0;
-  let tokensOut = 0;
-  let explanation: Explanation | null = null;
 
-  try {
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      tool_choice: { type: 'tool', name: 'provide_cgt_explanation' },
-      tools: [
-        {
-          name: 'provide_cgt_explanation',
-          description: 'Return a structured plain-English explanation of the CGT calculation.',
-          input_schema: {
-            type: 'object' as const,
-            properties: {
-              summary: {
-                type: 'string',
-                description: 'Plain text 2–4 sentence overview of the CGT outcome.',
-              },
-              items: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    label: { type: 'string' },
-                    value: { type: 'string' },
-                    note: { type: 'string' },
-                  },
-                  required: ['label', 'value'],
-                },
-              },
-              disclaimer: {
-                type: 'string',
-                description:
-                  'Must note that this is an AI-generated estimate under draft rules and must not be relied upon for tax decisions.',
-              },
-            },
-            required: ['summary', 'items', 'disclaimer'],
-          },
-        },
-      ],
-      messages: [{ role: 'user', content: masked }],
-    });
-
-    tokensIn = response.usage.input_tokens;
-    tokensOut = response.usage.output_tokens;
-
-    const toolBlock = response.content.find((b) => b.type === 'tool_use');
-    responseRaw = toolBlock ?? null;
-
-    const parsed = ExplanationSchema.safeParse(
-      toolBlock?.type === 'tool_use' ? toolBlock.input : null,
-    );
-    if (parsed.success) {
-      schemaValid = true;
-      explanation = parsed.data;
-    }
-  } catch {
-    // Anthropic call failed — attempt structural fallback (BL-0030)
-    fallbackUsed = true;
-    explanation = await callOpenAiFallback(masked);
-    if (explanation) schemaValid = true;
-  }
+  // ── Provider dispatch: Anthropic → OpenAI → Grok ─────────────────────────
+  const dispatched = await dispatchToProvider(masked);
 
   const latencyMs = Date.now() - t0;
+  const providerName = dispatched?.providerName ?? 'none';
+  const providerResult = dispatched?.result ?? null;
+  // fallback_used: true whenever Anthropic was not the provider (maintains existing semantics)
+  const fallbackUsed = providerName !== 'anthropic';
+
+  const tokensIn = providerResult?.tokensIn ?? 0;
+  const tokensOut = providerResult?.tokensOut ?? 0;
   // Approximate cost: Sonnet 4.6 ~$3/$15 per 1M tokens (in/out)
   const costCents = Math.round((tokensIn * 3 + tokensOut * 15) / 10_000);
 
   await logInteraction({
     userId,
     scenarioResultId: result.id,
-    model: fallbackUsed ? 'openai-fallback' : MODEL,
+    model: providerName,
     promptHash,
     contextHash,
-    responseRaw,
-    schemaValid,
+    responseRaw: providerResult ? { provider: providerName, raw: providerResult.raw } : null,
+    schemaValid: providerResult !== null,
     leakDetected: false, // TFN caught above; context already masked
     fallbackUsed,
     latencyMs,
@@ -348,13 +376,19 @@ export async function explainScenario(params: {
     costCents,
   });
 
-  if (!explanation) {
+  if (!providerResult) {
     return { ok: false, error: 'Failed to generate explanation.' };
   }
 
-  if (!groundingPass(explanation, result.result_payload)) {
+  // ── Grounding gate (after provider response, fail-CLOSED) ────────────────
+  if (!groundingPass(providerResult.explanation, result.result_payload)) {
     return { ok: true, suppressed: true, reason: 'grounding_fail' };
   }
 
-  return { ok: true, explanation, suppressed: false };
+  return {
+    ok: true,
+    explanation: providerResult.explanation,
+    suppressed: false,
+    provider: providerName,
+  };
 }

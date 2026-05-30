@@ -30,5 +30,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ suppressed: true, reason: explainResult.reason }, { status: 200 });
   }
 
-  return NextResponse.json({ explanation: explainResult.explanation }, { status: 200 });
+  return NextResponse.json(
+    { explanation: explainResult.explanation, provider: explainResult.provider },
+    { status: 200 },
+  );
 }

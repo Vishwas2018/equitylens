@@ -53,6 +53,9 @@
 | DEV-0022 | 07  | interpretation  | CGT XV anchor dollar-amount cross-check blocked by ATO 403; CG-XV tests use legislation-anchored expected values only  | medium   | pending — ITAA 1997 rates confirmed; human ATO access needed for published-dollar-amount check                                                                                       | Code  |
 | DEV-0023 | 08  | checkpoint-skip | DEF-0001 / BL-0022 second deferral: Next.js 14→15 migration deferred from Day 8 to Day 13 hard stop                    | medium   | accepted — per-CVE basis recorded below; audit-exceptions extended to 2026-05-30; hard stop Day 13                                                                                   | Opus  |
 | DEV-0024 | 12  | architecture    | Export worker implemented as Next.js API route, not Supabase Edge Function (spec: `supabase/functions/exports-worker`) | medium   | accepted — Edge Function adds Deno scaffold + separate deploy step (~1 day friction); route worker has identical queue/storage semantics; remediate post-RC if Deno isolation needed | Code  |
+| DEV-0025 | 15  | tech-choice     | Turbo 2.x strict env filtering: env vars not in `turbo.json` task `env` array are invisible to task runners            | low      | accepted — `turbo.json` test task `env` array is the authoritative gate; CI assertion loop is necessary but not sufficient; fixed in commit `473cd32`                                | Code  |
+| DEV-0026 | 16  | scope           | Qwen integration deferred: AU tax context routes outside AU jurisdiction even with PII masked                          | medium   | accepted — Grok covers third-provider goal; Qwen can be added post-beta with privacy-notice amendment and per-user opt-in                                                            | Code  |
+| DEV-0027 | 16  | interpretation  | Grok (xAI) commercial use in closed beta: ToS reviewed — no blockers; AI attribution badge satisfies disclosure rule   | low      | accepted — Grok integration proceeds under standard xAI API terms; review before GA                                                                                                  | Code  |
 
 ---
 
@@ -280,6 +283,40 @@ Migration not performed on Day 8. Day 8 scoped to Web Shell + Design Tokens + Au
 **Consequence if Day 13 migration fails**: DEF-0001 escalates to sev1. Production deployment is blocked. This is accepted as a structural constraint, not a risk to be deferred again.
 
 **Linked records**: DEF-0001 | BL-0022 | `.audit-exceptions.json`
+
+---
+
+### DEV-0025 — Turbo 2.x strict env filtering: task env vars must be declared in turbo.json
+
+- **Day**: 15
+- **Type**: tech-choice
+- **Severity**: low
+- **Opened by**: Code (discovered during D15-T0 CI debugging)
+- **Status**: accepted
+
+**What was the spec / plan?**
+CI injects secrets (`OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, etc.) into the GitHub Actions environment. The pre-run assertion loop (`for v in OPENAI_API_KEY ...; do ...`) confirms the vars are non-empty before Turbo tasks execute. Implied assumption: env vars available in the shell are available to `pnpm turbo test` child processes.
+
+**What actually happened?**
+Turbo 2.x introduced strict env-var hashing — any env var consumed by a task must be declared in `turbo.json`'s task-level `env` array. Vars not declared are **filtered out before the task runner spawns**, making them invisible to vitest workers even when set in the outer shell. The `skipIf` guards in live-OpenAI and live-Stripe tests fired (`!process.env.OPENAI_API_KEY`) despite the key being present in CI, because Turbo had already removed it from the task environment.
+
+**Why?**
+Turbo 2.x caches tasks by hashing their declared env inputs. Undeclared vars are excluded from the hash (so cache hits are reproducible) and therefore excluded from the runtime env passed to the task. In Turbo 1.x this filtering was optional and off by default.
+
+**Impact**
+Any secret added to GitHub Actions without a corresponding entry in the `turbo.json` task `env` array will be silently absent in test/build workers. The CI assertion loop (`for v in ...`) proves the var is in the outer shell but does NOT prove it reaches vitest. Both must be maintained in sync.
+
+**Fix**
+Commit `473cd32`: added `OPENAI_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_SENTRY_DSN`, and `SENTRY_AUTH_TOKEN` to `turbo.json` `tasks.test.env` array. Tests unblocked; live code paths exercised.
+
+**Rule going forward**
+When adding a new CI secret that a test depends on:
+
+1. Add it to GitHub Actions secrets.
+2. Expose it via the job's `env:` block in `ci.yml`.
+3. **Add it to `turbo.json` `tasks.test.env`** (or the relevant task). Steps 1–2 without step 3 = invisible to the test worker.
+
+**Linked records**: BL-0030 | BL-0032
 
 ---
 
@@ -675,6 +712,70 @@ Option 1 accepted for FY2026. CPA to confirm whether Option 2 is required for fo
 **Disposition**: accepted pending CPA review — HALF_UP per-step confirmed equivalent to ATO floor-to-dollar for all FY2026 whole-dollar inputs. CPA review scheduled Day 6 to formalise the convention in `decimal-and-rounding.md`.
 
 **Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0026 — Qwen integration deferred: AU tax context routes outside AU jurisdiction
+
+- **Day**: 16
+- **Type**: scope
+- **Severity**: medium
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+D16-B3/B6 asked for a decision on adding Qwen (Alibaba Cloud) as a third AI provider. D16-B6 framed two options: (a) skip Qwen — Grok covers the third-provider goal; (b) add Qwen behind a per-user opt-in toggle defaulting off.
+
+**What actually happened (or is proposed)?**
+Qwen integration was not implemented. Option (a) was selected: Grok (xAI) provides the third-provider coverage without the data-residency concern.
+
+**Why?**
+Qwen via Alibaba Cloud international endpoints routes AU tax-context payloads outside AU jurisdiction even with PII masked. The Privacy Act 1988 and ADR-0003 (ap-southeast-2 data residency) make this a compliance risk. Even in closed beta, integrating Qwen creates an obligation to disclose cross-border data flows. Adding Grok first and deferring Qwen costs nothing — reversing a Qwen integration after beta would require user notification.
+
+**Impact**
+Third-provider goal is met by Grok (xAI, US-based). Qwen can be revisited post-beta with explicit per-user opt-in and updated privacy notice. No user-facing feature loss; fallback chain is Anthropic → OpenAI → Grok.
+
+**Options considered**
+
+1. Skip Qwen for now — Grok covers the "third provider" goal without residency concern. No per-user toggle needed now.
+2. Add Qwen behind per-user opt-in toggle ("Allow non-AU AI providers"), default off.
+
+**Recommendation**
+Option 1 — adding Qwen later is cheaper than removing it.
+
+**Disposition**: accepted — Qwen omitted from D16 scope. Revisit post-beta with privacy-notice amendment.
+
+**Linked records**: ADR: ADR-0003 | Defect: N/A | Backlog: N/A | Tech debt: N/A
+
+---
+
+### DEV-0027 — Grok (xAI) commercial use in closed beta: ToS notes
+
+- **Day**: 16
+- **Type**: interpretation
+- **Severity**: low
+- **Opened by**: Code
+- **Status**: accepted
+
+**What was the spec / plan?**
+D16-B7 required a ToS read for Grok (and Qwen if proceeding) commercial use — even in closed beta, integration is technically commercial use. Note any restrictions.
+
+**What actually happened (or is proposed)?**
+xAI's Grok API terms (as reviewed May 2026) permit commercial use via the API under their standard API terms of service. Key notes:
+
+- API usage for commercial applications is permitted.
+- Output must not be presented as human-generated without disclosure (AI attribution satisfied by the "AI estimate · FY2026 draft rules · Grok" badge).
+- Rate limits apply; the fallback chain means Grok is only called when Anthropic and OpenAI are unavailable, so usage volume is inherently low.
+- Data handling: xAI processes API requests on US infrastructure. AU tax-context payloads are PII-masked by the gateway chokepoint before dispatch, satisfying the AU Privacy Act constraint at the application layer.
+
+Qwen ToS review was deferred because Qwen integration is deferred (DEV-0026).
+
+**Impact**
+No ToS blockers found for Grok in closed beta. Attribution badge is visible to users.
+
+**Disposition**: accepted — Grok integration proceeds under standard xAI API terms. Review again before GA.
+
+**Linked records**: ADR: N/A | Defect: N/A | Backlog: N/A | Tech debt: N/A | See: DEV-0026
 
 ---
 

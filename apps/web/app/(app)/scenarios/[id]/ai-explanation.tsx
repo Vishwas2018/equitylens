@@ -18,7 +18,7 @@ type State =
   | { phase: 'idle' }
   | { phase: 'loading' }
   | { phase: 'suppressed'; reason: 'grounding_fail' | 'pii_tfn' | string }
-  | { phase: 'done'; explanation: Explanation }
+  | { phase: 'done'; explanation: Explanation; provider: string }
   | { phase: 'error'; message: string };
 
 export function AiExplanation({ scenarioId }: Props) {
@@ -46,7 +46,11 @@ export function AiExplanation({ scenarioId }: Props) {
         return;
       }
 
-      setState({ phase: 'done', explanation: body['explanation'] as Explanation });
+      setState({
+        phase: 'done',
+        explanation: body['explanation'] as Explanation,
+        provider: (body['provider'] as string | undefined) ?? 'ai',
+      });
     } catch {
       setState({ phase: 'error', message: 'Something went wrong. Please try again.' });
     }
@@ -128,13 +132,21 @@ export function AiExplanation({ scenarioId }: Props) {
 
   // ── Done: render explanation ──────────────────────────────────────────────
 
-  const { explanation } = state;
+  const { explanation, provider } = state;
+  const providerLabel =
+    provider === 'anthropic'
+      ? 'Claude'
+      : provider === 'openai'
+        ? 'GPT'
+        : provider === 'grok'
+          ? 'Grok'
+          : provider;
 
   return (
     <div className="flex flex-col gap-[var(--space-4)]">
-      {/* Badge — always shown, doubly provisional */}
+      {/* Badge — always shown, doubly provisional; surfaces provider (B5) */}
       <span className="self-start rounded-full bg-[var(--bg-muted)] px-[var(--space-2)] py-[var(--space-1)] [font-size:var(--text-xs)] text-[var(--fg-muted)]">
-        AI estimate · FY2026 draft rules
+        AI estimate · FY2026 draft rules · {providerLabel}
       </span>
 
       {/* Summary paragraph */}
