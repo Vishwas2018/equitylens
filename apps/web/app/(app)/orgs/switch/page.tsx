@@ -1,13 +1,13 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 
 import { switchOrg } from '../../../../server/actions/org/switchOrg';
 
-export default function SwitchOrgPage() {
+function SwitchOrgContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [error, setError] = useState<string | null>(null);
@@ -54,5 +54,13 @@ export default function SwitchOrgPage() {
         <p className="[font-size:var(--text-sm)] text-[var(--fg-muted)]">No org specified.</p>
       )}
     </div>
+  );
+}
+
+export default function SwitchOrgPage() {
+  return (
+    <Suspense fallback={null}>
+      <SwitchOrgContent />
+    </Suspense>
   );
 }
