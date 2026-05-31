@@ -1,0 +1,15 @@
+# Global ownership — all files require review from the project owner
+* @Vishwas2018
+
+# Engine (financial calculations, determinism rules)
+# Any change to engine source requires explicit sign-off
+/packages/engine/ @Vishwas2018
+
+# Process registers and audit artefacts
+# Changes to registers must be intentional; auto-edits are tracked by task ID
+/docs/process/registers/ @Vishwas2018
+
+# Security-sensitive configuration
+/.github/ @Vishwas2018
+/.npmrc @Vishwas2018
+/packages/engine/.eslintrc.cjs @Vishwas2018

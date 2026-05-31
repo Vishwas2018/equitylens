@@ -8,9 +8,9 @@
 
 ### 1.1 Base URLs
 
-| Env | Base |
-|---|---|
-| Prod | `https://app.equitylens.com.au/api` |
+| Env     | Base                                 |
+| ------- | ------------------------------------ |
+| Prod    | `https://app.equitylens.com.au/api`  |
 | Staging | `https://staging.equitylens.app/api` |
 
 ### 1.2 Authentication
@@ -20,11 +20,11 @@
 
 ### 1.3 Standard headers
 
-| Header | Required | Purpose |
-|---|---|---|
-| `Idempotency-Key` | On all POST mutations | UUID v4; replay-safe (24 h window). |
-| `X-Request-ID` | Auto-generated if absent | Traced through OpenTelemetry. |
-| `Accept-Version` | Optional, defaults to latest | API version pin (`2026-02-01`). |
+| Header            | Required                     | Purpose                             |
+| ----------------- | ---------------------------- | ----------------------------------- |
+| `Idempotency-Key` | On all POST mutations        | UUID v4; replay-safe (24 h window). |
+| `X-Request-ID`    | Auto-generated if absent     | Traced through OpenTelemetry.       |
+| `Accept-Version`  | Optional, defaults to latest | API version pin (`2026-02-01`).     |
 
 ### 1.4 Error shape
 
@@ -36,21 +36,20 @@
   "detail": "Loan principal must be positive.",
   "instance": "/api/loans",
   "trace_id": "01HZ...",
-  "errors": [
-    { "path": "principal", "message": "Must be > 0" }
-  ]
+  "errors": [{ "path": "principal", "message": "Must be > 0" }]
 }
 ```
 
 ### 1.5 Rate limits
 
-| Tier | Reads | Writes | AI |
-|---|---|---|---|
-| Free | 60 / min | 30 / min | 5 / month |
-| Pro | 300 / min | 120 / min | 200 / month |
+| Tier         | Reads       | Writes    | AI            |
+| ------------ | ----------- | --------- | ------------- |
+| Free         | 60 / min    | 30 / min  | 5 / month     |
+| Pro          | 300 / min   | 120 / min | 200 / month   |
 | Professional | 1,000 / min | 300 / min | 1,000 / month |
 
 Headers returned on every response:
+
 - `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 
 Exceeded: `429 Too Many Requests` with `Retry-After` seconds.
@@ -58,16 +57,20 @@ Exceeded: `429 Too Many Requests` with `Retry-After` seconds.
 ### 1.6 Pagination
 
 Cursor-based:
+
 ```
 GET /api/properties?cursor=<opaque>&limit=25
 ```
+
 Response:
+
 ```json
 {
   "data": [...],
   "pagination": { "next_cursor": "...", "has_more": true }
 }
 ```
+
 Limit max = 100. Cursors are opaque base64-encoded `(updated_at, id)` tuples; clients must not parse.
 
 ---
@@ -89,13 +92,19 @@ export const Cents = z.number().int().min(-1e15).max(1e15);
 
 export const Percent = z.number().min(-1).max(1); // 0.0625 = 6.25%
 
-export const PositiveCents = Cents.refine(n => n >= 0, 'Must be non-negative');
+export const PositiveCents = Cents.refine((n) => n >= 0, 'Must be non-negative');
 
 export const Jurisdiction = z.enum(['VIC', 'NSW', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT']);
 
 export const LoanType = z.enum(['principal_and_interest', 'interest_only']);
 
-export const OwnershipKind = z.enum(['individual', 'joint', 'tenants_in_common', 'trust', 'company']);
+export const OwnershipKind = z.enum([
+  'individual',
+  'joint',
+  'tenants_in_common',
+  'trust',
+  'company',
+]);
 ```
 
 ---
@@ -109,25 +118,35 @@ export const OwnershipKind = z.enum(['individual', 'joint', 'tenants_in_common',
 ```ts
 export const PropertyCreateInput = z.object({
   address_line1: z.string().min(1).max(200),
-  suburb:        z.string().min(1).max(100),
-  state:         Jurisdiction,
-  postcode:      z.string().regex(/^\d{4}$/),
+  suburb: z.string().min(1).max(100),
+  state: Jurisdiction,
+  postcode: z.string().regex(/^\d{4}$/),
   property_type: z.enum(['house', 'apartment', 'townhouse', 'land', 'commercial']),
   purchase_date: ISODate,
   purchase_price_cents: PositiveCents,
   stamp_duty_paid_cents: PositiveCents,
   ownership: z.object({
     kind: OwnershipKind,
-    splits: z.array(z.object({
-      owner_id: UUID,
-      percentage: z.number().min(0).max(100),
-    })).refine(s => Math.abs(s.reduce((a, b) => a + b.percentage, 0) - 100) < 0.001,
-      'Ownership splits must total exactly 100%'),
+    splits: z
+      .array(
+        z.object({
+          owner_id: UUID,
+          percentage: z.number().min(0).max(100),
+        }),
+      )
+      .refine(
+        (s) => Math.abs(s.reduce((a, b) => a + b.percentage, 0) - 100) < 0.001,
+        'Ownership splits must total exactly 100%',
+      ),
   }),
-  ppor_history: z.array(z.object({
-    from: ISODate,
-    to:   ISODate.nullable(),
-  })).optional(),
+  ppor_history: z
+    .array(
+      z.object({
+        from: ISODate,
+        to: ISODate.nullable(),
+      }),
+    )
+    .optional(),
 });
 
 export type PropertyCreateInput = z.infer<typeof PropertyCreateInput>;
@@ -144,6 +163,7 @@ export type PropertyCreateInput = z.infer<typeof PropertyCreateInput>;
 ```
 
 **Error cases:**
+
 - `422` validation (any field).
 - `403 ENTITLEMENT_EXCEEDED` if property quota exhausted (`code = property.create`).
 
@@ -181,28 +201,31 @@ export const PropertyListItem = z.object({
 `POST /api/scenarios/run`
 
 ```ts
-export const ScenarioInput = z.object({
-  scope: z.discriminatedUnion('type', [
-    z.object({ type: z.literal('property'), property_id: UUID }),
-    z.object({ type: z.literal('portfolio') }),
-  ]),
-  horizon_years: z.number().int().min(1).max(30),
-  financial_year: FYString,
-  jurisdiction:   Jurisdiction,
-  assumptions: z.object({
-    rate_shock_bps:       z.number().int().min(-1000).max(1000).default(0),
-    rent_growth_pct:      Percent.default(0),
-    vacancy_weeks_pa:     z.number().min(0).max(52).default(0),
-    cpi_pct:              Percent.default(0.025),
-    capital_growth_pct:   Percent.default(0.04),
-    sell_at_year:         z.number().int().min(1).max(30).optional(),
-    refinance_year:       z.number().int().min(1).max(30).optional(),
-    refinance_new_rate:   Percent.optional(),
-    etf_alternative_return_pct: Percent.optional(),
-  }),
-  label: z.string().min(1).max(120).optional(),
-}).refine(d => !(d.assumptions.refinance_year && !d.assumptions.refinance_new_rate),
-  { message: 'refinance_new_rate required when refinance_year set' });
+export const ScenarioInput = z
+  .object({
+    scope: z.discriminatedUnion('type', [
+      z.object({ type: z.literal('property'), property_id: UUID }),
+      z.object({ type: z.literal('portfolio') }),
+    ]),
+    horizon_years: z.number().int().min(1).max(30),
+    financial_year: FYString,
+    jurisdiction: Jurisdiction,
+    assumptions: z.object({
+      rate_shock_bps: z.number().int().min(-1000).max(1000).default(0),
+      rent_growth_pct: Percent.default(0),
+      vacancy_weeks_pa: z.number().min(0).max(52).default(0),
+      cpi_pct: Percent.default(0.025),
+      capital_growth_pct: Percent.default(0.04),
+      sell_at_year: z.number().int().min(1).max(30).optional(),
+      refinance_year: z.number().int().min(1).max(30).optional(),
+      refinance_new_rate: Percent.optional(),
+      etf_alternative_return_pct: Percent.optional(),
+    }),
+    label: z.string().min(1).max(120).optional(),
+  })
+  .refine((d) => !(d.assumptions.refinance_year && !d.assumptions.refinance_new_rate), {
+    message: 'refinance_new_rate required when refinance_year set',
+  });
 
 export type ScenarioInput = z.infer<typeof ScenarioInput>;
 ```
@@ -224,6 +247,7 @@ export type ScenarioInput = z.infer<typeof ScenarioInput>;
 ```
 
 **Notes:**
+
 - Computation is server-side, deterministic, and synchronous when `horizon_years ≤ 10`; otherwise queued (returns `202` with `job_id`).
 - Identical `input_hash` returns cached result without re-running engine.
 
@@ -260,15 +284,16 @@ export const ExplainQuery = z.object({
 ```
 
 **Response 200:**
+
 ```json
 {
   "narrative": {
-    "tldr":   "This property is costing $812 per year after tax...",
+    "tldr": "This property is costing $812 per year after tax...",
     "detail": [
       { "heading": "Cash flow", "body": "..." },
       { "heading": "Tax impact", "body": "..." }
     ],
-    "caveats": [ "Estimates assume FY2026 rates as published 1 July 2025." ]
+    "caveats": ["Estimates assume FY2026 rates as published 1 July 2025."]
   },
   "schema_version": "explain.v1",
   "ai_generation_id": "ai_gen_01HZ...",
@@ -304,11 +329,13 @@ export const ReportRequest = z.object({
 ```
 
 **Response 202:**
+
 ```json
 { "job_id": "rpt_01HZ...", "poll_url": "/api/reports/rpt_01HZ.../status" }
 ```
 
 `GET /api/reports/:job_id/status`:
+
 ```json
 {
   "status": "completed",
@@ -327,12 +354,14 @@ export const ReportRequest = z.object({
 `GET /api/me/subscription` → current tier + status + period end.
 
 `POST /api/me/subscription/checkout`:
+
 ```ts
 export const CheckoutInput = z.object({
   price_id: z.enum(['price_pro_m', 'price_pro_y', 'price_pro_plus_m', 'price_pro_plus_y']),
   return_url: z.string().url(),
 });
 ```
+
 → returns Stripe Checkout session URL.
 
 `POST /api/me/subscription/portal` → Stripe Billing Portal session.
@@ -343,19 +372,19 @@ Webhook receiver: `POST /api/webhooks/stripe` — signature-verified, idempotent
 
 ## 9. Error Catalogue
 
-| Code | HTTP | Meaning |
-|---|---|---|
-| `VALIDATION_FAILED` | 422 | Zod parse error. `errors[]` populated. |
-| `AUTH_REQUIRED` | 401 | Missing/expired JWT. |
-| `MFA_REQUIRED` | 401 | AAL2 needed; client must re-authenticate. |
-| `ENTITLEMENT_TIER_LOCKED` | 403 | Feature unavailable on current tier. |
-| `ENTITLEMENT_QUOTA_EXCEEDED` | 403 | Quota hit. |
-| `RESOURCE_NOT_FOUND` | 404 | RLS-safe — leaks no existence info across tenants. |
-| `IDEMPOTENCY_CONFLICT` | 409 | Same key used with different body. |
-| `RATE_LIMITED` | 429 | Limit exceeded. |
-| `ENGINE_DETERMINISM_VIOLATION` | 500 | Internal — Sentry-paged. |
-| `TAX_RULE_NOT_PUBLISHED` | 422 | Requested FY rules unavailable. |
-| `AI_OUTPUT_INVALID` | 200 | Returned alongside `fallback_used: true`. |
+| Code                           | HTTP | Meaning                                            |
+| ------------------------------ | ---- | -------------------------------------------------- |
+| `VALIDATION_FAILED`            | 422  | Zod parse error. `errors[]` populated.             |
+| `AUTH_REQUIRED`                | 401  | Missing/expired JWT.                               |
+| `MFA_REQUIRED`                 | 401  | AAL2 needed; client must re-authenticate.          |
+| `ENTITLEMENT_TIER_LOCKED`      | 403  | Feature unavailable on current tier.               |
+| `ENTITLEMENT_QUOTA_EXCEEDED`   | 403  | Quota hit.                                         |
+| `RESOURCE_NOT_FOUND`           | 404  | RLS-safe — leaks no existence info across tenants. |
+| `IDEMPOTENCY_CONFLICT`         | 409  | Same key used with different body.                 |
+| `RATE_LIMITED`                 | 429  | Limit exceeded.                                    |
+| `ENGINE_DETERMINISM_VIOLATION` | 500  | Internal — Sentry-paged.                           |
+| `TAX_RULE_NOT_PUBLISHED`       | 422  | Requested FY rules unavailable.                    |
+| `AI_OUTPUT_INVALID`            | 200  | Returned alongside `fallback_used: true`.          |
 
 ---
 

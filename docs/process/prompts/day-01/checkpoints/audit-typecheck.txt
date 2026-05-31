@@ -1,0 +1,38 @@
+Check: typecheck
+Status: pass
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ typecheck C:\Users\vishw\Vish\Vish\EquityLens
+> turbo run typecheck
+
+
+   • Packages in scope: @equitylens/design-tokens, @equitylens/engine, @equitylens/types, @equitylens/web
+   • Running typecheck in 4 packages
+   • Remote caching disabled
+
+@equitylens/web:typecheck: cache miss, executing 46fb0af4d339993f
+@equitylens/design-tokens:typecheck: cache miss, executing 6d8ddb8b079592a8
+@equitylens/types:typecheck: cache miss, executing 27773f99d5a6b0d0
+@equitylens/engine:typecheck: cache miss, executing 8bdd83311dc50a81
+@equitylens/design-tokens:typecheck: 
+@equitylens/design-tokens:typecheck: > @equitylens/design-tokens@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\design-tokens
+@equitylens/design-tokens:typecheck: > tsc --noEmit
+@equitylens/design-tokens:typecheck: 
+@equitylens/web:typecheck: 
+@equitylens/web:typecheck: > @equitylens/web@0.0.1 typecheck C:\Users\vishw\Vish\Vish\EquityLens\apps\web
+@equitylens/web:typecheck: > tsc --noEmit
+@equitylens/web:typecheck: 
+@equitylens/engine:typecheck: 
+@equitylens/engine:typecheck: > @equitylens/engine@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\engine
+@equitylens/engine:typecheck: > tsc --noEmit
+@equitylens/engine:typecheck: 
+@equitylens/types:typecheck: 
+@equitylens/types:typecheck: > @equitylens/types@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:typecheck: > tsc --noEmit
+@equitylens/types:typecheck: 
+
+ Tasks:    4 successful, 4 total
+Cached:    0 cached, 4 total
+  Time:    4.092s

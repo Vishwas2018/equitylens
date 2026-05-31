@@ -65,15 +65,15 @@ flowchart LR
 
 ## 2. Service Boundaries
 
-| Service | Purpose | Lives in | Stateless? |
-|---|---|---|---|
-| **Web app (Next.js)** | UI, RSC, route handlers | Vercel Edge (AU) | Yes |
-| **Calc Engine** | Pure deterministic TS module | Imported into Edge/Node runtime | Yes |
-| **AI Explainer** | RAG over numbers → narration | Edge runtime, calls external LLM | Yes |
-| **Background Workers** | PDF gen, scheduled reports, batch recalcs | Supabase Edge Functions | Yes (idempotent jobs) |
-| **Postgres (Supabase)** | System of record | Supabase AU (Sydney) | No |
-| **Storage** | PDF / CSV artefacts, QS PDFs | Supabase Storage | No |
-| **Redis (Upstash)** | Rate limit counters, idempotency keys, AI narrative cache | Upstash AU | No (ephemeral) |
+| Service                 | Purpose                                                   | Lives in                         | Stateless?            |
+| ----------------------- | --------------------------------------------------------- | -------------------------------- | --------------------- |
+| **Web app (Next.js)**   | UI, RSC, route handlers                                   | Vercel Edge (AU)                 | Yes                   |
+| **Calc Engine**         | Pure deterministic TS module                              | Imported into Edge/Node runtime  | Yes                   |
+| **AI Explainer**        | RAG over numbers → narration                              | Edge runtime, calls external LLM | Yes                   |
+| **Background Workers**  | PDF gen, scheduled reports, batch recalcs                 | Supabase Edge Functions          | Yes (idempotent jobs) |
+| **Postgres (Supabase)** | System of record                                          | Supabase AU (Sydney)             | No                    |
+| **Storage**             | PDF / CSV artefacts, QS PDFs                              | Supabase Storage                 | No                    |
+| **Redis (Upstash)**     | Rate limit counters, idempotency keys, AI narrative cache | Upstash AU                       | No (ephemeral)        |
 
 **Rule:** business logic for money lives only in the Calc Engine. No "convenience math" in API handlers or UI.
 
@@ -156,13 +156,13 @@ sequenceDiagram
 
 ## 5. Caching Strategy
 
-| Layer | What | TTL | Invalidation |
-|---|---|---|---|
-| Vercel CDN | Public marketing pages, OG images | 1 h | Deploy invalidates |
-| RSC cache | Static dashboard shells | 30 s (stale-while-revalidate) | On mutation, `revalidatePath` |
-| Redis (Upstash) | Scenario result by `input_hash` | 24 h | Property/loan mutation → purge by tag |
-| Redis | AI narrative by `(scenario_result_id, template_version)` | 7 d | Tax rule version change purges |
-| Postgres | Materialised view for portfolio metrics | 5 min | Triggered refresh on writes |
+| Layer           | What                                                     | TTL                           | Invalidation                          |
+| --------------- | -------------------------------------------------------- | ----------------------------- | ------------------------------------- |
+| Vercel CDN      | Public marketing pages, OG images                        | 1 h                           | Deploy invalidates                    |
+| RSC cache       | Static dashboard shells                                  | 30 s (stale-while-revalidate) | On mutation, `revalidatePath`         |
+| Redis (Upstash) | Scenario result by `input_hash`                          | 24 h                          | Property/loan mutation → purge by tag |
+| Redis           | AI narrative by `(scenario_result_id, template_version)` | 7 d                           | Tax rule version change purges        |
+| Postgres        | Materialised view for portfolio metrics                  | 5 min                         | Triggered refresh on writes           |
 
 **Rule:** never cache anything across users. All cache keys include `user_id` or `org_id`.
 
@@ -189,17 +189,18 @@ All jobs are idempotent (`job_id` UUID, dedupe via Redis `SETNX`). Failures retr
 
 ## 7. Scalability & Failover
 
-| Concern | Approach |
-|---|---|
-| Read scale | RLS-safe Postgres read replicas via Supabase (Phase 2); cache hot portfolio aggregates. |
-| Write scale | Calc Engine is stateless; horizontal Edge scaling. Postgres connection via Supabase pgbouncer. |
-| Hot path latency | RSC + Edge → P95 dashboard load <800 ms (AU users). |
-| Cold path (PDF gen) | Async; SLO P95 <30 s. |
-| LLM dependency | Hard 4 s timeout; templated fallback narrative. AI failure is **never** a user-visible blocker. |
-| Region failover | Supabase Sydney primary; Melbourne standby (Phase 2). RPO 5 min via PITR. |
-| Stripe outage | Webhooks queue locally; entitlements continue based on last-known tier with 7-day grace. |
+| Concern             | Approach                                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| Read scale          | RLS-safe Postgres read replicas via Supabase (Phase 2); cache hot portfolio aggregates.         |
+| Write scale         | Calc Engine is stateless; horizontal Edge scaling. Postgres connection via Supabase pgbouncer.  |
+| Hot path latency    | RSC + Edge → P95 dashboard load <800 ms (AU users).                                             |
+| Cold path (PDF gen) | Async; SLO P95 <30 s.                                                                           |
+| LLM dependency      | Hard 4 s timeout; templated fallback narrative. AI failure is **never** a user-visible blocker. |
+| Region failover     | Supabase Sydney primary; Melbourne standby (Phase 2). RPO 5 min via PITR.                       |
+| Stripe outage       | Webhooks queue locally; entitlements continue based on last-known tier with 7-day grace.        |
 
 ### Capacity targets (year-1)
+
 - 10k MAU, 50k properties, 500k scenario runs/month.
 - DB at <40% CPU. Hot read P99 <50 ms. Engine compute <60 ms per scenario.
 
@@ -218,11 +219,11 @@ All jobs are idempotent (`job_id` UUID, dedupe via Redis `SETNX`). Failures retr
 
 ## 9. Environments
 
-| Env | URL | Branch | DB | Tax rules | Stripe |
-|---|---|---|---|---|---|
-| Dev | `dev.propertywealth.local` | feature/* | seeded local | latest staged | test |
-| Staging | `staging.equitylens.app` | `staging` | clone of prod (anonymised) | staged | test |
-| Prod | `app.equitylens.com.au` | `main` | live | published | live |
+| Env     | URL                        | Branch     | DB                         | Tax rules     | Stripe |
+| ------- | -------------------------- | ---------- | -------------------------- | ------------- | ------ |
+| Dev     | `dev.propertywealth.local` | feature/\* | seeded local               | latest staged | test   |
+| Staging | `staging.equitylens.app`   | `staging`  | clone of prod (anonymised) | staged        | test   |
+| Prod    | `app.equitylens.com.au`    | `main`     | live                       | published     | live   |
 
 Promotion: dev → staging on PR merge; staging → prod via manual gated deploy. See `/operations/ci-cd-pipeline.md`.
 

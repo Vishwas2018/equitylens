@@ -10,16 +10,16 @@ Specification, process, and runbooks for the EquityLens platform.
 
 ## Map
 
-| Area              | Folder                |
-| ----------------- | --------------------- |
-| Product           | `product/`            |
-| Architecture      | `architecture/`       |
-| Database          | `database/`           |
-| Engine (finance)  | `engine/`             |
-| UI / UX           | `ui-ux/`              |
-| Operations        | `operations/`         |
-| Reports & exports | `reports-exports/`    |
-| Build process     | `process/`            |
+| Area              | Folder             |
+| ----------------- | ------------------ |
+| Product           | `product/`         |
+| Architecture      | `architecture/`    |
+| Database          | `database/`        |
+| Engine (finance)  | `engine/`          |
+| UI / UX           | `ui-ux/`           |
+| Operations        | `operations/`      |
+| Reports & exports | `reports-exports/` |
+| Build process     | `process/`         |
 
 Every doc cross-references others via leading-slash paths (e.g.
 `/architecture/api-contracts.md`), interpreted relative to `docs/`.

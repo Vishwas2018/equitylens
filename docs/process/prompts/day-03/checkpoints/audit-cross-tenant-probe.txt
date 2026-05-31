@@ -1,0 +1,4 @@
+Check: cross-tenant-probe
+Status: skipped
+
+SKIPPED — wired on Day 2 (see docs/process/15-day-plan.md § Day 2)

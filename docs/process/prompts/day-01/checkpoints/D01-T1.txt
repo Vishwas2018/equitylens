@@ -1,0 +1,65 @@
+Checkpoint: D01-T1 — Monorepo skeleton
+Date: 2026-05-19T06:47:09Z
+Branch: feature/d01-bootstrap
+
+ENVIRONMENT NOTE
+  Node (local): v24.15.0  (spec: ^20.14.0 — dev env deviation, DEV-0002)
+  pnpm (local): 10.30.3   (spec: 9.4.0 — dev env deviation, DEV-0002)
+  Local workaround: npm_config_engine_strict=false env-var (beats .npmrc cascade)
+  CI: actions/setup-node + .nvmrc pins to Node 20.14.0; no override needed
+
+--- Step 1: pnpm install --frozen-lockfile ---
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+Scope: all 5 workspace projects
+Lockfile is up to date, resolution step is skipped
+Already up to date
+Done in 501ms using pnpm v10.30.3
+RESULT: PASS (warn-only on Node 24; CI will pass clean on Node 20.14)
+
+--- Step 2: pnpm build ---
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+turbo 2.9.14 — Running build in 4 packages
+  @equitylens/design-tokens:build  tsc --project tsconfig.build.json  OK
+  @equitylens/engine:build         tsc --project tsconfig.build.json  OK
+  @equitylens/types:build          tsc --project tsconfig.build.json  OK
+  @equitylens/web:build            next build                         OK
+    Next.js 14.2.5 — typedRoutes enabled
+    Compiled successfully
+    Generating static pages (5/5)
+    Route /            142 B   87.1 kB first load JS
+    Route /api/health    0 B      0 B
+Tasks: 4 successful, 4 total  Time: 14.684s
+RESULT: PASS
+
+--- Step 3: pnpm --filter @equitylens/web start + curl /api/health ---
+> next start
+  Next.js 14.2.5  Local: http://localhost:3000
+  Starting... Ready in 383ms
+curl -s http://localhost:3000/api/health
+  {"ok":true,"version":"dev"}
+RESULT: PASS
+
+--- Step 4: node -e "console.log(process.version)" ---
+v24.15.0
+NOTE: drift from spec ^20.14.0 — surfaced by audit script warning (Step 5)
+
+--- Step 5: pnpm audit:cctv --day 02 ---
+=== CCTV Audit Stub ===
+Date:        2026-05-19T06:47:09.685Z
+Branch:      feature/d01-bootstrap
+HEAD SHA:    b58973ad424a8d0c16a62f79e7e6b35ed510d97e
+Last commit: b58973ad424a8d0c16a62f79e7e6b35ed510d97e 2026-05-19 16:11:58 +1000 chore(process): stub CCTV audit script [D00-T3]
+Node:        v24.15.0
+WARNING: Node version drift detected. Running: v24.15.0. Expected: v20.14.x (see .nvmrc). CI enforces exact version; local results may differ.
+--- git status --porcelain ---
+(shows all staged/modified files for D01-T1 — expected at this point in execution)
+--- day-* tags ---
+day-0-end
+NOTE: Full implementation wired in D01-T4.
+RESULT: PASS — Node-drift warning fired correctly
+
+=== OVERALL: PASS ===
+All 5 checkpoint steps completed.
+Engine enforcement working: engine-strict=true in .npmrc correctly rejects Node 24.
+Local dev override: npm_config_engine_strict=false env-var (env vars beat .npmrc in pnpm cascade).
+CI pipeline: Node 20.14.0 via .nvmrc → clean pass, no override needed.

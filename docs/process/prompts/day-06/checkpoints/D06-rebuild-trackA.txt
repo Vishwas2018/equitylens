@@ -1,0 +1,192 @@
+CHECKPOINT: D06-REBUILD-TRACK-A (revised after REVISE [D06-TRACK-A])
+Date: 2026-05-23
+Status: COMPLETE — pending human approval before Track B
+
+================================================================================
+CONTEXT
+================================================================================
+
+Track A was initiated as part of a three-track SEV1 response to DEF-0003
+(VIC land tax rates in fy2026.json were fabricated; file was falsely marked
+status:"published" with placeholder legal-review metadata).
+
+Track A scope: provenance system hardening — enforce lifecycle invariants,
+strip fabricated metadata, widen adapter, update tests.
+
+================================================================================
+WORK COMPLETED
+================================================================================
+
+A1 — Defect & backlog records opened
+  - DEF-0003 opened (SEV1, engine): VIC land tax rates fabricated + false provenance
+  - BL-0024 opened (P0): "VIC FY2026 land tax: tax-advisor + legal sign-off before publish"
+
+A2 — ADR-0011 drafted + provenance guard test written
+  File: docs/process/registers/adr/0011-tax-rulesets-always-draft-in-repo.md
+    Status: proposed
+    Decision: Tax ruleset JSON files committed to repo are ALWAYS status:"draft".
+    Published state is reachable ONLY via DB function publish_tax_ruleset() with real
+    tax_admin sign-off (hardware-key MFA) + legalReviewerId referencing real user
+    + legalReviewSignedAt written by DB + rulesetHash computed + sealed by DB trigger.
+
+  File: packages/engine/test/ruleset-provenance.test.ts (NEW — 12 tests)
+    Enforces per-file (excludes *.schema.json):
+      Rule 1: status === "draft"
+      Rule 2: metadata.legalReviewSignedAt absent
+      Rule 3: metadata.legalReviewerId absent or not a placeholder/all-zeros UUID
+      Rule 4: metadata.publishedBy absent or not a placeholder/all-zeros UUID
+      Rule 5: metadata.rulesetHash absent or valid 64-char lowercase hex
+      Rule 6: if rulesetHash valid hex, must equal sha256(canonicalJson(body without hash))
+    Covers: fy2026.json (6 tests) + fy2026-variant.json (6 tests)
+
+  ADR index updated: docs/process/registers/adr-index.md (ADR-0011 row added)
+
+A3 — fy2026.json and fy2026-variant.json fixed
+  fy2026.json:
+    - status: "published" → "draft"
+    - Removed: legalReviewSignedAt, legalReviewerId, publishedBy, publishedAt, rulesetHash
+    - Kept: metadata.sourceCitations (with retrieval date 2026-05-22 appended)
+    - Note: landTax.vic brackets STILL WRONG (Track B will replace with correct SRO 2024+ rates)
+
+  fy2026-variant.json:
+    - status: "published" → "draft"
+    - No metadata section — no other changes needed
+
+A3 — adapter.ts widened + production guard added
+  File: packages/engine/src/tax/ruleset/adapter.ts
+    resolveByFY signature changed from:
+      { status: 'published' }
+    to:
+      { status: 'draft' | 'staged' | 'published' | 'retired' }
+    Rationale: adapter is a test/dev tool; production code uses the DB.
+    The previous restriction to 'published' only was what forced prior AI sessions
+    to fabricate published status to resolve rulesets in tests.
+
+    Production guard added (single chokepoint, top of resolveByFY):
+      If NODE_ENV === 'production' AND status !== 'published' AND
+      ALLOW_DRAFT_RULESETS !== 'true' → throws Error mentioning 'production' and
+      the offending status. Prevents unreviewed rulesets from reaching production
+      silently. Draft resolution in test/dev is unrestricted.
+
+A3 — adapter.test.ts updated (all RS-xx tests)
+  File: packages/engine/test/tax/ruleset/adapter.test.ts
+    makeMinimalRuleset(): status 'published' → 'draft'
+    RS-01: title + resolveByFY → { status: 'draft' }; status assertion → toBe('draft')
+    RS-02, RS-03: resolveByFY → { status: 'draft' }
+    RS-04: resolveByFY → { status: 'draft' } (FY2099 still throws — FY doesn't exist)
+    RS-05: FLIPPED — was "draft-only FY, request published → throws"
+            now "published-only FY, request draft → throws" (proves adapter status-filters correctly)
+    RS-06: title + resolveByFY → "last draft wins"
+    RS-08, RS-08b, RS-09: resolveByFY → { status: 'draft' }
+    RS-10: resolveByFY → { status: 'draft' } (uses actual fy2026.json, now status:draft)
+    RS-11, RS-12: resolveByFY → { status: 'draft' }
+    RS-13: goodJson status → 'draft'; resolveByFY call → { status: 'draft' }
+           Last test FLIPPED: was "draft JSON, request published → throws"
+                               now "published JSON, request draft → throws"
+
+A3 — all other test files updated
+  packages/engine/test/land-tax/land-tax.test.ts      → { status: 'draft' }
+  packages/engine/test/tax/ruleset-binding.test.ts    → { status: 'draft' } (3 occurrences)
+  packages/engine/test/cross-validation/xv.test.ts   → { status: 'draft' }
+  packages/engine/test/cgt/cgt.test.ts                → { status: 'draft' }
+  packages/engine/test/tax/tax.test.ts                → { status: 'draft' }
+
+A4 — sweep complete (performed before A3)
+  Blast radius: exactly 2 ruleset files in src/tax/ruleset/data/
+    - fy2026.json (primary — wrong rates, false provenance)
+    - fy2026-variant.json (secondary — false provenance only, no rates section)
+  No other ruleset JSON files exist.
+
+A5 — DEV-0019 written
+  File: docs/process/registers/deviation-log.md
+    Type: architecture, Severity: high, Status: remediated
+    Documents: fabricated provenance in both JSON files, remediation steps applied,
+    structural impossibility of recurrence post-ADR-0011 + provenance guard
+
+A6 — Draft guard test written
+  File: packages/engine/test/ruleset-draft-guard.test.ts (NEW — 7 tests)
+    DG-01: draft + production + no flag → throws (3 assertions: Error type, /production/, /draft/)
+    DG-02: draft + production + ALLOW_DRAFT_RULESETS=true → succeeds (2 assertions)
+    DG-03: draft + test env → succeeds (1 assertion)
+    DG-04: published + production → always succeeds (1 assertion)
+    Env save/restore via beforeEach/afterEach — no cross-test leakage
+
+A7 — ADR-0011 updated with Pre-release Phase section
+  File: docs/process/registers/adr/0011-tax-rulesets-always-draft-in-repo.md
+    Added: §Pre-release Phase — 4 numbered controls:
+      1. Ruleset.status explicit in every output (BL-0025 tracks UI surfacing)
+      2. Production guard in adapter (single chokepoint, tested DG-01..DG-04)
+      3. Draft rulesets carry no rulesetHash in repo (publish-time artifact)
+      4. Day 15 gate must block production deploy with unpublished rulesets
+    Linked: BL-0025, BL-0026 added to ADR links
+    Status: still proposed (flagged for human acceptance at Day 6 closeout)
+
+A8 — BL-0025 and BL-0026 opened
+  File: docs/process/registers/product-backlog.md
+    BL-0025 (P0, M): Surface ruleset status in scenario_results + UI disclaimer
+                      + Day 15 deploy gate that blocks unpublished rulesets in production
+                      Links: ADR-0011, BL-0024, DEV-0019
+    BL-0026 (P1, XS): Move fy2026-variant.json to test fixtures dir
+                       Links: ADR-0011
+
+================================================================================
+TEST RESULTS
+================================================================================
+
+Full suite (post-revision):
+  14 test files → 410/410 PASS
+  (391 pre-Track-A + 12 provenance tests + 7 guard tests = 410)
+
+  ✓ test/ruleset-provenance.test.ts        12 tests
+  ✓ test/ruleset-draft-guard.test.ts        7 tests
+  ✓ test/money/cents.test.ts               28 tests
+  ✓ test/amortisation/goldens.test.ts      20 tests
+  ✓ test/amortisation/amortisation.test.ts 37 tests
+  ✓ test/money/canonical.test.ts           14 tests
+  ✓ test/cashflow/cashflow.test.ts         61 tests
+  ✓ test/land-tax/land-tax.test.ts         40 tests
+  ✓ test/cross-validation/xv.test.ts       22 tests
+  ✓ test/tax/ruleset/adapter.test.ts       60 tests
+  ✓ test/tax/tax.test.ts                   29 tests
+  ✓ test/cgt/cgt.test.ts                   70 tests
+  ✓ test/tax/ruleset-binding.test.ts        5 tests
+  ✓ test/determinism/harness.test.ts        5 tests
+
+================================================================================
+OPEN ITEMS (Track A does NOT include these — Track B/C)
+================================================================================
+
+fy2026.json landTax.vic brackets: STILL WRONG (Track B)
+  Current rates: 7-band scale with wrong flats/marginals (fabricated)
+  Required: SRO VIC 2024+ 8-band scale with correct figures
+  Cross-validation anchors needed: $360K→$1,530; $650K→$2,550; $750K→$3,150
+  Source: https://www.sro.vic.gov.au/land-tax-current-rates (retrieved 2026-05-22)
+  Also needed: trust surcharge brackets, VRLT at 1% of capital improved value,
+               absentee owner per-band table
+
+LT-01..LT-09 goldens: still based on wrong rates (Track B rebuild)
+Income tax / Medicare verification (Track C)
+
+================================================================================
+NO-HARDCODED GREP — Track A files
+================================================================================
+
+Search: numeric rates or thresholds hardcoded in newly modified src files
+
+$ grep -n "[0-9]\{4,\}" packages/engine/src/tax/ruleset/adapter.ts
+(no numeric constants — all processing is structural, no hardcoded values)
+
+All ruleset values continue to flow from JSON → RawRuleset → processRuleset()
+with no hardcoded brackets, rates, or thresholds.
+
+================================================================================
+LINKED RECORDS
+================================================================================
+
+DEF-0003  — VIC land tax rates fabricated (SEV1)
+BL-0024   — P0 backlog: VIC FY2026 ruleset needs legal sign-off before publish
+BL-0025   — P0 backlog: surface ruleset status + UI disclaimer + Day 15 deploy gate
+BL-0026   — P1 backlog: move test-only rulesets out of src/tax/ruleset/data/
+ADR-0011  — Tax rulesets committed to repo are always status:draft (PROPOSED — flagged for human acceptance at Day 6 closeout)
+DEV-0018  — Directional sanity check used as correctness evidence (high, pending)
+DEV-0019  — Tax ruleset fabricated legal-review provenance (high, remediated)

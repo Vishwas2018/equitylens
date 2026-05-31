@@ -1,0 +1,55 @@
+D06-T1 CHECKPOINT — CGTEngine CG-01..CG-12
+Generated: 2026-05-22
+
+== Test Results ==
+pnpm --filter @equitylens/engine test cgt
+  ✅ test/cgt/cgt.test.ts — 70 tests PASSED
+  (includes CG-01..CG-12 plus edge-case extensions)
+
+== Coverage ==
+pnpm --filter @equitylens/engine test -- --coverage
+  cgt/cost-base.ts  | 100% stmts | 100% branch | 100% funcs | 100% lines
+  cgt/engine.ts     | 100% stmts | 100% branch | 100% funcs | 100% lines
+  cgt/index.ts      | 100% stmts | 100% branch | 100% funcs | 100% lines
+  CGT module total  | 100% branch ✅ (threshold: ≥95%)
+  All files global  | 95.6% branch ✅ (threshold: ≥95%)
+  Full engine: 351 tests passed (11 test files)
+
+== Hardcoded Discount Check ==
+grep -rnE "0\.5|5000\b|\* 5 / 10|/ 2\b" packages/engine/src/cgt --include=*.ts
+  → CLEAN: no hardcoded discount
+  Discount rate sourced from: ruleset.cgt.individualDiscountBps (= 5000 from fy2026.json)
+  SMSF rate: ruleset.cgt.smsfDiscountBps (= 3333 from fy2026.json)
+  Company: 0 (explicit, not from ruleset number)
+
+== Goldens (externally-anchored) ==
+cgt-golden-01-no-discount-derivation.md
+  Acquisition 2024-07-01, disposal 2024-12-31 (183 days < 366)
+  Cost base $420,000 (income-producing: element3 excluded)
+  Gross gain $70,000 = 7,000,000 cents
+  No discount → taxable = 7,000,000 cents ✅
+
+cgt-golden-02-discount-derivation.md
+  Acquisition 2023-01-01, disposal 2024-01-02 (366 days)
+  Cost base $430,000 (e1+e2+e4, income-producing)
+  Net proceeds $588,000. Gross gain $158,000 = 15,800,000 cents
+  50% discount: 7,900,000 cents → taxable = 7,900,000 cents ✅
+
+cgt-golden-03-loss-then-discount-derivation.md
+  Acquisition 2022-01-01, disposal 2023-01-02 (366 days)
+  Gross gain $215,000. Prior losses $30,000.
+  ATO ordering: $215K - $30K = $185K → 50% → $92,500 = 9,250,000 cents ✅
+  Wrong ordering (discount-first) would give $77,500 — confirmed not returned.
+
+== Key Invariants Verified ==
+- Element 3 excluded when wasIncomeProducing=true ✅
+- Discount ineligible for company entity ✅
+- SMSF discount (3333 bps) < individual (5000 bps) ✅
+- Trust uses individual discount rate ✅
+- isPreCgtAsset=true → taxableGain=0 for all owners ✅
+- Capital loss → carryForwardLoss, taxableGain=0 (not against ordinary income) ✅
+- Prior losses exceed gain → excess carries forward ✅
+- Div43 > cost base → cost base clamped to 0 ✅
+
+== Status ==
+✅ PASS — all checkpoint criteria met

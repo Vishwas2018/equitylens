@@ -1,0 +1,4 @@
+Check: disclaimer-audit
+Status: skipped
+
+SKIPPED — wired on Day 8 (see docs/process/15-day-plan.md § Day 8)

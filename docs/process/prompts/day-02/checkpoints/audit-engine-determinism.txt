@@ -1,0 +1,4 @@
+Check: engine-determinism
+Status: skipped
+
+SKIPPED — wired on Day 4 (see docs/process/15-day-plan.md § Day 4)
