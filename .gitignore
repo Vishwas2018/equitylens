@@ -15,3 +15,4 @@ test-results/
 
 .vercel
 supabase/.temp/
+.env.staging-secrets
