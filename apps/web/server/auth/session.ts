@@ -1,21 +1,36 @@
 import type { Session } from '@equitylens/types';
-import { jwtVerify } from 'jose';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-function getJwtSecretBytes(): Uint8Array {
+// HS256 path: Supabase JWT secret as symmetric bytes (used when project is HS256-configured).
+function tryGetJwtSecretBytes(): Uint8Array | null {
   const raw = process.env['SUPABASE_JWT_SECRET'];
-  if (!raw) throw new Error('SUPABASE_JWT_SECRET not set');
-  // Supabase stores the JWT secret as base64; decode to raw bytes for HS256 verification.
+  if (!raw) return null;
   return Buffer.from(raw, 'base64');
 }
 
+// ES256 path: verify against Supabase JWKS (works for both HS256 and ES256, cached for 15 min).
+// Initialised lazily so the middleware module can load without the env var present at build time.
+let _jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+function getJwks(): ReturnType<typeof createRemoteJWKSet> {
+  if (!_jwks) {
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'];
+    if (!supabaseUrl) throw new Error('NEXT_PUBLIC_SUPABASE_URL not set');
+    _jwks = createRemoteJWKSet(new URL(`${supabaseUrl}/auth/v1/.well-known/jwks.json`));
+  }
+  return _jwks;
+}
+
 /**
- * Verifies a Supabase access token locally using SUPABASE_JWT_SECRET.
- * No network call — safe to call on every request in middleware.
+ * Verifies a Supabase access token.
+ *
+ * Strategy: try HS256 (symmetric JWT secret) first — zero network cost.
+ * If the project uses ES256 (asymmetric, newer Supabase default), fall back
+ * to the Supabase JWKS endpoint. The JWKS set is cached by jose for 15 min.
  */
 export async function verifySessionToken(token: string): Promise<Session | null> {
   if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, getJwtSecretBytes());
+
+  const extractPayload = (payload: import('jose').JWTPayload): Session | null => {
     if (!payload.sub) return null;
     return {
       userId: payload.sub,
@@ -23,6 +38,23 @@ export async function verifySessionToken(token: string): Promise<Session | null>
       aal: ((payload['aal'] as string | undefined) ?? 'aal1') as Session['aal'],
       expiresAt: payload.exp ?? 0,
     };
+  };
+
+  // Try HS256 path first (no network call).
+  const secretBytes = tryGetJwtSecretBytes();
+  if (secretBytes) {
+    try {
+      const { payload } = await jwtVerify(token, secretBytes, { algorithms: ['HS256'] });
+      return extractPayload(payload);
+    } catch {
+      // Fall through to JWKS path (project may use ES256).
+    }
+  }
+
+  // JWKS path — handles ES256 and any future algorithm Supabase adopts.
+  try {
+    const { payload } = await jwtVerify(token, getJwks());
+    return extractPayload(payload);
   } catch {
     return null;
   }
