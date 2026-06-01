@@ -9,29 +9,42 @@ export interface RateLimitResult {
 }
 
 // Internal singleton — replaced in tests via _setLimitFn.
-let _limitFn: LimitFn | null = null;
+let _limitFn: LimitFn | null | undefined = undefined;
 
-function getProductionLimitFn(): LimitFn {
-  const ratelimit = new Ratelimit({
-    redis: Redis.fromEnv(),
-    limiter: Ratelimit.slidingWindow(10, '60 s'),
-    prefix: 'equitylens:signin',
-  });
-  return (ip) => ratelimit.limit(ip);
+function getProductionLimitFn(): LimitFn | null {
+  const url = process.env['UPSTASH_REDIS_REST_URL'];
+  const token = process.env['UPSTASH_REDIS_REST_TOKEN'];
+  if (!url || !token) return null; // Upstash not configured — fail-open below
+  try {
+    const ratelimit = new Ratelimit({
+      redis: new Redis({ url, token }),
+      limiter: Ratelimit.slidingWindow(10, '60 s'),
+      prefix: 'equitylens:signin',
+    });
+    return (ip) => ratelimit.limit(ip);
+  } catch {
+    return null;
+  }
 }
 
-function getLimitFn(): LimitFn {
-  if (!_limitFn) _limitFn = getProductionLimitFn();
+function getLimitFn(): LimitFn | null {
+  if (_limitFn === undefined) _limitFn = getProductionLimitFn();
   return _limitFn;
 }
 
 export async function checkSignInRateLimit(ip: string): Promise<RateLimitResult> {
-  const { success, reset } = await getLimitFn()(ip);
-  const retryAfter = success ? 0 : Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-  return { allowed: success, retryAfter };
+  const fn = getLimitFn();
+  if (!fn) return { allowed: true, retryAfter: 0 }; // fail-open when Upstash unavailable
+  try {
+    const { success, reset } = await fn(ip);
+    const retryAfter = success ? 0 : Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+    return { allowed: success, retryAfter };
+  } catch {
+    return { allowed: true, retryAfter: 0 }; // fail-open on transient Redis errors
+  }
 }
 
 // Testing hook — inject a mock limit function; pass null to restore production singleton.
 export function _setLimitFn(fn: LimitFn | null): void {
-  _limitFn = fn;
+  _limitFn = fn ?? undefined;
 }
