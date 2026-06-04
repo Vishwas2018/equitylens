@@ -17,9 +17,18 @@ async function getBetaAcked(): Promise<boolean> {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll() {
-          // Read-only in layout; token rotation handled by middleware.
-          // getUser() below hits the auth server directly — no cookie writes needed.
+        setAll(cookiesToSet) {
+          // Layout Server Components cannot write cookies; swallow the error so that
+          // an implicit token refresh inside getUser() does not silently consume the
+          // refresh token (leaving the browser with a dead cookie on the next request).
+          // Token rotation is authoritative in middleware which has a writable setAll.
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options),
+            );
+          } catch {
+            // Expected in RSC context — cookies() is read-only here.
+          }
         },
       },
     },
