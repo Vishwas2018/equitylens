@@ -45,15 +45,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <TopBar />
+      {/* D16-A4: persistent beta banner — fixed full-width below TopBar, above SideNav */}
+      <BetaBanner />
       {/* BL-0025: banner slot — wired now, reads ruleset_status post D08-T4 */}
       <RulesetStatusBanner status="draft" rulesetLabel="FY2026" />
       <SideNav />
       <main
-        className="ml-56 mt-14 min-h-[calc(100dvh-3.5rem)] bg-[var(--bg-page)]"
+        className="ml-56 mt-[calc(3.5rem+var(--shell-banner-h))] min-h-[calc(100dvh-3.5rem-var(--shell-banner-h))] bg-(--bg-page)"
         id="main-content"
       >
-        {/* D16-A4: persistent beta banner — not dismissible */}
-        <BetaBanner />
         <div className="p-(--space-6)">{children}</div>
       </main>
       {/* D16-A3: block all routes until beta ack persisted to user_metadata */}

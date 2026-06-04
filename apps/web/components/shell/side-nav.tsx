@@ -25,7 +25,7 @@ export function SideNav({ className }: SideNavProps) {
     <nav
       aria-label="Main navigation"
       className={cn(
-        'fixed bottom-0 left-0 top-14 z-40 flex w-56 flex-col border-r border-[var(--border-default)] bg-[var(--bg-surface)] py-[var(--space-3)]',
+        'fixed bottom-0 left-0 top-[calc(3.5rem+var(--shell-banner-h))] z-40 flex w-56 flex-col border-r border-[var(--border-default)] bg-[var(--bg-surface)] py-[var(--space-3)]',
         className,
       )}
     >

@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @import '@equitylens/design-tokens/tokens.css';
 
+/* ── Shell layout variables ── */
+:root {
+  /* beta banner rendered height — keep in sync with beta-banner.tsx py + text line-height + border */
+  --shell-banner-h: 2.25rem;
+}
+
 /* ── Base ── */
 html {
   font-family: var(--font-sans);
