@@ -19,14 +19,15 @@ async function getBetaAcked(): Promise<boolean> {
         },
         setAll() {
           // Read-only in layout; token rotation handled by middleware.
+          // getUser() below hits the auth server directly — no cookie writes needed.
         },
       },
     },
   );
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  return session?.user?.user_metadata?.['beta_ack'] === true;
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.user_metadata?.['beta_ack'] === true;
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
