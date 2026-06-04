@@ -19,23 +19,23 @@
 
 The following access patterns drive every index decision. Each is tagged with a frequency band: **HOT** (≥ 100/s), **WARM** (1–100/s), **COLD** (< 1/s).
 
-| ID    | Pattern                                                                 | Table(s)                          | Band |
-| ----- | ----------------------------------------------------------------------- | --------------------------------- | ---- |
-| Q-01  | Load portfolio dashboard: all active properties for org                | `properties`                      | HOT  |
-| Q-02  | Property detail: property + active loans + latest scenario             | `properties`,`loans`,`scenarios`  | HOT  |
-| Q-03  | Cash flow timeline: income + expenses for property over date range     | `income_records`,`expense_records`| HOT  |
-| Q-04  | Run scenario: lookup tax_rule_set by FY + jurisdiction (locked)        | `tax_rule_sets`                   | HOT  |
-| Q-05  | Scenario history: list user's scenarios for a property, paginated      | `scenarios`                       | WARM |
-| Q-06  | Replay scenario by input hash: cache hit before recompute              | `scenario_results`                | HOT  |
-| Q-07  | Audit log read: list actions for org over date range (admin only)      | `audit_logs`                      | COLD |
-| Q-08  | Audit log write: append-only insert                                    | `audit_logs`                      | HOT  |
-| Q-09  | Subscription lookup by Stripe customer id (webhook)                    | `subscriptions`                   | WARM |
-| Q-10  | Depreciation schedule lookup by property + FY                          | `depreciation_schedules`          | WARM |
-| Q-11  | Org membership check (RLS hot path)                                    | `org_members`                     | HOT  |
-| Q-12  | Property search by suburb/postcode (autocomplete)                      | `properties`                      | WARM |
-| Q-13  | Report status polling                                                  | `report_jobs`                     | WARM |
-| Q-14  | AI interaction audit by user/session                                   | `ai_interactions`                 | COLD |
-| Q-15  | Stripe event idempotency check                                         | `stripe_events`                   | HOT  |
+| ID   | Pattern                                                            | Table(s)                           | Band |
+| ---- | ------------------------------------------------------------------ | ---------------------------------- | ---- |
+| Q-01 | Load portfolio dashboard: all active properties for org            | `properties`                       | HOT  |
+| Q-02 | Property detail: property + active loans + latest scenario         | `properties`,`loans`,`scenarios`   | HOT  |
+| Q-03 | Cash flow timeline: income + expenses for property over date range | `income_records`,`expense_records` | HOT  |
+| Q-04 | Run scenario: lookup tax_rule_set by FY + jurisdiction (locked)    | `tax_rule_sets`                    | HOT  |
+| Q-05 | Scenario history: list user's scenarios for a property, paginated  | `scenarios`                        | WARM |
+| Q-06 | Replay scenario by input hash: cache hit before recompute          | `scenario_results`                 | HOT  |
+| Q-07 | Audit log read: list actions for org over date range (admin only)  | `audit_logs`                       | COLD |
+| Q-08 | Audit log write: append-only insert                                | `audit_logs`                       | HOT  |
+| Q-09 | Subscription lookup by Stripe customer id (webhook)                | `subscriptions`                    | WARM |
+| Q-10 | Depreciation schedule lookup by property + FY                      | `depreciation_schedules`           | WARM |
+| Q-11 | Org membership check (RLS hot path)                                | `org_members`                      | HOT  |
+| Q-12 | Property search by suburb/postcode (autocomplete)                  | `properties`                       | WARM |
+| Q-13 | Report status polling                                              | `report_jobs`                      | WARM |
+| Q-14 | AI interaction audit by user/session                               | `ai_interactions`                  | COLD |
+| Q-15 | Stripe event idempotency check                                     | `stripe_events`                    | HOT  |
 
 ---
 
@@ -249,11 +249,11 @@ This:
 
 ### 4.3 Retention
 
-| Table              | Hot retention     | Cold retention                          | Action after cold              |
-| ------------------ | ----------------- | --------------------------------------- | ------------------------------ |
-| `audit_logs`       | 13 months online  | 7 years (APP, ATO record-keeping)       | Detach + archive to S3 Glacier |
-| `scenario_results` | 24 months online  | 7 years for paid orgs, 12 months free   | Detach + archive               |
-| `ai_interactions`  | 6 months online   | 24 months                               | Detach + permanently drop      |
+| Table              | Hot retention    | Cold retention                        | Action after cold              |
+| ------------------ | ---------------- | ------------------------------------- | ------------------------------ |
+| `audit_logs`       | 13 months online | 7 years (APP, ATO record-keeping)     | Detach + archive to S3 Glacier |
+| `scenario_results` | 24 months online | 7 years for paid orgs, 12 months free | Detach + archive               |
+| `ai_interactions`  | 6 months online  | 24 months                             | Detach + permanently drop      |
 
 ```sql
 -- Cold-tier example: detach partitions older than 13 months for audit_logs
@@ -363,8 +363,8 @@ Every query in `pg_stat_statements` with mean execution time > 200 ms or P95 > 1
 
 ## 8. Cross-References
 
-* `/database/schema.sql` — table DDL referenced by every index above.
-* `/database/rls-policies.sql` — RLS predicates that determine which indexes are actually usable.
-* `/engine/financial-calc-engine.md` § 4 — input-hash determinism contract enforced by `uq_scenario_results_input_hash`.
-* `/operations/ci-cd-pipeline.md` § 5 — migration safety rules; index creation gates.
-* `/operations/monitoring-and-observability.md` § 4 — slow query alerting.
+- `/database/schema.sql` — table DDL referenced by every index above.
+- `/database/rls-policies.sql` — RLS predicates that determine which indexes are actually usable.
+- `/engine/financial-calc-engine.md` § 4 — input-hash determinism contract enforced by `uq_scenario_results_input_hash`.
+- `/operations/ci-cd-pipeline.md` § 5 — migration safety rules; index creation gates.
+- `/operations/monitoring-and-observability.md` § 4 — slow query alerting.

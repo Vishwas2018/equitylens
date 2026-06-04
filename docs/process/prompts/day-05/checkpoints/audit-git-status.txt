@@ -1,0 +1,7 @@
+Check: git-status
+Status: pass
+
+?? HOW-TO-RUN.md
+?? docs/audit-prompt.md
+?? docs/process/prompts/day-04/checkpoints/
+?? run-audit.sh

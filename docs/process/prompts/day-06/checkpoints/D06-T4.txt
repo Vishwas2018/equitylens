@@ -1,0 +1,119 @@
+D06-T4 CHECKPOINT — Income Tax + Medicare Re-verification (Track C, DEF-0003)
+Generated: 2026-05-23
+
+== Objective ==
+Re-verify FY2026 income tax brackets and Medicare thresholds per C1..C4.
+Add ATO/legislation-anchored TX-XV cross-validation tests and golden derivations.
+Surface any unverified values as open deviations before Track C commit.
+
+== C1: Status + Citation ==
+fy2026.json: status = "draft" ✓ (set in Track A)
+sourceCitations updated to distinguish which source covers which field:
+  - marginalRates:     Treasury Laws Amendment (Cost of Living Tax Cuts) Act 2024 (primary);
+                       ATO URL noted but returns 403
+  - medicareLevy.rateBps: Medicare Levy Act 1986 s.6 (2% rate)
+  - singleThresholdCents/familyThresholdCents: ATO Medicare levy low-income threshold page
+                       (HTTP 403 — see DEV-0021)
+  - surchargeBrackets: ATO MLS URL (same as before, cited correctly)
+  - landTax.vic:       SRO VIC URL (Track B, unchanged)
+
+== C2: Income Tax Brackets — Stage 3 (confirmed) ==
+Brackets confirmed against Treasury Laws Amendment (Cost of Living Tax Cuts) Act 2024:
+  $0 – $18,200:          0%   (1,820,000c threshold)
+  $18,201 – $45,000:    16%   (4,500,000c threshold)
+  $45,001 – $135,000:   30%   (13,500,000c threshold)
+  $135,001 – $190,000:  37%   (19,000,000c threshold)
+  Over $190,000:        45%
+
+User confirmed correct on 2026-05-22. ATO URL returns 403; legislation is authoritative.
+Existing TX-01..TX-10 values (TR-XV-01..02 added for C4) — all checked correct. ✓
+
+== C3: Medicare Low-Income Thresholds — UNVERIFIED (DEV-0021) ==
+ATO Medicare levy page: HTTP 403 (all ATO URLs blocked in automated access).
+
+Secondary source (etax.com.au, queried for 2025-26):
+  Single threshold: $27,222
+  Family threshold: $45,907
+
+fy2026.json current values:
+  singleThresholdCents: 2,716,800 ($27,168) — $54 below secondary source
+  familyThresholdCents: 4,584,000 ($45,840) — $67 below secondary source
+
+Assessment: Thresholds are indexed upward annually. fy2026.json values ($27,168/$45,840)
+are below what the secondary source shows for the current year. They may represent FY2025
+values or an earlier year's data. Values were NOT changed (etax is a secondary source;
+direct ATO confirmation required before modifying).
+
+Status: DEV-0021 open, severity medium. No test values derived from the boundary changed.
+TX-XV-03 designed to be threshold-independent. TX-11 boundary test uses ruleset's own
+threshold value — tests engine boundary logic, not threshold correctness.
+
+ATO page to verify: https://www.ato.gov.au/individuals-and-families/medicare-levy/how-much-medicare-levy-you-pay
+
+== C4: External Anchors — Added ==
+NEW: packages/engine/test/fixtures/tax/tx-golden-01-income-tax-derivation.md
+  TX-XV-01: $120,000 → 2,678,800c ($26,788) — Stage 3 Bands 2–3
+  TX-XV-02: $180,000 → 4,793,800c ($47,938) — Stage 3 Bands 2–4
+
+NEW: packages/engine/test/fixtures/tax/tx-golden-02-medicare-derivation.md
+  TX-XV-03: $150,000 single Medicare levy → 300,000c ($3,000) — 2% rate, threshold-independent
+
+TX-XV derivation arithmetic (HALF_UP, bigint):
+
+TX-XV-01 ($120,000 = 12,000,000c):
+  Band 2: mulDiv(2,680,000, 1600, 10000) = (4,288,000,000 + 5000)/10000 = 428,800c
+  Band 3: mulDiv(7,500,000, 3000, 10000) = (22,500,000,000 + 5000)/10000 = 2,250,000c
+  Total:  2,678,800c = $26,788 ✓
+  Cross-check: 16%×$26,800 + 30%×$75,000 = $4,288 + $22,500 = $26,788 ✓
+
+TX-XV-02 ($180,000 = 18,000,000c):
+  Band 2: 428,800c
+  Band 3: mulDiv(9,000,000, 3000, 10000) = (27,000,000,000 + 5000)/10000 = 2,700,000c (full band)
+  Band 4: mulDiv(4,500,000, 3700, 10000) = (16,650,000,000 + 5000)/10000 = 1,665,000c
+  Total:  4,793,800c = $47,938 ✓
+  Cross-check: 16%×$26,800 + 30%×$90,000 + 37%×$45,000 = $4,288 + $27,000 + $16,650 = $47,938 ✓
+
+TX-XV-03 ($150,000 = 15,000,000c single):
+  mulDiv(15,000,000, 200, 10000) = (3,000,000,000 + 5000)/10000 = 300,000c = $3,000 ✓
+  Independent of singleThresholdCents ($150K >> $27K plausible range).
+
+== Files Changed ==
+1. packages/engine/src/tax/ruleset/data/fy2026.json
+   - sourceCitations: expanded to 5 entries, each field-scoped; adds Medicare levy reduction
+     threshold ATO URL; notes 403 status and DEV-0021 for threshold fields
+
+2. packages/engine/test/fixtures/tax/tx-golden-01-income-tax-derivation.md  [NEW]
+   - TX-XV-01 ($120K) and TX-XV-02 ($180K) full bigint derivations + cross-checks
+
+3. packages/engine/test/fixtures/tax/tx-golden-02-medicare-derivation.md  [NEW]
+   - TX-XV-03 ($150K Medicare) derivation; DEV-0021 threshold discrepancy documented
+
+4. packages/engine/test/tax/tax.test.ts
+   - TX-XV-01, TX-XV-02, TX-XV-03 describe blocks added (+3 tests: 29 → 32)
+
+5. docs/process/registers/deviation-log.md
+   - DEV-0021: Medicare levy low-income thresholds unverified (medium, pending)
+
+== Test Results ==
+Suite: npx vitest run (packages/engine)
+  ✅ test/tax/tax.test.ts        — 32 tests PASSED (was 29, +3 XV anchors)
+  ✅ All other test files        — GREEN (unchanged)
+  TOTAL: 421/421 PASSED (14 test files)
+
+== Test Count Delta (Track B 418 → Track C 421, +3) ==
+tax.test.ts: 29 → 32 (+3)
+  TX-XV-01: +1 it (income tax = 2,678,800c)
+  TX-XV-02: +1 it (income tax = 4,793,800c)
+  TX-XV-03: +1 it (Medicare levy = 300,000c)
+
+== Open Items (human action required) ==
+DEV-0021: Verify Medicare low-income thresholds for FY2026 at:
+  https://www.ato.gov.au/individuals-and-families/medicare-levy/how-much-medicare-levy-you-pay
+  If thresholds differ from fy2026.json values ($27,168/$45,840), update the JSON and TX-11.
+
+ADR-0011: Status remains "proposed". Must be flagged for human acceptance at Day 6 closeout.
+
+== Status ==
+✅ PASS — 421/421 GREEN, ≥2 external anchors for income tax (2) and Medicare (1),
+   all arithmetic verified, DEV-0021 open and documented.
+   Track C ready to commit pending approval.

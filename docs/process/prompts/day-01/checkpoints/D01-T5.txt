@@ -1,0 +1,48 @@
+Checkpoint: D01-T5 — CI Workflow, CODEOWNERS, PR Template, Composite Action
+Date: 2026-05-19
+Branch: feature/d01-bootstrap
+
+--- Files created ---
+.github/actions/restore-deps/action.yml
+  Composite action: pnpm/action-setup@v4 (version: 10, per DEV-0002) +
+  actions/setup-node@v4 (node-version-file: .nvmrc → 20.14.0) +
+  pnpm install --frozen-lockfile
+
+.github/workflows/ci.yml
+  Jobs:
+    commit-lint (PR only):
+      - pnpm commitlint --from base.sha --to head.sha
+      - grep each commit subject for [D\d{2}-T\d+]$ (DEV-0006 server-side mitigation)
+    typecheck, lint, format-check, test — independent, parallel
+    audit-deps — hard failure (DEF-0001 known; drives BL-0022 resolution)
+    build — depends on typecheck, lint, format-check, test; env: BUILD_SHA=${{ github.sha }}
+
+.github/CODEOWNERS
+  * @Vishwas2018 (global)
+  /packages/engine/ @Vishwas2018 (financial calculation rules)
+  /docs/process/registers/ @Vishwas2018 (register integrity)
+  /.github/ .npmrc packages/engine/.eslintrc.cjs @Vishwas2018 (security config)
+
+.github/pull_request_template.md
+  Checklist: CCTV check, task-ID format, no any/@ts-ignore, engine rules,
+  register entries, prettier clean
+
+--- Verification ---
+pnpm format:check: PASS (all .github files formatted)
+git status: clean (only .github/ untracked)
+
+--- Notes for required checks (human configures in GitHub Settings) ---
+Required status checks to add under main branch protection:
+  - "Commit lint"     (commit-lint job — blocks merges missing task-ID suffix)
+  - "Type check"      (typecheck job)
+  - "Lint"            (lint job)
+  - "Format check"    (format-check job)
+  - "Test"            (test job)
+  - "Dependency audit" (audit-deps — will show red until DEF-0001 resolved)
+  - "Build"           (build job)
+
+--- DEV-0006 disposition ---
+Mitigation: commit-lint CI job adds server-side grep check for [DNN-TM] pattern.
+Status: accepted with mitigation (CI enforces pattern on PRs).
+
+=== OVERALL: PASS ===

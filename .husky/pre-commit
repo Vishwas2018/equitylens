@@ -1,0 +1,2 @@
+export npm_config_engine_strict=false
+pnpm lint-staged

@@ -1,0 +1,4 @@
+Check: region-check
+Status: warn
+
+SUPABASE_MGMT_TOKEN or SUPABASE_PROJECT_REF not set — skipping region check locally (runs on CI for main/staging pushes)

@@ -44,17 +44,17 @@ A DB trigger locks rows once `state = 'published'`; subsequent updates raise an 
 
 ### 2.1 Catalogue
 
-| Slug                        | Formats           | Audience           | Description                                              |
-| --------------------------- | ----------------- | ------------------ | -------------------------------------------------------- |
-| `portfolio-summary`         | PDF, CSV          | Investor           | Single-page overview of all properties and net position  |
-| `property-detail`           | PDF               | Investor           | Deep dive on one property with 30-year forecast          |
-| `scenario-comparison`       | PDF, CSV          | Investor / Adviser | Side-by-side of up to 4 scenarios                        |
-| `cashflow-annual`           | CSV, XLSX         | Investor / Adviser | Year-by-year cashflow lines, ATO-aligned                 |
-| `cgt-disposal`              | PDF, CSV          | Investor / Adviser | CGT calculation breakdown per disposal                   |
-| `land-tax-victoria`         | PDF, CSV          | Investor           | Annual Victorian land tax summary                        |
-| `hold-vs-sell`              | PDF               | Investor           | Decision support comparing hold vs sell outcomes         |
-| `adviser-pack`              | PDF (multi-doc)   | Adviser            | Bundle: portfolio, all properties, cashflows, CGT, notes |
-| `data-export-full`          | JSON              | Investor (APP 12)  | Full machine-readable export of user's data              |
+| Slug                  | Formats         | Audience           | Description                                              |
+| --------------------- | --------------- | ------------------ | -------------------------------------------------------- |
+| `portfolio-summary`   | PDF, CSV        | Investor           | Single-page overview of all properties and net position  |
+| `property-detail`     | PDF             | Investor           | Deep dive on one property with 30-year forecast          |
+| `scenario-comparison` | PDF, CSV        | Investor / Adviser | Side-by-side of up to 4 scenarios                        |
+| `cashflow-annual`     | CSV, XLSX       | Investor / Adviser | Year-by-year cashflow lines, ATO-aligned                 |
+| `cgt-disposal`        | PDF, CSV        | Investor / Adviser | CGT calculation breakdown per disposal                   |
+| `land-tax-victoria`   | PDF, CSV        | Investor           | Annual Victorian land tax summary                        |
+| `hold-vs-sell`        | PDF             | Investor           | Decision support comparing hold vs sell outcomes         |
+| `adviser-pack`        | PDF (multi-doc) | Adviser            | Bundle: portfolio, all properties, cashflows, CGT, notes |
+| `data-export-full`    | JSON            | Investor (APP 12)  | Full machine-readable export of user's data              |
 
 ---
 
@@ -96,16 +96,16 @@ Scenario:     {scenario_name} ({scenario_id})
 
 ### 3.3 Money Formatting
 
-* Stored as bigint cents in the engine; rendered as `$1,234,567` (no decimals) for headline figures and `$1,234,567.89` where pennies matter (CGT calculation lines, settlement statements).
-* Negative values shown as `-$1,234` in CSVs and `($1,234)` in PDFs (accounting convention).
-* Currency code always `AUD`; templates assert and refuse other codes.
+- Stored as bigint cents in the engine; rendered as `$1,234,567` (no decimals) for headline figures and `$1,234,567.89` where pennies matter (CGT calculation lines, settlement statements).
+- Negative values shown as `-$1,234` in CSVs and `($1,234)` in PDFs (accounting convention).
+- Currency code always `AUD`; templates assert and refuse other codes.
 
 ### 3.4 Date Formatting
 
-* Long form: `1 July 2026` (PDF body)
-* Short form: `01/07/2026` (PDF tables)
-* ISO: `2026-07-01` (CSV, JSON)
-* Financial year: `FY2026` (= year ending 30 June 2026, ATO convention)
+- Long form: `1 July 2026` (PDF body)
+- Short form: `01/07/2026` (PDF tables)
+- ISO: `2026-07-01` (CSV, JSON)
+- Financial year: `FY2026` (= year ending 30 June 2026, ATO convention)
 
 ### 3.5 Locale & i18n
 
@@ -139,35 +139,35 @@ fy,property_id,property_label,gross_rent,vacancy_loss,property_mgmt_fee,...
 
 ATO-aligned column set; each row is one financial year × property.
 
-| Column                       | Type   | Notes                                                          | ATO line ref |
-| ---------------------------- | ------ | -------------------------------------------------------------- | ------------ |
-| `fy`                         | string | `FY2026`                                                       | —            |
-| `property_id`                | string | UUID                                                           | —            |
-| `property_label`             | string | User-provided label, no street address                         | —            |
-| `gross_rent`                 | number | AUD, 2dp                                                       | 21A          |
-| `vacancy_loss`               | number | Negative                                                       | —            |
-| `property_mgmt_fee`          | number | Negative                                                       | 21H          |
-| `repairs_and_maintenance`    | number | Negative                                                       | 21G          |
-| `body_corporate_fees`        | number | Negative                                                       | 21F          |
-| `council_rates`              | number | Negative                                                       | 21E          |
-| `water_rates`                | number | Negative                                                       | 21K          |
-| `insurance`                  | number | Negative                                                       | 21J          |
-| `land_tax`                   | number | Negative; sourced from `cgt-disposal`-adjacent land tax engine | 21M          |
-| `interest_expense`           | number | Negative                                                       | 21I          |
-| `borrowing_expenses_deductible` | number | Negative; amortised per ATO five-year rule                 | 21Q          |
-| `depreciation_capital_works` | number | Negative; Div 43                                               | 21X          |
-| `depreciation_plant`         | number | Negative; Div 40                                               | 21X          |
-| `other_deductible`           | number | Negative                                                       | 21U          |
-| `net_rental_income`          | number | Sum of above                                                   | 21R/21S      |
-| `principal_repayment`        | number | Negative; not deductible, included for cashflow                | —            |
-| `pre_tax_cashflow`           | number |                                                                | —            |
-| `marginal_tax_rate`          | number | Decimal, e.g. `0.45`                                           | —            |
-| `medicare_levy_rate`         | number | Decimal                                                        | —            |
-| `tax_impact`                 | number | Signed; positive = refund effect                               | —            |
-| `after_tax_cashflow`         | number |                                                                | —            |
-| `equity_end_of_year`         | number |                                                                | —            |
-| `lvr_end_of_year`            | number | Decimal                                                        | —            |
-| `notes`                      | string | Free text                                                      | —            |
+| Column                          | Type   | Notes                                                          | ATO line ref |
+| ------------------------------- | ------ | -------------------------------------------------------------- | ------------ |
+| `fy`                            | string | `FY2026`                                                       | —            |
+| `property_id`                   | string | UUID                                                           | —            |
+| `property_label`                | string | User-provided label, no street address                         | —            |
+| `gross_rent`                    | number | AUD, 2dp                                                       | 21A          |
+| `vacancy_loss`                  | number | Negative                                                       | —            |
+| `property_mgmt_fee`             | number | Negative                                                       | 21H          |
+| `repairs_and_maintenance`       | number | Negative                                                       | 21G          |
+| `body_corporate_fees`           | number | Negative                                                       | 21F          |
+| `council_rates`                 | number | Negative                                                       | 21E          |
+| `water_rates`                   | number | Negative                                                       | 21K          |
+| `insurance`                     | number | Negative                                                       | 21J          |
+| `land_tax`                      | number | Negative; sourced from `cgt-disposal`-adjacent land tax engine | 21M          |
+| `interest_expense`              | number | Negative                                                       | 21I          |
+| `borrowing_expenses_deductible` | number | Negative; amortised per ATO five-year rule                     | 21Q          |
+| `depreciation_capital_works`    | number | Negative; Div 43                                               | 21X          |
+| `depreciation_plant`            | number | Negative; Div 40                                               | 21X          |
+| `other_deductible`              | number | Negative                                                       | 21U          |
+| `net_rental_income`             | number | Sum of above                                                   | 21R/21S      |
+| `principal_repayment`           | number | Negative; not deductible, included for cashflow                | —            |
+| `pre_tax_cashflow`              | number |                                                                | —            |
+| `marginal_tax_rate`             | number | Decimal, e.g. `0.45`                                           | —            |
+| `medicare_levy_rate`            | number | Decimal                                                        | —            |
+| `tax_impact`                    | number | Signed; positive = refund effect                               | —            |
+| `after_tax_cashflow`            | number |                                                                | —            |
+| `equity_end_of_year`            | number |                                                                | —            |
+| `lvr_end_of_year`               | number | Decimal                                                        | —            |
+| `notes`                         | string | Free text                                                      | —            |
 
 Validation: `net_rental_income == gross_rent + sum(deductibles)`; engine refuses to emit a row that fails this identity. Round-trip parsing test in CI ensures CSV → struct → CSV is byte-identical.
 
@@ -175,45 +175,45 @@ Validation: `net_rental_income == gross_rent + sum(deductibles)`; engine refuses
 
 Each row represents one disposal event.
 
-| Column                       | Type   | Notes                                                       |
-| ---------------------------- | ------ | ----------------------------------------------------------- |
-| `disposal_id`                | string |                                                             |
-| `property_id`                | string |                                                             |
-| `acquisition_date`           | date   |                                                             |
-| `disposal_date`              | date   |                                                             |
-| `holding_period_days`        | number | Used to determine 50% discount eligibility (≥365)           |
-| `cost_base`                  | number | First element + incidental + non-deductible holding costs   |
-| `incidental_costs_acq`       | number |                                                             |
-| `incidental_costs_disp`      | number |                                                             |
-| `capital_improvements`       | number |                                                             |
-| `non_capital_holding_costs`  | number | If applicable per s 110-25(4)                               |
-| `capital_proceeds`           | number |                                                             |
-| `gross_capital_gain`         | number | `capital_proceeds - cost_base`                              |
-| `cgt_discount_eligible`      | bool   |                                                             |
-| `cgt_discount_pct`           | number | 0.5 for individuals/trusts; 0 otherwise (under FY ruleset)  |
-| `discounted_capital_gain`    | number |                                                             |
-| `prior_year_losses_applied`  | number |                                                             |
-| `net_capital_gain`           | number |                                                             |
-| `marginal_tax_rate`          | number |                                                             |
-| `cgt_payable_estimate`       | number |                                                             |
-| `notes`                      | string |                                                             |
+| Column                      | Type   | Notes                                                      |
+| --------------------------- | ------ | ---------------------------------------------------------- |
+| `disposal_id`               | string |                                                            |
+| `property_id`               | string |                                                            |
+| `acquisition_date`          | date   |                                                            |
+| `disposal_date`             | date   |                                                            |
+| `holding_period_days`       | number | Used to determine 50% discount eligibility (≥365)          |
+| `cost_base`                 | number | First element + incidental + non-deductible holding costs  |
+| `incidental_costs_acq`      | number |                                                            |
+| `incidental_costs_disp`     | number |                                                            |
+| `capital_improvements`      | number |                                                            |
+| `non_capital_holding_costs` | number | If applicable per s 110-25(4)                              |
+| `capital_proceeds`          | number |                                                            |
+| `gross_capital_gain`        | number | `capital_proceeds - cost_base`                             |
+| `cgt_discount_eligible`     | bool   |                                                            |
+| `cgt_discount_pct`          | number | 0.5 for individuals/trusts; 0 otherwise (under FY ruleset) |
+| `discounted_capital_gain`   | number |                                                            |
+| `prior_year_losses_applied` | number |                                                            |
+| `net_capital_gain`          | number |                                                            |
+| `marginal_tax_rate`         | number |                                                            |
+| `cgt_payable_estimate`      | number |                                                            |
+| `notes`                     | string |                                                            |
 
 A schema validator enforces ordering and presence; missing optional columns are emitted as empty strings (never `null`).
 
 ### 4.4 `land-tax-victoria` (v1.0.0)
 
-| Column                        | Type   | Notes                                          |
-| ----------------------------- | ------ | ---------------------------------------------- |
-| `assessment_year`             | number | Calendar year (VIC SRO basis, 31 December)     |
-| `property_id`                 | string |                                                |
-| `site_value`                  | number | Unimproved capital value                       |
-| `aggregated_site_value`       | number | Per owner aggregation                          |
-| `pp_or_exempt`                | string | `principal_place`, `exempt_purpose`, `none`    |
-| `absentee_owner_surcharge`    | number |                                                |
-| `vacant_residential_lt`       | number | VRLT where applicable                          |
-| `base_land_tax`               | number |                                                |
-| `total_land_tax`              | number |                                                |
-| `ruleset_version`             | string |                                                |
+| Column                     | Type   | Notes                                       |
+| -------------------------- | ------ | ------------------------------------------- |
+| `assessment_year`          | number | Calendar year (VIC SRO basis, 31 December)  |
+| `property_id`              | string |                                             |
+| `site_value`               | number | Unimproved capital value                    |
+| `aggregated_site_value`    | number | Per owner aggregation                       |
+| `pp_or_exempt`             | string | `principal_place`, `exempt_purpose`, `none` |
+| `absentee_owner_surcharge` | number |                                             |
+| `vacant_residential_lt`    | number | VRLT where applicable                       |
+| `base_land_tax`            | number |                                             |
+| `total_land_tax`           | number |                                             |
+| `ruleset_version`          | string |                                             |
 
 The columns follow the Victorian SRO terminology to ease reconciliation against assessment notices.
 
@@ -258,10 +258,11 @@ PDFs are rendered server-side with `@react-pdf/renderer`. Layouts use the same O
 One page (or two for >8 properties).
 
 **Page 1 — Snapshot**
-* Header tile band: total portfolio value, total debt, net equity, gross yield, pre-tax cashflow, after-tax cashflow, weighted LVR.
-* Property table: label, suburb (no full address), purchase year, current value, debt, equity, LVR, annual after-tax cashflow.
-* 10-year equity forecast chart (line, single series); accompanied by a data table for screen-reader and PDF text-extraction parity.
-* Disclaimer footer.
+
+- Header tile band: total portfolio value, total debt, net equity, gross yield, pre-tax cashflow, after-tax cashflow, weighted LVR.
+- Property table: label, suburb (no full address), purchase year, current value, debt, equity, LVR, annual after-tax cashflow.
+- 10-year equity forecast chart (line, single series); accompanied by a data table for screen-reader and PDF text-extraction parity.
+- Disclaimer footer.
 
 **Optional Page 2** — Property table continuation if >8 rows.
 
@@ -286,24 +287,25 @@ Every numerical figure on a chart is also present in a table so the PDF is fully
 
 Up to four scenarios side-by-side.
 
-* Header row: scenario name + one-line description + ruleset version per scenario.
-* Comparison table rows: total portfolio value (end of horizon), net equity (EOH), cumulative after-tax cashflow, cumulative CGT exposure, peak LVR, year of first positive cashflow.
-* Side-by-side bar chart of selected metrics + companion table.
-* Per-scenario assumptions appendix.
+- Header row: scenario name + one-line description + ruleset version per scenario.
+- Comparison table rows: total portfolio value (end of horizon), net equity (EOH), cumulative after-tax cashflow, cumulative CGT exposure, peak LVR, year of first positive cashflow.
+- Side-by-side bar chart of selected metrics + companion table.
+- Per-scenario assumptions appendix.
 
 ### 5.5 `hold-vs-sell` (v1.0.0)
 
 Two-column page comparing:
-* **Hold**: 10-year after-tax cashflow path, equity path, terminal equity at year 10.
-* **Sell now**: net proceeds after CGT and selling costs, projected portfolio value if re-invested per user's nominated alternative (or shown as cash if no alternative).
-* Decision aids: break-even year for hold, sensitivity to rental growth ±1%, sensitivity to capital growth ±1%.
-* Heavy disclaimer pull-quote: this is decision support, not a recommendation.
+
+- **Hold**: 10-year after-tax cashflow path, equity path, terminal equity at year 10.
+- **Sell now**: net proceeds after CGT and selling costs, projected portfolio value if re-invested per user's nominated alternative (or shown as cash if no alternative).
+- Decision aids: break-even year for hold, sensitivity to rental growth ±1%, sensitivity to capital growth ±1%.
+- Heavy disclaimer pull-quote: this is decision support, not a recommendation.
 
 ### 5.6 PDF Determinism
 
-* `react-pdf` is configured with `fontSubsetting: true` and embedded fonts; the same content always produces the same byte stream.
-* The `generated_at` in the footer is the only timestamp; it is **excluded** from the report's `output_hash`. The hash covers content + disclaimer + identification (minus the timestamp).
-* CI runs `pnpm test:pdf:golden` which renders the standard fixture set and compares against golden files; visual diffs require explicit approval.
+- `react-pdf` is configured with `fontSubsetting: true` and embedded fonts; the same content always produces the same byte stream.
+- The `generated_at` in the footer is the only timestamp; it is **excluded** from the report's `output_hash`. The hash covers content + disclaimer + identification (minus the timestamp).
+- CI runs `pnpm test:pdf:golden` which renders the standard fixture set and compares against golden files; visual diffs require explicit approval.
 
 ---
 
@@ -329,13 +331,15 @@ export const dataExportFullSchema = z.object({
   properties: z.array(propertySchema),
   loans: z.array(loanSchema),
   scenarios: z.array(scenarioSchema),
-  scenario_results_index: z.array(z.object({
-    scenario_id: z.string().uuid(),
-    result_id: z.string().uuid(),
-    ruleset_version: z.string(),
-    engine_version: z.string(),
-    output_hash: z.string(),
-  })),
+  scenario_results_index: z.array(
+    z.object({
+      scenario_id: z.string().uuid(),
+      result_id: z.string().uuid(),
+      ruleset_version: z.string(),
+      engine_version: z.string(),
+      output_hash: z.string(),
+    }),
+  ),
   ai_interactions: z.array(aiInteractionSchema), // masked prompt only
   audit_logs: z.array(auditLogSchema),
   subscriptions: z.array(subscriptionSchema),
@@ -343,9 +347,9 @@ export const dataExportFullSchema = z.object({
 });
 ```
 
-* Output is one JSON file plus the full set of scenario result JSONs, bundled in a `.zip` whose manifest lists per-file SHA-256 hashes.
-* Excludes: TFN, full DOB if entered, raw banking, raw payment method (Stripe stores those — exported separately on user request via Stripe's mechanisms).
-* Delivered via presigned URL; URL expires in 7 days; user must re-authenticate to download.
+- Output is one JSON file plus the full set of scenario result JSONs, bundled in a `.zip` whose manifest lists per-file SHA-256 hashes.
+- Excludes: TFN, full DOB if entered, raw banking, raw payment method (Stripe stores those — exported separately on user request via Stripe's mechanisms).
+- Delivered via presigned URL; URL expires in 7 days; user must re-authenticate to download.
 
 ### 6.2 `scenario-result` (v2.0.0, machine-readable)
 
@@ -358,18 +362,19 @@ Used by the adviser API surface. Schema mirrors the engine's `ScenarioResult` ty
 XLSX is a convenience wrapper over CSV for the same templates that emit CSV. We use SheetJS server-side.
 
 Rules:
-* One worksheet per logical CSV table; the first worksheet `_meta` holds the metadata block (template, scenario, ruleset/engine version, disclaimer link, output hash).
-* Numbers are written as numbers (not strings); dates as ISO date cells.
-* No formulas — XLSX is a data export, not a model.
-* No macros, no VBA. The renderer rejects any template that attempts to inject either.
+
+- One worksheet per logical CSV table; the first worksheet `_meta` holds the metadata block (template, scenario, ruleset/engine version, disclaimer link, output hash).
+- Numbers are written as numbers (not strings); dates as ISO date cells.
+- No formulas — XLSX is a data export, not a model.
+- No macros, no VBA. The renderer rejects any template that attempts to inject either.
 
 ---
 
 ## 8. Versioning Policy
 
-* **Patch** (`x.y.Z`) — non-content fixes (formatting, accessibility, padding). Outputs may differ byte-for-byte but are semantically identical.
-* **Minor** (`x.Y.0`) — additive columns/sections; older consumers continue to work because parsers tolerate trailing columns.
-* **Major** (`X.0.0`) — column rename, semantic change, ATO line-ref change. Old version remains supported in `state = 'published'` for at least 12 months; both are listed in the registry.
+- **Patch** (`x.y.Z`) — non-content fixes (formatting, accessibility, padding). Outputs may differ byte-for-byte but are semantically identical.
+- **Minor** (`x.Y.0`) — additive columns/sections; older consumers continue to work because parsers tolerate trailing columns.
+- **Major** (`X.0.0`) — column rename, semantic change, ATO line-ref change. Old version remains supported in `state = 'published'` for at least 12 months; both are listed in the registry.
 
 Old versions are **never** mutated. A report rendered under v1.2.0 will always be reproducible under v1.2.0 even if v2.0.0 is current, provided the engine and ruleset versions are still available (they always are — engine versions are immutable on npm, rulesets are immutable in the DB).
 
@@ -383,25 +388,25 @@ import type { ScenarioResultId, TemplateSlug, TemplateVersion, Locale } from '@/
 
 export interface RenderRequest {
   scenarioResultId: ScenarioResultId;
-  templateSlug:     TemplateSlug;
-  templateVersion:  TemplateVersion;
-  locale:           Locale;          // 'en-AU'
-  requestedBy:      UserId;
-  tenantId:         TenantId;
-  purpose:          'personal' | 'adviser' | 'data_export';
+  templateSlug: TemplateSlug;
+  templateVersion: TemplateVersion;
+  locale: Locale; // 'en-AU'
+  requestedBy: UserId;
+  tenantId: TenantId;
+  purpose: 'personal' | 'adviser' | 'data_export';
 }
 
 export interface RenderResult {
-  reportId:        string;
-  format:          'pdf' | 'csv' | 'json' | 'xlsx';
-  outputHash:      string;  // sha256 over canonical content
-  storageKey:      string;  // Supabase Storage object key
-  byteLength:      number;
-  presignedUrl:    string;  // 7-day expiry
+  reportId: string;
+  format: 'pdf' | 'csv' | 'json' | 'xlsx';
+  outputHash: string; // sha256 over canonical content
+  storageKey: string; // Supabase Storage object key
+  byteLength: number;
+  presignedUrl: string; // 7-day expiry
   templateVersion: TemplateVersion;
-  rulesetVersion:  string;
-  engineVersion:   string;
-  generatedAt:     string;  // ISO; excluded from outputHash
+  rulesetVersion: string;
+  engineVersion: string;
+  generatedAt: string; // ISO; excluded from outputHash
 }
 
 export async function render(req: RenderRequest): Promise<RenderResult>;
@@ -422,12 +427,12 @@ The renderer:
 
 ## 10. Storage & Retention
 
-| Class                       | Bucket / Prefix                                | Retention                                | Encryption        |
-| --------------------------- | ---------------------------------------------- | ---------------------------------------- | ----------------- |
-| Standard reports            | `tenants/{tenant_id}/reports/`                 | 24 months from generation                | AES-256 at rest   |
-| Data export (APP 12)        | `tenants/{tenant_id}/data-exports/`            | 14 days (auto-purged)                    | AES-256 + per-tenant KMS key |
-| Audit-pinned reports        | `tenants/{tenant_id}/audit/`                   | 7 years (cold storage after 1 year)      | AES-256 + KMS     |
-| Synthetic / test outputs    | `synthetics/`                                  | 7 days                                   | AES-256           |
+| Class                    | Bucket / Prefix                     | Retention                           | Encryption                   |
+| ------------------------ | ----------------------------------- | ----------------------------------- | ---------------------------- |
+| Standard reports         | `tenants/{tenant_id}/reports/`      | 24 months from generation           | AES-256 at rest              |
+| Data export (APP 12)     | `tenants/{tenant_id}/data-exports/` | 14 days (auto-purged)               | AES-256 + per-tenant KMS key |
+| Audit-pinned reports     | `tenants/{tenant_id}/audit/`        | 7 years (cold storage after 1 year) | AES-256 + KMS                |
+| Synthetic / test outputs | `synthetics/`                       | 7 days                              | AES-256                      |
 
 Presigned URLs default to 7-day expiry; data-export URLs to 24 hours. URL minting is rate-limited per user per day to prevent enumeration.
 
@@ -435,32 +440,32 @@ Presigned URLs default to 7-day expiry; data-export URLs to 24 hours. URL mintin
 
 ## 11. Accessibility
 
-* PDFs are tagged (PDF/UA where the renderer supports it); headings have semantic levels; tables have header rows declared; alt text on charts cites the companion table.
-* CSV/XLSX are inherently accessible; the metadata header lets screen readers announce provenance.
-* Colour usage matches `/ui-ux/data-viz-guidelines.md` — never colour-only encoding; companion tables accompany all charts in PDFs.
+- PDFs are tagged (PDF/UA where the renderer supports it); headings have semantic levels; tables have header rows declared; alt text on charts cites the companion table.
+- CSV/XLSX are inherently accessible; the metadata header lets screen readers announce provenance.
+- Colour usage matches `/ui-ux/data-viz-guidelines.md` — never colour-only encoding; companion tables accompany all charts in PDFs.
 
 ---
 
 ## 12. Anti-Patterns (Renderer Refuses)
 
-* Emitting any output without a disclaimer block.
-* Using `Date.now()` inside content (only the footer is allowed a generated-at).
-* Including raw email, TFN, full DOB, or card data.
-* Using fonts that are not embedded.
-* Embedding remote images (renderer fetches and inlines, then strips remote refs).
-* JavaScript inside PDFs (action handlers, embedded scripts) — flat refusal.
-* Outputs whose `output_hash` differs between two consecutive renders of identical inputs (CI golden test catches this).
+- Emitting any output without a disclaimer block.
+- Using `Date.now()` inside content (only the footer is allowed a generated-at).
+- Including raw email, TFN, full DOB, or card data.
+- Using fonts that are not embedded.
+- Embedding remote images (renderer fetches and inlines, then strips remote refs).
+- JavaScript inside PDFs (action handlers, embedded scripts) — flat refusal.
+- Outputs whose `output_hash` differs between two consecutive renders of identical inputs (CI golden test catches this).
 
 ---
 
 ## Cross-References
 
-* `/product/prd.md` — which exports are gated to which tiers
-* `/product/pricing-and-gating.md` — entitlements table for `reports.format`
-* `/architecture/api-contracts.md` — `/api/reports/export` request/response shapes
-* `/architecture/security-and-compliance.md` — APP 12 data export workflow, retention
-* `/database/schema.sql` — `reports`, `report_templates`, `disclaimers`
-* `/database/rls-policies.sql` — read policies for reports + audit pins
-* `/engine/financial-calc-engine.md` — `ScenarioResult` shape consumed by renderers
-* `/ui-ux/data-viz-guidelines.md` — PDF chart parity rules
-* `/reports-exports/scheduling-and-delivery.md` — background workers, delivery channels
+- `/product/prd.md` — which exports are gated to which tiers
+- `/product/pricing-and-gating.md` — entitlements table for `reports.format`
+- `/architecture/api-contracts.md` — `/api/reports/export` request/response shapes
+- `/architecture/security-and-compliance.md` — APP 12 data export workflow, retention
+- `/database/schema.sql` — `reports`, `report_templates`, `disclaimers`
+- `/database/rls-policies.sql` — read policies for reports + audit pins
+- `/engine/financial-calc-engine.md` — `ScenarioResult` shape consumed by renderers
+- `/ui-ux/data-viz-guidelines.md` — PDF chart parity rules
+- `/reports-exports/scheduling-and-delivery.md` — background workers, delivery channels

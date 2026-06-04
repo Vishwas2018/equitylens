@@ -20,17 +20,17 @@ Set to `proposed` on creation. Updated by Opus when the decision is finalised. I
 
 ## Authors
 
-* Opus (drafted)
-* Human approver
-* Code (consulted, if applicable)
+- Opus (drafted)
+- Human approver
+- Code (consulted, if applicable)
 
 ## Linked Records
 
-* Deviation: `DEV-NNNN` (if this ADR was triggered by a deviation)
-* Defect: `DEF-NNNN` (if triggered by a defect)
-* Backlog: `BL-NNNN` (if triggered by a planning decision)
-* Tech debt: `TD-NNNN` (if accepting debt knowingly)
-* Supersedes: `ADR-NNNN` (if replacing a prior decision)
+- Deviation: `DEV-NNNN` (if this ADR was triggered by a deviation)
+- Defect: `DEF-NNNN` (if triggered by a defect)
+- Backlog: `BL-NNNN` (if triggered by a planning decision)
+- Tech debt: `TD-NNNN` (if accepting debt knowingly)
+- Supersedes: `ADR-NNNN` (if replacing a prior decision)
 
 ---
 
@@ -50,21 +50,21 @@ A clear, declarative statement of what was decided.
 
 ### Positive
 
-* What becomes easier?
-* What risk is reduced?
-* What invariants are preserved?
+- What becomes easier?
+- What risk is reduced?
+- What invariants are preserved?
 
 ### Negative
 
-* What becomes harder?
-* What is forgone?
-* What ongoing cost is accepted?
+- What becomes harder?
+- What is forgone?
+- What ongoing cost is accepted?
 
 ### Neutral / Notes
 
-* Anything else future readers should know.
-* Implementation hints (without becoming a spec — link to the spec instead).
-* Migration plan if this changes existing behaviour.
+- Anything else future readers should know.
+- Implementation hints (without becoming a spec — link to the spec instead).
+- Migration plan if this changes existing behaviour.
 
 ## Alternatives Considered
 
@@ -78,10 +78,10 @@ For each alternative, one or two sentences on why it was not chosen.
 
 How will we know this decision was correct? What signals would tell us to revisit?
 
-* Metric or test that confirms the decision is working.
-* Trigger that would re-open this decision (e.g., "if we add a non-AUD currency, revisit").
+- Metric or test that confirms the decision is working.
+- Trigger that would re-open this decision (e.g., "if we add a non-AUD currency, revisit").
 
 ## References
 
-* External: legislation, RFCs, vendor docs, papers.
-* Internal: `/docs/**` paths.
+- External: legislation, RFCs, vendor docs, papers.
+- Internal: `/docs/**` paths.

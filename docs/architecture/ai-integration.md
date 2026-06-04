@@ -6,15 +6,16 @@
 
 ## 1. AI Boundary Rules
 
-| Allowed | Forbidden |
-|---|---|
-| Narrate a pre-computed cash flow ("Your property is $812 negative after tax this year because…") | Compute a cash flow |
-| Highlight which input has the largest impact (sensitivity ranking pre-computed by engine) | Estimate marginal tax bracket |
-| Compose a hold-vs-sell rationale referencing scored outcomes | Recommend "you should sell" as the model's own conclusion |
-| Suggest follow-up scenarios the user might explore (UI suggestion only) | Apply tax rules or CGT discount |
-| Translate technical fields into plain English | State numeric values not present in input payload |
+| Allowed                                                                                          | Forbidden                                                 |
+| ------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| Narrate a pre-computed cash flow ("Your property is $812 negative after tax this year because…") | Compute a cash flow                                       |
+| Highlight which input has the largest impact (sensitivity ranking pre-computed by engine)        | Estimate marginal tax bracket                             |
+| Compose a hold-vs-sell rationale referencing scored outcomes                                     | Recommend "you should sell" as the model's own conclusion |
+| Suggest follow-up scenarios the user might explore (UI suggestion only)                          | Apply tax rules or CGT discount                           |
+| Translate technical fields into plain English                                                    | State numeric values not present in input payload         |
 
 **Enforcement mechanisms (defence in depth):**
+
 1. **Prompt scope** — system prompts forbid arithmetic; user payload is numbers + labels only.
 2. **Output schema** — every response validated against a Zod schema; failures → templated fallback.
 3. **Numeric-leak detector** — regex post-filter rejects unexpected numbers (outside input payload set) with >1% deviation; logs and triggers fallback.
@@ -218,10 +219,14 @@ sequenceDiagram
 ```ts
 export const ExplainV1 = z.object({
   tldr: z.string().min(1).max(240),
-  detail: z.array(z.object({
-    heading: z.enum(['Cash flow', 'Tax impact', 'Depreciation', 'Loan', 'Land tax', 'Equity']),
-    body:    z.string().min(1).max(800),
-  })).max(6),
+  detail: z
+    .array(
+      z.object({
+        heading: z.enum(['Cash flow', 'Tax impact', 'Depreciation', 'Loan', 'Land tax', 'Equity']),
+        body: z.string().min(1).max(800),
+      }),
+    )
+    .max(6),
   caveats: z.array(z.string().min(1).max(280)).max(5),
 });
 ```
@@ -231,7 +236,7 @@ export const ExplainV1 = z.object({
 ```ts
 export function detectNumericLeak(text: string, allowedCents: number[]): boolean {
   const tokens = text.match(/-?\$?\d[\d,]*(\.\d+)?/g) ?? [];
-  const allowedSet = new Set(allowedCents.map(c => Math.round(c / 100)));
+  const allowedSet = new Set(allowedCents.map((c) => Math.round(c / 100)));
   // Allow $0..$9 and small percentages, but flag any "large" number not in payload
   for (const t of tokens) {
     const n = Number(t.replace(/[\$,]/g, ''));
@@ -239,7 +244,7 @@ export function detectNumericLeak(text: string, allowedCents: number[]): boolean
     if (Math.abs(n) < 10) continue;
     if (allowedSet.has(Math.round(n))) continue;
     // 1% tolerance match
-    const hit = [...allowedSet].some(a => Math.abs(a - n) / Math.max(1, Math.abs(a)) < 0.01);
+    const hit = [...allowedSet].some((a) => Math.abs(a - n) / Math.max(1, Math.abs(a)) < 0.01);
     if (!hit) return true;
   }
   return false;
@@ -264,7 +269,7 @@ Before any payload leaves AU compute boundary:
 export function maskContext(ctx: ExplainContext): ExplainContext {
   // ExplainContext schema explicitly excludes PII fields.
   // The mask function asserts no forbidden keys leaked in.
-  const forbidden = ['user_id','email','address_line1','owner_name'];
+  const forbidden = ['user_id', 'email', 'address_line1', 'owner_name'];
   for (const k of forbidden) {
     if (k in (ctx as any)) throw new Error(`PII leaked in context: ${k}`);
   }
@@ -278,12 +283,12 @@ export function maskContext(ctx: ExplainContext): ExplainContext {
 
 Sources of injection (and counters):
 
-| Source | Risk | Counter |
-|---|---|---|
-| Address field of a property | "Ignore previous instructions" stored in DB | Address never inserted into prompt; only numerics + jurisdiction. |
-| Scenario label / notes | User free text | Stripped of `{{`, backticks, prompt-like markers via allow-list (alphanumerics, basic punctuation only). |
-| Imported CSV | Crafted cell values | Same allow-list; cells passed as data only, never as prompt context. |
-| Rule snippet (admin-authored) | Internal supply-chain risk | Maintained in version control with code review; signed off by legal before deploy. |
+| Source                        | Risk                                        | Counter                                                                                                  |
+| ----------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Address field of a property   | "Ignore previous instructions" stored in DB | Address never inserted into prompt; only numerics + jurisdiction.                                        |
+| Scenario label / notes        | User free text                              | Stripped of `{{`, backticks, prompt-like markers via allow-list (alphanumerics, basic punctuation only). |
+| Imported CSV                  | Crafted cell values                         | Same allow-list; cells passed as data only, never as prompt context.                                     |
+| Rule snippet (admin-authored) | Internal supply-chain risk                  | Maintained in version control with code review; signed off by legal before deploy.                       |
 
 The system prompt is constructed server-side, immutable per deploy; user payload is appended in a structured JSON block clearly delimited. We use the LLM provider's "developer message" vs "user message" separation where supported.
 
@@ -315,6 +320,7 @@ CREATE TABLE ai_interactions (
 ```
 
 Retention: 24 months. Append-only (no `UPDATE` policy). Used for:
+
 - Compliance evidence (showing AI never authoritatively calculated).
 - Quality monitoring (fallback rate, latency, cost).
 - Replay (re-run prompts against new models in staging).
@@ -323,13 +329,13 @@ Retention: 24 months. Append-only (no `UPDATE` policy). Used for:
 
 ## 9. Cost & Latency Budgets
 
-| Metric | Budget | Action on breach |
-|---|---|---|
-| P95 latency | 2.5 s | Auto-fallback to templated narrative. |
-| Hard timeout | 4 s | Fallback. |
-| Cost per Pro user per month | ≤$0.30 | Throttle non-essential calls; cache aggressively. |
-| Fallback rate | <2% / 24 h | Page on-call; freeze prompt deploys. |
-| Schema invalid rate | <1% / 24 h | Same. |
+| Metric                      | Budget     | Action on breach                                  |
+| --------------------------- | ---------- | ------------------------------------------------- |
+| P95 latency                 | 2.5 s      | Auto-fallback to templated narrative.             |
+| Hard timeout                | 4 s        | Fallback.                                         |
+| Cost per Pro user per month | ≤$0.30     | Throttle non-essential calls; cache aggressively. |
+| Fallback rate               | <2% / 24 h | Page on-call; freeze prompt deploys.              |
+| Schema invalid rate         | <1% / 24 h | Same.                                             |
 
 ---
 

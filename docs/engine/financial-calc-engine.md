@@ -42,16 +42,16 @@ flowchart LR
   class DB io
 ```
 
-| Module             | Responsibility                                                                  | Lines (approx) | Depends on                |
-| ------------------ | ------------------------------------------------------------------------------- | -------------- | ------------------------- |
-| `ScenarioRunner`   | Orchestrates module execution, validates, hashes, persists                      | 300            | All others                |
-| `CashFlowService`  | Period-by-period income/expense aggregation, mortgage amortisation, offset      | 600            | None                      |
-| `TaxService`       | Marginal-rate computation, deductibility, negative gearing, depreciation impact | 800            | `CashFlowService` outputs |
-| `EquityService`    | Loan balance over time, principal reduction, equity composition                 | 400            | `CashFlowService` outputs |
-| `CGTEngine`        | Capital gain calc, discount eligibility, ownership splits, cost base adjustments | 500           | `TaxService`              |
-| `LandTaxEngine`    | State-specific land tax (VIC initial, NSW/QLD planned)                          | 350            | None                      |
-| `Amortisation`     | Pure loan math, fixed + variable + IO-to-P&I transitions                        | 250            | None                      |
-| `RulesetAdapter`   | Loads & freezes `tax_rule_sets` JSON; type-narrows by FY                        | 200            | None                      |
+| Module            | Responsibility                                                                   | Lines (approx) | Depends on                |
+| ----------------- | -------------------------------------------------------------------------------- | -------------- | ------------------------- |
+| `ScenarioRunner`  | Orchestrates module execution, validates, hashes, persists                       | 300            | All others                |
+| `CashFlowService` | Period-by-period income/expense aggregation, mortgage amortisation, offset       | 600            | None                      |
+| `TaxService`      | Marginal-rate computation, deductibility, negative gearing, depreciation impact  | 800            | `CashFlowService` outputs |
+| `EquityService`   | Loan balance over time, principal reduction, equity composition                  | 400            | `CashFlowService` outputs |
+| `CGTEngine`       | Capital gain calc, discount eligibility, ownership splits, cost base adjustments | 500            | `TaxService`              |
+| `LandTaxEngine`   | State-specific land tax (VIC initial, NSW/QLD planned)                           | 350            | None                      |
+| `Amortisation`    | Pure loan math, fixed + variable + IO-to-P&I transitions                         | 250            | None                      |
+| `RulesetAdapter`  | Loads & freezes `tax_rule_sets` JSON; type-narrows by FY                         | 200            | None                      |
 
 ---
 
@@ -63,10 +63,10 @@ The engine's surface is three types: `ScenarioInputs`, `Ruleset`, `ScenarioResul
 // /engine/types.ts
 
 export interface ScenarioInputs {
-  readonly scenarioId: string;          // uuid; assigned by caller before invocation
-  readonly orgId: string;               // for audit; not used in calc
-  readonly asOf: string;                // ISO date; the "now" of the simulation
-  readonly horizonYears: number;        // 1..40
+  readonly scenarioId: string; // uuid; assigned by caller before invocation
+  readonly orgId: string; // for audit; not used in calc
+  readonly asOf: string; // ISO date; the "now" of the simulation
+  readonly horizonYears: number; // 1..40
   readonly property: PropertySnapshot;
   readonly loans: readonly LoanSnapshot[];
   readonly incomeStreams: readonly IncomeStream[];
@@ -74,61 +74,61 @@ export interface ScenarioInputs {
   readonly depreciation: readonly DepreciationLine[];
   readonly owners: readonly OwnerShare[];
   readonly assumptions: Assumptions;
-  readonly rulesetId: string;           // FK into tax_rule_sets
-  readonly engineVersion: string;       // semver of /engine package
+  readonly rulesetId: string; // FK into tax_rule_sets
+  readonly engineVersion: string; // semver of /engine package
 }
 
 export interface PropertySnapshot {
   readonly id: string;
-  readonly jurisdiction: 'VIC'|'NSW'|'QLD'|'WA'|'SA'|'TAS'|'ACT'|'NT';
+  readonly jurisdiction: 'VIC' | 'NSW' | 'QLD' | 'WA' | 'SA' | 'TAS' | 'ACT' | 'NT';
   readonly purchasePriceCents: bigint;
-  readonly purchaseDate: string;        // ISO date
+  readonly purchaseDate: string; // ISO date
   readonly currentValueCents: bigint;
-  readonly isPPOR: boolean;             // principal place of residence
-  readonly mixedUseFraction: number;    // 0..1, fraction used for investment
-  readonly type: 'house'|'apartment'|'townhouse'|'land'|'commercial';
+  readonly isPPOR: boolean; // principal place of residence
+  readonly mixedUseFraction: number; // 0..1, fraction used for investment
+  readonly type: 'house' | 'apartment' | 'townhouse' | 'land' | 'commercial';
 }
 
 export interface LoanSnapshot {
   readonly id: string;
   readonly principalCents: bigint;
   readonly outstandingCents: bigint;
-  readonly interestRateBps: number;     // basis points, e.g. 645 = 6.45%
-  readonly rateType: 'variable'|'fixed'|'split';
+  readonly interestRateBps: number; // basis points, e.g. 645 = 6.45%
+  readonly rateType: 'variable' | 'fixed' | 'split';
   readonly fixedUntil?: string;
-  readonly loanType: 'principal_and_interest'|'interest_only';
+  readonly loanType: 'principal_and_interest' | 'interest_only';
   readonly ioEndsOn?: string;
   readonly termMonths: number;
   readonly offsetBalanceCents: bigint;
-  readonly purposeFraction: number;     // 0..1, fraction for investment purpose
+  readonly purposeFraction: number; // 0..1, fraction for investment purpose
 }
 
 export interface Assumptions {
-  readonly rentGrowthBps: number;       // annual rent growth, bps
+  readonly rentGrowthBps: number; // annual rent growth, bps
   readonly capitalGrowthBps: number;
   readonly cpiBps: number;
   readonly vacancyWeeksPerYear: number;
-  readonly variableRateShockBps?: number;   // applied to variable loans
+  readonly variableRateShockBps?: number; // applied to variable loans
   readonly variableRateShockMonth?: number; // 1..480
-  readonly marginalTaxRateBpsOverride?: number;  // null = compute from income
+  readonly marginalTaxRateBpsOverride?: number; // null = compute from income
   readonly taxableIncomeCentsOverride?: bigint;
 }
 
 export interface ScenarioResult {
   readonly scenarioId: string;
-  readonly inputHash: string;           // sha256(canonicalJson(inputs))
-  readonly outputHash: string;          // sha256(canonicalJson(this minus hashes))
+  readonly inputHash: string; // sha256(canonicalJson(inputs))
+  readonly outputHash: string; // sha256(canonicalJson(this minus hashes))
   readonly engineVersion: string;
   readonly rulesetVersion: string;
   readonly periods: readonly PeriodResult[];
-  readonly cgt: CGTBreakdown;           // null if no sale modelled
+  readonly cgt: CGTBreakdown; // null if no sale modelled
   readonly summary: ScenarioSummary;
   readonly warnings: readonly EngineWarning[];
 }
 
 export interface PeriodResult {
-  readonly year: number;                // 1..horizon
-  readonly financialYear: string;       // 'FY2026'
+  readonly year: number; // 1..horizon
+  readonly financialYear: string; // 'FY2026'
   readonly grossRentCents: bigint;
   readonly vacancyLossCents: bigint;
   readonly operatingExpenseCents: bigint;
@@ -139,7 +139,7 @@ export interface PeriodResult {
   readonly depreciationDiv40Cents: bigint;
   readonly depreciationDiv43Cents: bigint;
   readonly taxableIncomeImpactCents: bigint;
-  readonly taxRefundOrPayableCents: bigint;   // negative = refund
+  readonly taxRefundOrPayableCents: bigint; // negative = refund
   readonly loanBalanceEndCents: bigint;
   readonly propertyValueEndCents: bigint;
   readonly equityEndCents: bigint;
@@ -167,7 +167,7 @@ export function canonicalJson(value: unknown): string {
     if (typeof v === 'bigint') return `${v.toString()}n`;
     if (v && typeof v === 'object' && !Array.isArray(v)) {
       return Object.fromEntries(
-        Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b))
+        Object.entries(v as Record<string, unknown>).sort(([a], [b]) => a.localeCompare(b)),
       );
     }
     return v;
@@ -191,7 +191,7 @@ The hash drives the cache: before computing, `ScenarioRunner` looks up `scenario
 
 ### 4.2 Output Hash
 
-The output hash is computed over the result *excluding* the hash fields themselves. It is verified on every read: if a row's stored `outputHash` does not match a recomputation of its payload, an integrity alert fires. This catches DB corruption, manual edits, and version-skew bugs.
+The output hash is computed over the result _excluding_ the hash fields themselves. It is verified on every read: if a row's stored `outputHash` does not match a recomputation of its payload, an integrity alert fires. This catches DB corruption, manual edits, and version-skew bugs.
 
 ### 4.3 Property-Based Test
 
@@ -199,15 +199,14 @@ The output hash is computed over the result *excluding* the hash fields themselv
 import { fc } from '@fast-check/vitest';
 
 it('engine is deterministic under shuffled input order', () =>
-  fc.assert(fc.property(
-    arbScenarioInputs(),
-    (inputs) => {
+  fc.assert(
+    fc.property(arbScenarioInputs(), (inputs) => {
       const a = runEngine(inputs);
       const b = runEngine(shuffleArrays(inputs)); // semantic identity, different order
       return a.outputHash === b.outputHash;
-    }
-  ), { numRuns: 500 })
-);
+    }),
+    { numRuns: 500 },
+  ));
 ```
 
 ---
@@ -220,10 +219,10 @@ The most-executed module. Computes period-by-period cash flow from streams of in
 
 Internally the engine uses **monthly periods**, then aggregates to financial years. Monthly is the smallest granularity that captures:
 
-* rent receipt rhythm (mostly weekly or fortnightly, normalised to monthly equivalents)
-* variable-rate changes (RBA decisions are monthly)
-* IO-to-P&I transitions (occur on a specific month)
-* offset balance shifts
+- rent receipt rhythm (mostly weekly or fortnightly, normalised to monthly equivalents)
+- variable-rate changes (RBA decisions are monthly)
+- IO-to-P&I transitions (occur on a specific month)
+- offset balance shifts
 
 ```typescript
 // /engine/cashflow/index.ts
@@ -238,7 +237,7 @@ export function buildMonthlyPeriods(asOf: Date, horizonYears: number): MonthPeri
       year: 1 + Math.floor(i / 12),
       monthOfYear: i % 12,
       startsOn: month,
-      financialYear: financialYearOf(month),  // FY26, FY27, ...
+      financialYear: financialYearOf(month), // FY26, FY27, ...
       daysInMonth: daysInMonth(month),
     });
   }
@@ -260,7 +259,7 @@ function rentForMonth(
   const grown = compoundCents(baseWeeklyRentCents, growthBps, yearsElapsed);
 
   // Vacancy is distributed proportionally across the year
-  const weeksInMonth = bigintFromFraction(period.daysInMonth, 7);  // ~4.333
+  const weeksInMonth = bigintFromFraction(period.daysInMonth, 7); // ~4.333
   const vacancyShare = bigintFromFraction(vacancyWeeksPerYear, 12);
 
   const effectiveWeeks = weeksInMonth - vacancyShare;
@@ -277,23 +276,22 @@ We never produce fractional cents. Every multiplication uses `mulCentsBy(amount,
 
 export function amortiseMonth(state: LoanState, rateBpsForMonth: number): LoanState {
   const { outstandingCents, offsetCents, loanType } = state;
-  const effectiveBalance = outstandingCents - offsetCents > 0n
-    ? outstandingCents - offsetCents
-    : 0n;
+  const effectiveBalance =
+    outstandingCents - offsetCents > 0n ? outstandingCents - offsetCents : 0n;
 
   // Monthly interest, computed daily-equivalent: r/12 with actual/365 conventions
   // matches Australian retail banking standard (CBA, NAB, ANZ, Westpac).
   const interestCents = mulCentsBy(
     effectiveBalance,
     BigInt(rateBpsForMonth) * BigInt(state.daysInMonth),
-    BigInt(10_000) * BigInt(365)
+    BigInt(10_000) * BigInt(365),
   );
 
   let principalCents = 0n;
   if (loanType === 'principal_and_interest') {
     const totalPayment = state.scheduledMonthlyPaymentCents;
     principalCents = totalPayment - interestCents;
-    if (principalCents < 0n) principalCents = 0n;  // negative amortisation guard
+    if (principalCents < 0n) principalCents = 0n; // negative amortisation guard
   }
 
   return {
@@ -307,10 +305,10 @@ export function amortiseMonth(state: LoanState, rateBpsForMonth: number): LoanSt
 
 **Edge cases handled:**
 
-* Interest-only period transitions to P&I: scheduled payment is recomputed at transition month using the remaining principal and remaining term.
-* Variable rate shock: `assumptions.variableRateShockBps` and `variableRateShockMonth` together apply a one-time bump from that month onwards.
-* Fixed rate expiry: rate reverts to the "revert rate" stored on the loan; if missing, ruleset default (`ruleset.defaultRevertRateBps`) is used and a warning is appended to `result.warnings`.
-* Offset tiering: the offset balance is sourced from `assumptions.offsetGrowthSchedule`; if absent, offset is held flat at the input value.
+- Interest-only period transitions to P&I: scheduled payment is recomputed at transition month using the remaining principal and remaining term.
+- Variable rate shock: `assumptions.variableRateShockBps` and `variableRateShockMonth` together apply a one-time bump from that month onwards.
+- Fixed rate expiry: rate reverts to the "revert rate" stored on the loan; if missing, ruleset default (`ruleset.defaultRevertRateBps`) is used and a warning is appended to `result.warnings`.
+- Offset tiering: the offset balance is sourced from `assumptions.offsetGrowthSchedule`; if absent, offset is held flat at the input value.
 
 ### 5.4 Mixed-Use Properties
 
@@ -334,7 +332,7 @@ The engine never asks the user for their marginal rate directly unless they expl
 
 export function applyMarginalRates(
   taxableIncomeCents: bigint,
-  brackets: readonly TaxBracket[]
+  brackets: readonly TaxBracket[],
 ): bigint {
   let tax = 0n;
   for (const b of brackets) {
@@ -393,7 +391,7 @@ function equityAtPeriod(
   const gross = propertyValue - loanBalance;
   return {
     grossEquityCents: gross,
-    perOwner: ownership.map(o => ({
+    perOwner: ownership.map((o) => ({
       ownerId: o.ownerId,
       shareCents: mulBps(gross, o.shareBps),
     })),
@@ -411,17 +409,19 @@ Property value grows at `assumptions.capitalGrowthBps` annually, compounded on t
 
 ```typescript
 interface CostBase {
-  acquisitionCents: bigint;          // purchase price + stamp duty + legal
-  capitalImprovementsCents: bigint;  // structural additions; NOT repairs
-  ownershipCostsCents: bigint;       // rates, insurance during non-rented periods
-  reducedByDiv43Cents: bigint;       // Div 43 claimed reduces cost base (s110-45)
+  acquisitionCents: bigint; // purchase price + stamp duty + legal
+  capitalImprovementsCents: bigint; // structural additions; NOT repairs
+  ownershipCostsCents: bigint; // rates, insurance during non-rented periods
+  reducedByDiv43Cents: bigint; // Div 43 claimed reduces cost base (s110-45)
 }
 
 export function adjustedCostBase(cb: CostBase): bigint {
-  return cb.acquisitionCents
-       + cb.capitalImprovementsCents
-       + cb.ownershipCostsCents
-       - cb.reducedByDiv43Cents;
+  return (
+    cb.acquisitionCents +
+    cb.capitalImprovementsCents +
+    cb.ownershipCostsCents -
+    cb.reducedByDiv43Cents
+  );
 }
 ```
 
@@ -431,16 +431,19 @@ The cost base reduction under s110-45 ITAA 1997 (Div 43 capital works deductions
 
 ```typescript
 export function cgtDiscountBps(
-  ownerEntity: 'individual'|'trust'|'company'|'smsf',
+  ownerEntity: 'individual' | 'trust' | 'company' | 'smsf',
   holdingPeriodDays: number,
   ruleset: Ruleset,
 ): number {
-  if (holdingPeriodDays < 366) return 0;  // <12 months: no discount
+  if (holdingPeriodDays < 366) return 0; // <12 months: no discount
   switch (ownerEntity) {
     case 'individual':
-    case 'trust':   return ruleset.cgt.individualDiscountBps;  // 5000 = 50%
-    case 'smsf':    return ruleset.cgt.smsfDiscountBps;        // 3333 = 33.33%
-    case 'company': return 0;
+    case 'trust':
+      return ruleset.cgt.individualDiscountBps; // 5000 = 50%
+    case 'smsf':
+      return ruleset.cgt.smsfDiscountBps; // 3333 = 33.33%
+    case 'company':
+      return 0;
   }
 }
 ```
@@ -455,13 +458,19 @@ export function cgtPerOwner(
   owners: readonly OwnerShare[],
   ruleset: Ruleset,
 ): readonly CGTOwnerResult[] {
-  return owners.map(o => {
+  return owners.map((o) => {
     const share = mulBps(totalGainCents, o.shareBps);
     const discount = cgtDiscountBps(o.entityType, o.holdingDays, ruleset);
     const discountedGain = share - mulBps(share, discount);
-    const tax = applyMarginalRates(o.taxableIncomeCents + discountedGain, ruleset.marginalRates)
-              - applyMarginalRates(o.taxableIncomeCents, ruleset.marginalRates);
-    return { ownerId: o.ownerId, shareCents: share, discountedGainCents: discountedGain, taxCents: tax };
+    const tax =
+      applyMarginalRates(o.taxableIncomeCents + discountedGain, ruleset.marginalRates) -
+      applyMarginalRates(o.taxableIncomeCents, ruleset.marginalRates);
+    return {
+      ownerId: o.ownerId,
+      shareCents: share,
+      discountedGainCents: discountedGain,
+      taxCents: tax,
+    };
   });
 }
 ```
@@ -487,15 +496,17 @@ export function vicLandTax(
   let base = 0n;
   for (const b of brackets) {
     if (aggregatedSiteValueCents <= b.thresholdCents) {
-      base += b.flatCents
-            + mulBps(aggregatedSiteValueCents - b.previousThresholdCents, b.marginalBps);
+      base +=
+        b.flatCents + mulBps(aggregatedSiteValueCents - b.previousThresholdCents, b.marginalBps);
       break;
     }
   }
 
   let total = base;
-  if (flags.isAbsentee) total += mulBps(aggregatedSiteValueCents, ruleset.landTax.vic.absenteeSurchargeBps);
-  if (flags.isVacant)   total += mulBps(aggregatedSiteValueCents, ruleset.landTax.vic.vacantSurchargeBps);
+  if (flags.isAbsentee)
+    total += mulBps(aggregatedSiteValueCents, ruleset.landTax.vic.absenteeSurchargeBps);
+  if (flags.isVacant)
+    total += mulBps(aggregatedSiteValueCents, ruleset.landTax.vic.vacantSurchargeBps);
 
   return total;
 }
@@ -513,7 +524,7 @@ NSW (premium property tax), QLD (national-aggregation rule) and WA stubs exist b
 export async function runScenario(
   inputs: ScenarioInputs,
   ruleset: Ruleset,
-  db: ScenarioPersistence,        // narrow interface; only the runner touches DB
+  db: ScenarioPersistence, // narrow interface; only the runner touches DB
 ): Promise<ScenarioResult> {
   // 1. Validate (Zod) + deep-freeze
   const frozen = freezeDeep(ScenarioInputsSchema.parse(inputs));
@@ -530,7 +541,7 @@ export async function runScenario(
 
   for (const m of months) {
     const rateBps = effectiveRateBps(loanStates, m, frozen.assumptions);
-    loanStates = loanStates.map(ls => amortiseMonth(ls, rateBps[ls.id]));
+    loanStates = loanStates.map((ls) => amortiseMonth(ls, rateBps[ls.id]));
     // ... aggregate into yearly periodResults at FY boundaries
   }
 
@@ -542,7 +553,7 @@ export async function runScenario(
   const result: ScenarioResult = freezeDeep({
     scenarioId: frozen.scenarioId,
     inputHash,
-    outputHash: '',          // placeholder, computed next
+    outputHash: '', // placeholder, computed next
     engineVersion: frozen.engineVersion,
     rulesetVersion: ruleset.version,
     periods: periodResults,
@@ -564,19 +575,19 @@ The runner has exactly **one** I/O dependency, `ScenarioPersistence`, injected. 
 
 ## 11. Edge Cases & Their Resolutions
 
-| Edge case                                          | Resolution                                                                  |
-| -------------------------------------------------- | --------------------------------------------------------------------------- |
+| Edge case                                          | Resolution                                                                     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------ |
 | Negative amortisation (rate > capacity to pay)     | Principal clamped at 0; warning emitted; balance grows by capitalised interest |
-| Offset balance > loan principal                    | Effective balance clamped at 0; interest = 0 for that month                |
-| Sale month before purchase date                    | Validation error, scenario rejected                                         |
-| Mixed-use fraction outside [0, 1]                  | Validation error                                                            |
-| Ownership shares don't sum to 10000 bps            | Validation error                                                            |
-| Depreciation line with start year > horizon        | Silently ignored                                                            |
-| Variable rate shock month > horizon months         | Validation warning; shock never applied                                     |
-| Holding period exactly 365 days at sale            | No CGT discount (must be > 12 months per s115-25)                          |
-| Capital improvements after sale date               | Validation error                                                            |
-| Property in jurisdiction without published ruleset | Engine refuses to run; UX surfaces "Land tax for QLD unavailable until..." |
-| Trust ownership claiming CGT discount as company   | Validation rejects: entity type and trust flag must agree                  |
+| Offset balance > loan principal                    | Effective balance clamped at 0; interest = 0 for that month                    |
+| Sale month before purchase date                    | Validation error, scenario rejected                                            |
+| Mixed-use fraction outside [0, 1]                  | Validation error                                                               |
+| Ownership shares don't sum to 10000 bps            | Validation error                                                               |
+| Depreciation line with start year > horizon        | Silently ignored                                                               |
+| Variable rate shock month > horizon months         | Validation warning; shock never applied                                        |
+| Holding period exactly 365 days at sale            | No CGT discount (must be > 12 months per s115-25)                              |
+| Capital improvements after sale date               | Validation error                                                               |
+| Property in jurisdiction without published ruleset | Engine refuses to run; UX surfaces "Land tax for QLD unavailable until..."     |
+| Trust ownership claiming CGT discount as company   | Validation rejects: entity type and trust flag must agree                      |
 
 ---
 
@@ -584,9 +595,9 @@ The runner has exactly **one** I/O dependency, `ScenarioPersistence`, injected. 
 
 The engine package follows strict semver:
 
-* **MAJOR** bumps when a calculation changes such that historical scenarios would produce different outputs.
-* **MINOR** bumps when a new module/feature is added without changing existing outputs.
-* **PATCH** bumps for non-numerical changes (logging, performance, types).
+- **MAJOR** bumps when a calculation changes such that historical scenarios would produce different outputs.
+- **MINOR** bumps when a new module/feature is added without changing existing outputs.
+- **PATCH** bumps for non-numerical changes (logging, performance, types).
 
 Every `MAJOR` bump triggers the **regression simulator** (`/operations/deployment-checklist.md` § 6): the engine recomputes every scenario in the last 90 days under the new code and reports diffs. Diffs > $0.01 per period require a release-note line.
 
@@ -596,8 +607,8 @@ The engine version is captured on every `ScenarioResult` and shown in the UI as 
 
 ## 13. Cross-References
 
-* `/engine/tax-rule-versioning.md` — structure and lifecycle of `Ruleset`.
-* `/engine/test-matrix.md` — the 50+ unit test cases this engine must pass before any release.
-* `/database/schema.sql` — `scenario_results.input_hash` unique constraint.
-* `/architecture/api-contracts.md` § 5 — the `POST /scenarios/:id/run` endpoint that invokes `ScenarioRunner`.
-* `/architecture/ai-integration.md` — confirms AI never touches the engine path.
+- `/engine/tax-rule-versioning.md` — structure and lifecycle of `Ruleset`.
+- `/engine/test-matrix.md` — the 50+ unit test cases this engine must pass before any release.
+- `/database/schema.sql` — `scenario_results.input_hash` unique constraint.
+- `/architecture/api-contracts.md` § 5 — the `POST /scenarios/:id/run` endpoint that invokes `ScenarioRunner`.
+- `/architecture/ai-integration.md` — confirms AI never touches the engine path.

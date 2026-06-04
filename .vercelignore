@@ -1,0 +1,15 @@
+# Build artifacts
+node_modules
+.turbo
+*.tsbuildinfo
+
+# Process / dev artefacts
+docs/process/prompts
+scripts
+.husky
+.github
+
+# Test files
+**/__tests__
+**/*.test.ts
+**/*.spec.ts

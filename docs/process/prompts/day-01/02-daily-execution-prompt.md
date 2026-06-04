@@ -111,6 +111,7 @@ After pre-flight, print "Pre-flight complete" and proceed to Day 0.
 ### D01-T4 — Full CCTV audit script
 
 Replace D00-T3 stub. `scripts/audit-cctv.ts` must:
+
 - Parse `--day NN` flag; default = (latest `day-*-end` tag number + 1)
 - Verify `day-(NN-1)-end` exists; if not, exit 2 (drift)
 - Run in parallel (capture each to `checkpoints/audit-<check>.txt`):
@@ -187,6 +188,7 @@ Autonomously update all six registers. No human prompting for these — you have
 7. Generate `docs/process/prompts/day-01/03-end-of-day-report.md` from the template — all sections populated honestly.
 8. Generate `docs/process/prompts/day-00/03-end-of-day-report.md` (Day 0 backfill) — minimal: tasks T1–T3, tag, no checkpoints (bootstrap had no automated suite yet).
 9. Tag: `git tag -a day-1-end -m "Day 1 complete: monorepo, toolchain, CI skeleton, Vercel preview" && git push --tags`
+
 - **Checkpoint** → `checkpoints/D01-T7.txt`:
   ```
   git tag --list 'day-*-end'                              # day-0-end, day-1-end
@@ -232,6 +234,7 @@ Wait for human reply: `approve` / `revise <note>` / `reject <reason>` / `defer <
 ## Start
 
 Acknowledge with:
+
 1. The seven Day 1 task IDs and three Day 0 task IDs you will execute
 2. The list of unavoidable human-driven steps (GitHub URL, branch protection, Vercel link)
 3. Begin pre-flight, then D00-T1

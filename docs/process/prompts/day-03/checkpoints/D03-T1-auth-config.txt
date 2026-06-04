@@ -1,0 +1,52 @@
+D03-T1 — Supabase Auth Configuration
+Date: 2026-05-20
+
+## Settings Applied (via Management API PATCH + dashboard)
+
+### Applied via Management API (automated, no human action needed):
+  jwt_exp:               43200    (12 hours — was 3600)
+  password_min_length:   12       (was 6)
+  enable_email_link:     false    (magic link disabled)
+  security_refresh_token_rotation_enabled: true
+
+### Requires human action in Supabase Dashboard:
+   URL: https://supabase.com/dashboard/project/wubqybgqehbqdolsdmrw/auth/providers
+
+   1. Email provider → Confirm email: ON (already default — verify it is checked)
+   2. Email provider → Magic Link: OFF (verify it is unchecked)
+   3. Auth → URL Configuration → Site URL: https://equitylens.vercel.app (or production URL)
+   4. Auth → URL Configuration → Redirect URLs — add all three:
+        http://localhost:3000/**
+        https://*.vercel.app/**
+        https://equitylens.vercel.app/**
+
+   5. Auth → Sessions → JWT Expiry: verify shows 43200 (12h) — API change above applies it
+   6. Auth → Password → Minimum password length: verify shows 12 — API change above applies it
+
+### Verification probe (run after applying dashboard settings):
+  curl -sk -H "Authorization: Bearer $SUPABASE_MGMT_TOKEN" \
+    "https://api.supabase.com/v1/projects/$SUPABASE_PROJECT_REF/config/auth" | \
+    node -e "const c=[];process.stdin.on('data',d=>c.push(d));process.stdin.on('end',()=>{
+      const d=JSON.parse(Buffer.concat(c).toString());
+      console.log(JSON.stringify({
+        jwt_exp: d.jwt_exp,
+        password_min_length: d.password_min_length,
+        enable_email_link: d.enable_email_link,
+        mailer_autoconfirm: d.mailer_autoconfirm,
+        security_refresh_token_rotation_enabled: d.security_refresh_token_rotation_enabled,
+      }, null, 2));
+    });"
+
+  Expected output:
+    {
+      "jwt_exp": 43200,
+      "password_min_length": 12,
+      "enable_email_link": false,
+      "mailer_autoconfirm": false,
+      "security_refresh_token_rotation_enabled": true
+    }
+
+## Deviations logged:
+  DEV-0012: is_default column missing from user_org_membership in 0001 spec.
+            Added via migration 0003 + set_active_org() SECURITY DEFINER function.
+            Severity: low, accepted.

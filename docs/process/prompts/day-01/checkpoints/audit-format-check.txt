@@ -1,0 +1,11 @@
+Check: format-check
+Status: pass
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ format:check C:\Users\vishw\Vish\Vish\EquityLens
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!

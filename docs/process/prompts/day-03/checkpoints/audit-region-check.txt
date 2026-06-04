@@ -1,0 +1,4 @@
+Check: region-check
+Status: pass
+
+Region confirmed: ap-southeast-2

@@ -42,23 +42,23 @@ flowchart TB
 
 ### 2.1 Approved Chart Types
 
-| Type             | Use case                                                            | Notes                                        |
-| ---------------- | ------------------------------------------------------------------- | -------------------------------------------- |
-| Line             | Equity over time, loan balance, value over horizon                  | Always 2px stroke                            |
-| Stacked area     | Cash-flow composition over time (income segments, expense segments) | Use for parts-of-whole                       |
-| Stacked bar      | FY-level breakdowns (period buckets ≤ 24)                          | Preferred over area for discrete periods     |
-| Bar              | Comparisons (property A vs B)                                       | Horizontal when category labels are long     |
-| Sparkline        | KPI tile trend (12-month)                                           | No axes, no labels                           |
-| Sankey           | Cash flow from income → categories → net                            | Reserved for the "Where does my rent go?" view |
-| Heatmap          | Sensitivity tables (rate × growth grid)                             | Used only in Scenario Lab advanced view      |
+| Type         | Use case                                                            | Notes                                          |
+| ------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
+| Line         | Equity over time, loan balance, value over horizon                  | Always 2px stroke                              |
+| Stacked area | Cash-flow composition over time (income segments, expense segments) | Use for parts-of-whole                         |
+| Stacked bar  | FY-level breakdowns (period buckets ≤ 24)                           | Preferred over area for discrete periods       |
+| Bar          | Comparisons (property A vs B)                                       | Horizontal when category labels are long       |
+| Sparkline    | KPI tile trend (12-month)                                           | No axes, no labels                             |
+| Sankey       | Cash flow from income → categories → net                            | Reserved for the "Where does my rent go?" view |
+| Heatmap      | Sensitivity tables (rate × growth grid)                             | Used only in Scenario Lab advanced view        |
 
 ### 2.2 Forbidden Chart Types
 
-* **Pie / donut charts.** Banned. Cannot accurately compare slices; stacked bars communicate part-of-whole better.
-* **Radar / spider charts.** No legitimate use case in our domain.
-* **3D charts.** Banned, always.
-* **Dual-axis charts.** Strongly discouraged. Allowed only with explicit "axis A: X, axis B: Y" labels above each axis, never on dashboards. The two cases where dual-axis is permitted: (1) Property value vs Loan balance (both monetary, same axis preferred anyway); (2) advanced sensitivity overlays. Never for "rate vs cash flow" — the unit mismatch invites misreading.
-* **Gauges.** No KPI is bounded enough to gauge.
+- **Pie / donut charts.** Banned. Cannot accurately compare slices; stacked bars communicate part-of-whole better.
+- **Radar / spider charts.** No legitimate use case in our domain.
+- **3D charts.** Banned, always.
+- **Dual-axis charts.** Strongly discouraged. Allowed only with explicit "axis A: X, axis B: Y" labels above each axis, never on dashboards. The two cases where dual-axis is permitted: (1) Property value vs Loan balance (both monetary, same axis preferred anyway); (2) advanced sensitivity overlays. Never for "rate vs cash flow" — the unit mismatch invites misreading.
+- **Gauges.** No KPI is bounded enough to gauge.
 
 ---
 
@@ -69,19 +69,27 @@ flowchart TB
 
 interface ChartProps<TDatum> {
   data: readonly TDatum[];
-  type: 'line' | 'area' | 'bar' | 'stacked-area' | 'stacked-bar' | 'sparkline' | 'sankey' | 'heatmap';
+  type:
+    | 'line'
+    | 'area'
+    | 'bar'
+    | 'stacked-area'
+    | 'stacked-bar'
+    | 'sparkline'
+    | 'sankey'
+    | 'heatmap';
   series: ChartSeries<TDatum>[];
   xAxis?: AxisConfig;
   yAxis?: AxisConfig;
-  yAxisRight?: AxisConfig;       // ONLY for the two permitted dual-axis cases
-  marker?: ProjectionMarker;     // { fromIndex: number } — beyond this, render hatched
-  height?: number;               // default: 300
+  yAxisRight?: AxisConfig; // ONLY for the two permitted dual-axis cases
+  marker?: ProjectionMarker; // { fromIndex: number } — beyond this, render hatched
+  height?: number; // default: 300
   title?: string;
-  description?: string;          // a11y description
+  description?: string; // a11y description
   exportFilename?: string;
   className?: string;
   // The companion table is auto-generated from `data + series`.
-  hideCompanionTable?: boolean;  // default false
+  hideCompanionTable?: boolean; // default false
 }
 
 export function Chart<T>(props: ChartProps<T>) {
@@ -125,7 +133,7 @@ export const chartTheme = {
     stroke: 'var(--border-default)',
     strokeDasharray: '3 3',
     horizontal: true,
-    vertical: false,        // vertical grid lines almost always noise
+    vertical: false, // vertical grid lines almost always noise
   },
   tooltip: {
     backgroundColor: 'var(--bg-elevated)',
@@ -144,9 +152,9 @@ export const chartTheme = {
     color: 'var(--fg-muted)',
   },
   series: {
-    line:  { strokeWidth: 2, dot: false, activeDot: { r: 4 } },
-    area:  { fillOpacity: 0.15, strokeWidth: 1.5 },
-    bar:   { radius: [3, 3, 0, 0] as [number, number, number, number] },
+    line: { strokeWidth: 2, dot: false, activeDot: { r: 4 } },
+    area: { fillOpacity: 0.15, strokeWidth: 1.5 },
+    bar: { radius: [3, 3, 0, 0] as [number, number, number, number] },
   },
 };
 ```
@@ -158,7 +166,7 @@ The 8-colour chart palette (defined in `/ui-ux/design-system.md` § 2.4) is cons
 ```tsx
 // Always assign the same colour to the same logical series across views.
 const palette = useChartPalette();
-const colorRent     = palette.assign('rent');
+const colorRent = palette.assign('rent');
 const colorExpenses = palette.assign('expenses');
 const colorInterest = palette.assign('interest');
 ```
@@ -180,17 +188,17 @@ Projected periods (anything beyond `asOf`) render with `strokeDasharray="4 4"` a
 
 ### 4.3 Tooltip Format
 
-* Title: period label (e.g. "FY2026" or "Mar 2026")
-* Series rows: colour swatch · label · right-aligned tabular-numeric value
-* Footer: contextual hint when relevant (e.g. "Includes Div 43 depreciation")
+- Title: period label (e.g. "FY2026" or "Mar 2026")
+- Series rows: colour swatch · label · right-aligned tabular-numeric value
+- Footer: contextual hint when relevant (e.g. "Includes Div 43 depreciation")
 
 The tooltip never modifies state and never makes a network call.
 
 ### 4.4 Legend
 
-* Top-left aligned for monetary charts.
-* Single-line, wraps cleanly.
-* Clicking a legend entry toggles visibility — the toggle state is announced via `aria-live`.
+- Top-left aligned for monetary charts.
+- Single-line, wraps cleanly.
+- Clicking a legend entry toggles visibility — the toggle state is announced via `aria-live`.
 
 ---
 
@@ -198,20 +206,20 @@ The tooltip never modifies state and never makes a network call.
 
 ### 5.1 Data Volumes
 
-| Chart class                  | Max points | Strategy if exceeded                          |
-| ---------------------------- | ---------- | --------------------------------------------- |
-| Sparkline                    | 60         | Pre-aggregate                                 |
-| KPI trend chart              | 120        | Monthly aggregation                           |
-| Scenario cash flow (line)    | 480        | Monthly granularity, no decimation needed     |
-| Sensitivity heatmap          | 20 × 20    | Server-side pre-compute                       |
+| Chart class               | Max points | Strategy if exceeded                      |
+| ------------------------- | ---------- | ----------------------------------------- |
+| Sparkline                 | 60         | Pre-aggregate                             |
+| KPI trend chart           | 120        | Monthly aggregation                       |
+| Scenario cash flow (line) | 480        | Monthly granularity, no decimation needed |
+| Sensitivity heatmap       | 20 × 20    | Server-side pre-compute                   |
 
 If a chart needs more than the maximum, the wrapper raises an error in dev mode and decimates in prod with a footer note "decimated for display."
 
 ### 5.2 Render Strategy
 
-* Server-side render charts to inline SVG when possible (server components).
-* For interactive charts, hydrate Recharts lazily after FCP.
-* Use `ResponsiveContainer` only when the parent's width is unknown at SSR time; otherwise pass explicit width.
+- Server-side render charts to inline SVG when possible (server components).
+- For interactive charts, hydrate Recharts lazily after FCP.
+- Use `ResponsiveContainer` only when the parent's width is unknown at SSR time; otherwise pass explicit width.
 
 ### 5.3 Reflow Avoidance
 
@@ -225,9 +233,9 @@ Charts reserve their final dimensions during skeleton loading. CLS impact from c
 
 Every `<Chart />` renders a companion `<table>` with the underlying data. By default it is visually hidden but available to screen readers and "Show data" toggles. The table includes:
 
-* Caption matching the chart title.
-* Column headers with `scope="col"`.
-* Numeric cells right-aligned, tabular-numerals.
+- Caption matching the chart title.
+- Column headers with `scope="col"`.
+- Numeric cells right-aligned, tabular-numerals.
 
 ### 6.2 Aria Description
 
@@ -239,9 +247,9 @@ The summary text is generated deterministically from the data; it is **not** AI-
 
 No information is conveyed by colour alone:
 
-* Series have distinct shapes/strokes where confusable (e.g. dashed vs solid for actual vs projected).
-* Tooltips show the series label, not just colour.
-* The companion table is the canonical record.
+- Series have distinct shapes/strokes where confusable (e.g. dashed vs solid for actual vs projected).
+- Tooltips show the series label, not just colour.
+- The companion table is the canonical record.
 
 ### 6.4 Keyboard
 
@@ -253,24 +261,24 @@ Charts are focusable; arrow keys navigate data points; `Enter` opens tooltip det
 
 ### 7.1 Tooltip Rules
 
-* Tooltip width: max 320 px; longer content truncates with "…"
-* Tooltip never covers the data point — Recharts' `cursor` line stays vertical at the hovered x.
-* For touchscreens, tap-and-hold opens a persistent tooltip; tap elsewhere dismisses.
+- Tooltip width: max 320 px; longer content truncates with "…"
+- Tooltip never covers the data point — Recharts' `cursor` line stays vertical at the hovered x.
+- For touchscreens, tap-and-hold opens a persistent tooltip; tap elsewhere dismisses.
 
 ### 7.2 Legend Rules
 
-* Always present when ≥ 2 series.
-* Single series: legend is suppressed; chart title carries the unit/label.
-* Long legends wrap to 2 lines maximum; beyond that, charts are likely showing too many series and need redesigning.
+- Always present when ≥ 2 series.
+- Single series: legend is suppressed; chart title carries the unit/label.
+- Long legends wrap to 2 lines maximum; beyond that, charts are likely showing too many series and need redesigning.
 
 ### 7.3 Annotations
 
 Used sparingly. Permitted annotations:
 
-* Reference line at `asOf` (forecast boundary).
-* Reference line at rate-shock month in Scenario Lab.
-* Reference dot at sale month for CGT chart.
-* Threshold band for land-tax bracket boundaries in the property tax view.
+- Reference line at `asOf` (forecast boundary).
+- Reference line at rate-shock month in Scenario Lab.
+- Reference dot at sale month for CGT chart.
+- Threshold band for land-tax bracket boundaries in the property tax view.
 
 Annotations are coloured `var(--border-strong)` and labelled inline. They never compete with series colours.
 
@@ -311,9 +319,9 @@ Charts and tooltips use the centralised formatters from `/lib/money/format.ts`:
 
 ```typescript
 export function formatAUD(cents: bigint, opts?: { compact?: boolean; precision?: 0 | 2 }): string;
-export function formatCompactAUD(cents: bigint | number): string;  // $1.2k, $1.2M
+export function formatCompactAUD(cents: bigint | number): string; // $1.2k, $1.2M
 export function formatPercent(bps: number, opts?: { precision?: 0 | 1 | 2 }): string;
-export function formatFY(date: Date): string;                       // "FY2026"
+export function formatFY(date: Date): string; // "FY2026"
 ```
 
 No chart computes its own formatting. Axis tick formatters are passed in from `chartTheme`. Period labels use `formatFY` or `formatMonth` per chart granularity.
@@ -325,8 +333,14 @@ No chart computes its own formatting. Axis tick formatters are passed in from `c
 ```tsx
 // /app/properties/[id]/charts/cash-flow.tsx
 
-export function CashFlowChart({ periods, asOfMonth }: { periods: PeriodResult[]; asOfMonth: number }) {
-  const data = periods.map(p => ({
+export function CashFlowChart({
+  periods,
+  asOfMonth,
+}: {
+  periods: PeriodResult[];
+  asOfMonth: number;
+}) {
+  const data = periods.map((p) => ({
     period: p.financialYear,
     rent: Number(p.grossRentCents) / 100,
     expenses: -Number(p.operatingExpenseCents) / 100,
@@ -343,10 +357,10 @@ export function CashFlowChart({ periods, asOfMonth }: { periods: PeriodResult[];
       description="Rent income vs operating expenses, interest, and principal paid, in dollars, by FY."
       marker={{ fromIndex: asOfMonth }}
       series={[
-        { id: 'rent',      key: 'rent',      label: 'Gross rent',      stackId: 'in' },
-        { id: 'expenses',  key: 'expenses',  label: 'Operating exp.',  stackId: 'out' },
-        { id: 'interest',  key: 'interest',  label: 'Interest',        stackId: 'out' },
-        { id: 'principal', key: 'principal', label: 'Principal',       stackId: 'out' },
+        { id: 'rent', key: 'rent', label: 'Gross rent', stackId: 'in' },
+        { id: 'expenses', key: 'expenses', label: 'Operating exp.', stackId: 'out' },
+        { id: 'interest', key: 'interest', label: 'Interest', stackId: 'out' },
+        { id: 'principal', key: 'principal', label: 'Principal', stackId: 'out' },
       ]}
       xAxis={{ dataKey: 'period' }}
       yAxis={{ tickFormatter: formatCompactAUD }}
@@ -363,22 +377,22 @@ The `Chart` component handles theming, projection marker, palette assignment, co
 
 ## 11. Anti-Patterns
 
-| Anti-pattern                                              | Why                                                                                                       |
-| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Truncated y-axis on cash-flow chart                       | Misleads scale of negative cash flow.                                                                     |
-| Animating numbers                                         | Distracts from value, reduces credibility.                                                                |
-| Pie chart for "where my rent goes"                        | Use stacked bar or Sankey.                                                                                |
-| Chart without companion data table                        | A11y failure; also hides exact values from power users.                                                   |
-| Multiple unit types on same axis                          | Always mismatched; user misreads.                                                                         |
-| Recharts `isAnimationActive` defaults                      | We disable globally to avoid jitter under SSR rehydration.                                               |
-| Inline `style={{ color: '#3b82f6' }}`                     | Use tokens. ESLint blocks raw colour strings in chart components.                                         |
-| Dual-axis "rate% vs cash flow $"                          | Two-axis charts with mixed units are a credibility liability.                                            |
+| Anti-pattern                          | Why                                                               |
+| ------------------------------------- | ----------------------------------------------------------------- |
+| Truncated y-axis on cash-flow chart   | Misleads scale of negative cash flow.                             |
+| Animating numbers                     | Distracts from value, reduces credibility.                        |
+| Pie chart for "where my rent goes"    | Use stacked bar or Sankey.                                        |
+| Chart without companion data table    | A11y failure; also hides exact values from power users.           |
+| Multiple unit types on same axis      | Always mismatched; user misreads.                                 |
+| Recharts `isAnimationActive` defaults | We disable globally to avoid jitter under SSR rehydration.        |
+| Inline `style={{ color: '#3b82f6' }}` | Use tokens. ESLint blocks raw colour strings in chart components. |
+| Dual-axis "rate% vs cash flow $"      | Two-axis charts with mixed units are a credibility liability.     |
 
 ---
 
 ## 12. Cross-References
 
-* `/ui-ux/design-system.md` § 2.4 — chart palette tokens.
-* `/ui-ux/dashboard-layouts.md` § 2, § 3, § 4 — pages that consume `<Chart />`.
-* `/reports-exports/export-templates.md` § 5 — PDF report chart layout slots.
-* `/architecture/ai-integration.md` § 6 — separation between chart summary (deterministic) and AI commentary (LLM).
+- `/ui-ux/design-system.md` § 2.4 — chart palette tokens.
+- `/ui-ux/dashboard-layouts.md` § 2, § 3, § 4 — pages that consume `<Chart />`.
+- `/reports-exports/export-templates.md` § 5 — PDF report chart layout slots.
+- `/architecture/ai-integration.md` § 6 — separation between chart summary (deterministic) and AI commentary (LLM).

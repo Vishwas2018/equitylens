@@ -8,20 +8,20 @@
 
 We use trunk-based development with short-lived feature branches. `main` is always deployable.
 
-| Branch                  | Purpose                                  | Auto-Deploys To       | Protection              |
-| ----------------------- | ---------------------------------------- | --------------------- | ----------------------- |
-| `main`                  | Production source of truth               | Vercel Production     | 2 reviewers + all checks |
-| `staging`               | Pre-prod integration                     | Vercel Staging        | 1 reviewer + all checks |
-| `feat/*`, `fix/*`       | Short-lived work branches                | Vercel Preview        | All checks must pass    |
-| `release/YYYY-MM-DD`    | Release candidates for scheduled deploys | Vercel Staging (pinned) | 2 reviewers           |
-| `hotfix/*`              | Emergency production patches             | Vercel Preview        | 1 reviewer + on-call    |
-| `tax-rules/FY-YYYY-XX`  | Tax ruleset proposals (see below)        | Isolated tax sandbox  | Legal + tax sign-off    |
+| Branch                 | Purpose                                  | Auto-Deploys To         | Protection               |
+| ---------------------- | ---------------------------------------- | ----------------------- | ------------------------ |
+| `main`                 | Production source of truth               | Vercel Production       | 2 reviewers + all checks |
+| `staging`              | Pre-prod integration                     | Vercel Staging          | 1 reviewer + all checks  |
+| `feat/*`, `fix/*`      | Short-lived work branches                | Vercel Preview          | All checks must pass     |
+| `release/YYYY-MM-DD`   | Release candidates for scheduled deploys | Vercel Staging (pinned) | 2 reviewers              |
+| `hotfix/*`             | Emergency production patches             | Vercel Preview          | 1 reviewer + on-call     |
+| `tax-rules/FY-YYYY-XX` | Tax ruleset proposals (see below)        | Isolated tax sandbox    | Legal + tax sign-off     |
 
 **Naming rules**
 
-* Lowercase, kebab-case after the prefix.
-* Branches longer than 5 days require a rebase against `main` daily.
-* `tax-rules/*` branches **never** merge directly to `main`; they flow through the ruleset lifecycle in `/engine/tax-rule-versioning.md`.
+- Lowercase, kebab-case after the prefix.
+- Branches longer than 5 days require a rebase against `main` daily.
+- `tax-rules/*` branches **never** merge directly to `main`; they flow through the ruleset lifecycle in `/engine/tax-rule-versioning.md`.
 
 ---
 
@@ -40,12 +40,12 @@ flowchart LR
   Synthetic --> Grafana
 ```
 
-| Environment | URL                                  | DB                           | Region        | Data           |
-| ----------- | ------------------------------------ | ---------------------------- | ------------- | -------------- |
-| Local       | `localhost:3000`                     | Supabase CLI local           | n/a           | Seed fixtures  |
-| Preview     | `pr-<n>-equitylens.vercel.app`              | Supabase branch DB (ephemeral) | ap-southeast-2 | Anonymised seed |
-| Staging     | `staging.equitylens.com.au`          | Supabase staging project     | ap-southeast-2 | Anonymised prod snapshot (weekly) |
-| Production  | `app.equitylens.com.au`              | Supabase production project  | ap-southeast-2 | Live           |
+| Environment | URL                            | DB                             | Region         | Data                              |
+| ----------- | ------------------------------ | ------------------------------ | -------------- | --------------------------------- |
+| Local       | `localhost:3000`               | Supabase CLI local             | n/a            | Seed fixtures                     |
+| Preview     | `pr-<n>-equitylens.vercel.app` | Supabase branch DB (ephemeral) | ap-southeast-2 | Anonymised seed                   |
+| Staging     | `staging.equitylens.com.au`    | Supabase staging project       | ap-southeast-2 | Anonymised prod snapshot (weekly) |
+| Production  | `app.equitylens.com.au`        | Supabase production project    | ap-southeast-2 | Live                              |
 
 > **AU data residency**: All Supabase projects must be created in `ap-southeast-2` (Sydney). The CI workflow fails if a misconfigured region is detected via the management API check in step 9 below.
 
@@ -319,17 +319,17 @@ jobs:
 
 The following checks are mandatory on `main` and `staging`:
 
-* `lint`
-* `typecheck`
-* `unit-engine` (with coverage ≥ 95%)
-* `unit-app` (with coverage ≥ 80%)
-* `migration-dryrun`
-* `e2e`
-* `security`
-* `a11y-perf`
-* `region-check` (main/staging only)
-* `CODEOWNERS` review on changed paths
-* Signed commits (DCO sign-off)
+- `lint`
+- `typecheck`
+- `unit-engine` (with coverage ≥ 95%)
+- `unit-app` (with coverage ≥ 80%)
+- `migration-dryrun`
+- `e2e`
+- `security`
+- `a11y-perf`
+- `region-check` (main/staging only)
+- `CODEOWNERS` review on changed paths
+- Signed commits (DCO sign-off)
 
 The **engine package** (`packages/engine`) has a dedicated CODEOWNER group `@equitylens/eng-finance`. Any PR touching files under `packages/engine/src/**` requires review from this group, regardless of other reviewers.
 
@@ -354,10 +354,16 @@ The `db:migrate:lint` step enforces:
 ```ts
 // scripts/migrate-lint.ts (excerpt)
 const FORBIDDEN_PATTERNS: Array<{ pattern: RegExp; reason: string }> = [
-  { pattern: /\bDROP\s+TABLE\b/i,         reason: 'Drop tables in a follow-up release after read paths removed' },
-  { pattern: /\bDROP\s+COLUMN\b/i,        reason: 'Drop columns in a follow-up release after read paths removed' },
-  { pattern: /\bALTER\s+TYPE\b/i,         reason: 'Use new enum + dual-write pattern' },
-  { pattern: /\bTRUNCATE\b/i,             reason: 'TRUNCATE forbidden in migrations' },
+  {
+    pattern: /\bDROP\s+TABLE\b/i,
+    reason: 'Drop tables in a follow-up release after read paths removed',
+  },
+  {
+    pattern: /\bDROP\s+COLUMN\b/i,
+    reason: 'Drop columns in a follow-up release after read paths removed',
+  },
+  { pattern: /\bALTER\s+TYPE\b/i, reason: 'Use new enum + dual-write pattern' },
+  { pattern: /\bTRUNCATE\b/i, reason: 'TRUNCATE forbidden in migrations' },
   { pattern: /NOT\s+NULL(?!\s+DEFAULT)/i, reason: 'NOT NULL requires DEFAULT or prior backfill' },
   { pattern: /CREATE\s+INDEX\s+(?!CONCURRENTLY)/i, reason: 'Use CREATE INDEX CONCURRENTLY' },
 ];
@@ -385,11 +391,11 @@ draft → legal_review → staged → published → retired
 
 A ruleset proposal is opened on a `tax-rules/FY-YYYY-XX` branch. The branch runs an extended CI matrix:
 
-* All standard checks above
-* `engine:regression` — replays the historical scenario corpus (>10k scenarios) and reports diff
-* `engine:atosro-fixtures` — re-runs the 40 ATO/SRO cross-validation fixtures from `/engine/test-matrix.md`
-* Legal sign-off via a required reviewer from `@equitylens/legal`
-* Tax review sign-off from `@equitylens/tax-advisor`
+- All standard checks above
+- `engine:regression` — replays the historical scenario corpus (>10k scenarios) and reports diff
+- `engine:atosro-fixtures` — re-runs the 40 ATO/SRO cross-validation fixtures from `/engine/test-matrix.md`
+- Legal sign-off via a required reviewer from `@equitylens/legal`
+- Tax review sign-off from `@equitylens/tax-advisor`
 
 Only after the ruleset reaches the `published` state in the DB (which is gated by a DB trigger) does it become live for new scenarios. Existing scenarios remain pinned to the ruleset version they were computed under.
 
@@ -397,16 +403,16 @@ Only after the ruleset reaches the `published` state in the DB (which is gated b
 
 ## 8. Secret Management
 
-| Secret                          | Stored In                        | Rotation       | Used By                  |
-| ------------------------------- | -------------------------------- | -------------- | ------------------------ |
-| `SUPABASE_SERVICE_ROLE_KEY`     | Vercel env (encrypted) + GH OIDC | Quarterly       | Edge Functions only      |
-| `STRIPE_SECRET_KEY`             | Vercel env                       | On suspicion    | Server actions, webhooks |
-| `OPENAI_API_KEY`                | Vercel env                       | Quarterly       | AI gateway (server only) |
-| `ANTHROPIC_API_KEY`             | Vercel env                       | Quarterly       | AI gateway (server only) |
-| `UPSTASH_REDIS_REST_TOKEN`      | Vercel env                       | Quarterly       | Rate limiter, jobs       |
-| `RESEND_API_KEY`                | Vercel env                       | Quarterly       | Transactional email      |
-| `SENTRY_AUTH_TOKEN`             | GH Actions secret                | Quarterly       | Sourcemap upload         |
-| `SUPABASE_MGMT_TOKEN`           | GH Actions secret                | Quarterly       | Region check, snapshots  |
+| Secret                      | Stored In                        | Rotation     | Used By                  |
+| --------------------------- | -------------------------------- | ------------ | ------------------------ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Vercel env (encrypted) + GH OIDC | Quarterly    | Edge Functions only      |
+| `STRIPE_SECRET_KEY`         | Vercel env                       | On suspicion | Server actions, webhooks |
+| `OPENAI_API_KEY`            | Vercel env                       | Quarterly    | AI gateway (server only) |
+| `ANTHROPIC_API_KEY`         | Vercel env                       | Quarterly    | AI gateway (server only) |
+| `UPSTASH_REDIS_REST_TOKEN`  | Vercel env                       | Quarterly    | Rate limiter, jobs       |
+| `RESEND_API_KEY`            | Vercel env                       | Quarterly    | Transactional email      |
+| `SENTRY_AUTH_TOKEN`         | GH Actions secret                | Quarterly    | Sourcemap upload         |
+| `SUPABASE_MGMT_TOKEN`       | GH Actions secret                | Quarterly    | Region check, snapshots  |
 
 Secrets are **never** referenced from preview/PR environments belonging to forked PRs. The pipeline uses `pull_request_target` only for trusted contributors and gates secret-dependent jobs behind `if: github.event.pull_request.head.repo.full_name == github.repository`.
 
@@ -414,12 +420,12 @@ Secrets are **never** referenced from preview/PR environments belonging to forke
 
 ## 9. Versioning & Tagging
 
-* Application releases use **CalVer** (`YYYY.MM.DD-N`) tagged by the production deploy job.
-* The `@equitylens/engine` package is **independently SemVer-versioned**. Every change to the engine bumps:
-  * `patch` for bug fixes that preserve historical scenario outputs
-  * `minor` for new calculation features that do not change outputs of existing scenarios
-  * `major` for any change that would alter outputs of pre-existing scenarios (these require a new published tax ruleset and a regression report attached to the PR)
-* The engine version is stamped on every `scenario_results` row (`engine_version` column), so audit trails are reproducible.
+- Application releases use **CalVer** (`YYYY.MM.DD-N`) tagged by the production deploy job.
+- The `@equitylens/engine` package is **independently SemVer-versioned**. Every change to the engine bumps:
+  - `patch` for bug fixes that preserve historical scenario outputs
+  - `minor` for new calculation features that do not change outputs of existing scenarios
+  - `major` for any change that would alter outputs of pre-existing scenarios (these require a new published tax ruleset and a regression report attached to the PR)
+- The engine version is stamped on every `scenario_results` row (`engine_version` column), so audit trails are reproducible.
 
 ---
 
@@ -427,24 +433,24 @@ Secrets are **never** referenced from preview/PR environments belonging to forke
 
 CI fails if any of the following regress beyond 5% versus the previous `main` commit:
 
-| Metric                              | Budget       |
-| ----------------------------------- | ------------ |
-| `/portfolio` route bundle (gz)      | ≤ 180 KB     |
-| `/scenarios/[id]` route bundle (gz) | ≤ 220 KB     |
-| Engine: portfolio of 10 properties  | ≤ 50 ms p95  |
-| Engine: 30-year forecast (single)   | ≤ 35 ms p95  |
-| Lighthouse Performance (mobile)     | ≥ 92         |
-| Lighthouse Accessibility            | ≥ 98         |
-| axe critical violations             | 0            |
+| Metric                              | Budget      |
+| ----------------------------------- | ----------- |
+| `/portfolio` route bundle (gz)      | ≤ 180 KB    |
+| `/scenarios/[id]` route bundle (gz) | ≤ 220 KB    |
+| Engine: portfolio of 10 properties  | ≤ 50 ms p95 |
+| Engine: 30-year forecast (single)   | ≤ 35 ms p95 |
+| Lighthouse Performance (mobile)     | ≥ 92        |
+| Lighthouse Accessibility            | ≥ 98        |
+| axe critical violations             | 0           |
 
 ---
 
 ## Cross-References
 
-* `/architecture/system-architecture.md` — runtime topology this pipeline deploys
-* `/architecture/security-and-compliance.md` — OWASP gates enforced in the `security` job
-* `/database/schema.sql`, `/database/rls-policies.sql` — applied during `migration-dryrun`
-* `/engine/tax-rule-versioning.md` — separate promotion path for tax rulesets
-* `/engine/test-matrix.md` — coverage targets and fixtures the engine job enforces
-* `/operations/deployment-checklist.md` — manual gates surrounding each promotion
-* `/operations/monitoring-and-observability.md` — what to watch after deploy
+- `/architecture/system-architecture.md` — runtime topology this pipeline deploys
+- `/architecture/security-and-compliance.md` — OWASP gates enforced in the `security` job
+- `/database/schema.sql`, `/database/rls-policies.sql` — applied during `migration-dryrun`
+- `/engine/tax-rule-versioning.md` — separate promotion path for tax rulesets
+- `/engine/test-matrix.md` — coverage targets and fixtures the engine job enforces
+- `/operations/deployment-checklist.md` — manual gates surrounding each promotion
+- `/operations/monitoring-and-observability.md` — what to watch after deploy

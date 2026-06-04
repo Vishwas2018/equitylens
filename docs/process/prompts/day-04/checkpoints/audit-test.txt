@@ -1,0 +1,84 @@
+Check: test
+Status: pass
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ test C:\Users\vishw\Vish\Vish\EquityLens
+> turbo run test
+
+
+   • Packages in scope: @equitylens/design-tokens, @equitylens/engine, @equitylens/types, @equitylens/web
+   • Running test in 4 packages
+   • Remote caching disabled
+
+@equitylens/engine:test: cache miss, executing ebb9fc502347803e
+@equitylens/types:build: cache hit, replaying logs 8984cb877fe4bdc3
+@equitylens/design-tokens:test: cache miss, executing fe65a7c05ca0b743
+@equitylens/types:build: 
+@equitylens/types:build: > @equitylens/types@0.1.0 build C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:build: > tsc --project tsconfig.build.json
+@equitylens/types:build: 
+@equitylens/types:test: cache miss, executing 32918fd040d74226
+@equitylens/web:test: cache miss, executing 0be1f8874d0c5386
+@equitylens/design-tokens:test: 
+@equitylens/design-tokens:test: > @equitylens/design-tokens@0.1.0 test C:\Users\vishw\Vish\Vish\EquityLens\packages\design-tokens
+@equitylens/design-tokens:test: > vitest run
+@equitylens/design-tokens:test: 
+@equitylens/web:test: 
+@equitylens/web:test: > @equitylens/web@0.0.1 test C:\Users\vishw\Vish\Vish\EquityLens\apps\web
+@equitylens/web:test: > vitest run
+@equitylens/web:test: 
+@equitylens/engine:test: 
+@equitylens/engine:test: > @equitylens/engine@0.1.0 test C:\Users\vishw\Vish\Vish\EquityLens\packages\engine
+@equitylens/engine:test: > vitest run
+@equitylens/engine:test: 
+@equitylens/types:test: 
+@equitylens/types:test: > @equitylens/types@0.1.0 test C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:test: > vitest run
+@equitylens/types:test: 
+@equitylens/design-tokens:test: 
+@equitylens/design-tokens:test: [7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/vishw/Vish/Vish/EquityLens/packages/design-tokens[39m
+@equitylens/design-tokens:test: 
+@equitylens/web:test: 
+@equitylens/web:test: [7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/vishw/Vish/Vish/EquityLens/apps/web[39m
+@equitylens/web:test: 
+@equitylens/types:test: 
+@equitylens/types:test: [7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/vishw/Vish/Vish/EquityLens/packages/types[39m
+@equitylens/types:test: 
+@equitylens/engine:test: 
+@equitylens/engine:test: [7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mC:/Users/vishw/Vish/Vish/EquityLens/packages/engine[39m
+@equitylens/engine:test: 
+@equitylens/types:test:  [32m✓[39m src/index.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 6[2mms[22m[39m
+@equitylens/engine:test:  [32m✓[39m src/index.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 10[2mms[22m[39m
+@equitylens/types:test: 
+@equitylens/types:test: [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/types:test: [2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/types:test: [2m   Start at [22m 09:37:32
+@equitylens/types:test: [2m   Duration [22m 2.96s[2m (transform 1.25s, setup 1ms, collect 1.30s, tests 6ms, environment 1ms, prepare 402ms)[22m
+@equitylens/types:test: 
+@equitylens/engine:test: 
+@equitylens/engine:test: [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/engine:test: [2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/engine:test: [2m   Start at [22m 09:37:32
+@equitylens/engine:test: [2m   Duration [22m 2.98s[2m (transform 1.35s, setup 0ms, collect 1.36s, tests 10ms, environment 1ms, prepare 762ms)[22m
+@equitylens/engine:test: 
+@equitylens/web:test:  [32m✓[39m __tests__/placeholder.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 6[2mms[22m[39m
+@equitylens/design-tokens:test:  [32m✓[39m src/index.test.ts [2m ([22m[2m1 test[22m[2m)[22m[90m 7[2mms[22m[39m
+@equitylens/design-tokens:test: 
+@equitylens/design-tokens:test: [2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/design-tokens:test: [2m      Tests [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+@equitylens/design-tokens:test: [2m   Start at [22m 09:37:32
+@equitylens/design-tokens:test: [2m   Duration [22m 3.50s[2m (transform 196ms, setup 0ms, collect 166ms, tests 7ms, environment 1ms, prepare 589ms)[22m
+@equitylens/design-tokens:test: 
+@equitylens/web:test:  [32m✓[39m server/auth/session.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 38[2mms[22m[39m
+@equitylens/web:test: 
+@equitylens/web:test: [2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+@equitylens/web:test: [2m      Tests [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+@equitylens/web:test: [2m   Start at [22m 09:37:32
+@equitylens/web:test: [2m   Duration [22m 3.75s[2m (transform 796ms, setup 0ms, collect 1.03s, tests 44ms, environment 1ms, prepare 2.03s)[22m
+@equitylens/web:test: 
+
+ Tasks:    5 successful, 5 total
+Cached:    1 cached, 5 total
+  Time:    6.886s

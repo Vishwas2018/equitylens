@@ -1,0 +1,79 @@
+Checkpoint: D01-T4 — Full CCTV Audit Script
+Date: 2026-05-19
+Branch: feature/d01-bootstrap
+
+--- Step 1: pnpm audit:cctv --day 01 ---
+=== CCTV Audit — Day 01 ===
+Date:         2026-05-19T11:38:27.841Z
+Branch:       feature/d01-bootstrap
+HEAD SHA:     89189016a8f35695dbc41ea2a5b5e896987939f4
+Last commit:  89189016a8f35695dbc41ea2a5b5e896987939f4 2026-05-19 21:24:23 +1000 Vishwas Joshi: feat(repo): eslint, prettier, husky, commitlint with task-id enforcement [D01-T3]
+Node:         v24.15.0
+⚠  WARNING: Node version drift. Running: v24.15.0. Expected: v20.14.x (see .nvmrc). CI enforces exact version; local results may differ.
+
+Prev tag:     day-00-end ❌ MISSING (day-0-end exists — naming predates zero-pad convention; not a drift error for day=1)
+All day tags: day-0-end
+
+--- Automated checks ---
+  ✅ git-status: pass
+  ✅ typecheck: pass
+  ✅ lint: pass
+  ✅ format-check: pass
+  ✅ test: pass
+  ❌ audit-deps: fail — 7 high-severity Next.js CVEs (14.x→15.x migration required)
+     Registered immediately: DEF-0001 in defect-log.md (same commit as this evidence)
+     Glob CLI injection (GHSA-5j98-mcp5-4vw2) fixed via pnpm.overrides: {"glob": ">=10.5.0"}
+
+  ⏭  migration-status: skipped (wiredDay: 2)
+  ⏭  migration-dryrun: skipped (wiredDay: 2)
+  ⏭  rls-coverage: skipped (wiredDay: 2)
+  ⏭  cross-tenant-probe: skipped (wiredDay: 2)
+  ⏭  region-check: skipped (wiredDay: 2)
+  ⏭  engine-determinism: skipped (wiredDay: 4)
+  ⏭  ato-fixture-canary: skipped (wiredDay: 4)
+  ⏭  bundle-budgets: skipped (wiredDay: 8)
+  ⏭  a11y: skipped (wiredDay: 8)
+  ⏭  disclaimer-audit: skipped (wiredDay: 8)
+  ⏭  secret-scan: skipped (wiredDay: 15)
+
+Exit code: 1 (one or more wired checks failed — expected; audit-deps fail is documented)
+
+--- Step 2: test -f docs/process/prompts/day-01/01-cctv-audit-report.md ---
+report: EXISTS
+
+--- Step 3: echo "exit: $?" ---
+exit: 0
+
+--- Changes introduced in D01-T4 ---
+- scripts/audit-cctv.ts: full implementation (replaces D00-T3 stub)
+  - Windows path fix: fileURLToPath() instead of .pathname (fixes C:\C:\... double-prefix)
+  - Drift guard: exits 2 if day-NN-end tag missing (for day > 1)
+  - Node-drift warning (from D01-T1 revision)
+  - Generates docs/process/prompts/day-NN/01-cctv-audit-report.md
+  - Saves per-check output to day-NN/checkpoints/audit-<check>.txt
+- scripts/lib/git.ts: NEW — git helper functions (headSha, currentBranch, lastCommit,
+  statusPorcelain, dayTags, latestEndTagDay, tagExists, diffStatSince)
+- scripts/lib/checks.ts: NEW — wired checks runner + skipped checks registry
+- apps/web/__tests__/placeholder.test.ts: NEW — placeholder test (fixes no-test-files exit-1)
+- apps/web/package.json: next 14.2.5 → 14.2.29 (fixes GHSA-f82v-jwr5-mffw critical auth bypass)
+- package.json: eslint-config-next 14.2.5 → 14.2.29; pnpm.overrides glob>=10.5.0
+- pnpm-lock.yaml: updated lockfile
+
+--- Deviations ---
+DEV-0009 (new): apps/web placeholder test added outside Next.js component scope.
+  Vitest requires at least one test file; no UI tests exist yet (planned Day 8).
+  Accepted: placeholder is accurate about its own purpose.
+
+--- Known failing check: audit-deps ---
+7 high-severity Next.js vulnerabilities require Next.js ≥15.5.16.
+CVEs: GHSA-mwv6-3258-q52c, GHSA-5j59-xgg2-r9c4, GHSA-h25m-26qc-wcjf,
+      GHSA-q4gf-8mx6-v5v3, GHSA-8h8q-6873-q5fj, GHSA-c4j6-fc7j-m34r,
+      GHSA-36qx-fr4f-26g5
+Next.js 14.x→15.x migration is a breaking change (App Router, React 19 RSC).
+Registers updated in same commit block as D01-T4 code:
+  - DEF-0001 opened: docs/process/registers/defect-log.md (sev2, open)
+  - BL-0022 opened: docs/process/registers/product-backlog.md (P0, proposed, target Day 2 or Day 8)
+  - TD-0008 opened: docs/process/registers/technical-debt.md (ci, medium, open)
+Decision gate: Day 2 morning — migrate immediately vs defer to Day 8.
+
+=== OVERALL: PASS (audit script correct; audit-deps fail is known/documented; registers updated) ===

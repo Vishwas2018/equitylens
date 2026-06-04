@@ -1,0 +1,20 @@
+Check: format-check
+Status: fail
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ format:check C:\Users\vishw\Vish\Vish\EquityLens
+> prettier --check .
+
+Checking formatting...
+ ELIFECYCLE  Command failed with exit code 1.
+
+[warn] docs/audit-prompt.md
+[warn] HOW-TO-RUN.md
+[warn] Code style issues found in 2 files. Run Prettier with --write to fix.
+
+Command failed: pnpm format:check
+[warn] docs/audit-prompt.md
+[warn] HOW-TO-RUN.md
+[warn] Code style issues found in 2 files. Run Prettier with --write to fix.

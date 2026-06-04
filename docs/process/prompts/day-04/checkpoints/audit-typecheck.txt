@@ -1,0 +1,43 @@
+Check: typecheck
+Status: pass
+
+WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+ WARN  Unsupported engine: wanted: {"node":"^20.14.0"} (current: {"node":"v24.15.0","pnpm":"10.30.3"})
+
+> equitylens@ typecheck C:\Users\vishw\Vish\Vish\EquityLens
+> turbo run typecheck
+
+
+   • Packages in scope: @equitylens/design-tokens, @equitylens/engine, @equitylens/types, @equitylens/web
+   • Running typecheck in 4 packages
+   • Remote caching disabled
+
+@equitylens/design-tokens:typecheck: cache miss, executing 451c42ab464d79b3
+@equitylens/types:build: cache miss, executing 8984cb877fe4bdc3
+@equitylens/engine:typecheck: cache miss, executing 9be6868f1d889e21
+@equitylens/types:typecheck: cache miss, executing 193d07d4225589c7
+@equitylens/engine:typecheck: 
+@equitylens/engine:typecheck: > @equitylens/engine@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\engine
+@equitylens/engine:typecheck: > tsc --noEmit
+@equitylens/engine:typecheck: 
+@equitylens/design-tokens:typecheck: 
+@equitylens/design-tokens:typecheck: > @equitylens/design-tokens@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\design-tokens
+@equitylens/design-tokens:typecheck: > tsc --noEmit
+@equitylens/design-tokens:typecheck: 
+@equitylens/types:typecheck: 
+@equitylens/types:typecheck: > @equitylens/types@0.1.0 typecheck C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:typecheck: > tsc --noEmit
+@equitylens/types:typecheck: 
+@equitylens/types:build: 
+@equitylens/types:build: > @equitylens/types@0.1.0 build C:\Users\vishw\Vish\Vish\EquityLens\packages\types
+@equitylens/types:build: > tsc --project tsconfig.build.json
+@equitylens/types:build: 
+@equitylens/web:typecheck: cache miss, executing b8e828ec1ed96638
+@equitylens/web:typecheck: 
+@equitylens/web:typecheck: > @equitylens/web@0.0.1 typecheck C:\Users\vishw\Vish\Vish\EquityLens\apps\web
+@equitylens/web:typecheck: > tsc --noEmit
+@equitylens/web:typecheck: 
+
+ Tasks:    5 successful, 5 total
+Cached:    0 cached, 5 total
+  Time:    6.863s

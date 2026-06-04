@@ -6,20 +6,20 @@
 
 ## Quick Map
 
-| Topic                          | Path                                                |
-| ------------------------------ | --------------------------------------------------- |
-| Operating model                | `execution-system.md`                               |
-| Day-by-day sprint spine        | `15-day-plan.md`                                    |
-| Operational procedure          | `daily-ritual.md`                                   |
-| Code's morning template        | `templates/cctv-audit-report.md`                    |
-| Opus's daily plan template     | `templates/daily-execution-prompt.md`               |
-| Code's evening template        | `templates/end-of-day-report.md`                    |
-| Backlog                        | `registers/product-backlog.md`                      |
-| Defects                        | `registers/defect-log.md`                           |
-| Deviations                     | `registers/deviation-log.md`                        |
-| Daily narrative                | `registers/daily-progress-log.md`                   |
-| Technical debt                 | `registers/technical-debt.md`                       |
-| Architecture decisions         | `registers/adr-index.md` + `registers/adr/*.md`     |
+| Topic                      | Path                                            |
+| -------------------------- | ----------------------------------------------- |
+| Operating model            | `execution-system.md`                           |
+| Day-by-day sprint spine    | `15-day-plan.md`                                |
+| Operational procedure      | `daily-ritual.md`                               |
+| Code's morning template    | `templates/cctv-audit-report.md`                |
+| Opus's daily plan template | `templates/daily-execution-prompt.md`           |
+| Code's evening template    | `templates/end-of-day-report.md`                |
+| Backlog                    | `registers/product-backlog.md`                  |
+| Defects                    | `registers/defect-log.md`                       |
+| Deviations                 | `registers/deviation-log.md`                    |
+| Daily narrative            | `registers/daily-progress-log.md`               |
+| Technical debt             | `registers/technical-debt.md`                   |
+| Architecture decisions     | `registers/adr-index.md` + `registers/adr/*.md` |
 
 ---
 

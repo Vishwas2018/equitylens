@@ -1,0 +1,31 @@
+D02-T3 — supabase db push evidence
+Date: 2026-05-20
+
+Issues encountered and fixed before final push:
+  1. config.toml had project_id inside [api] section → moved to top-level
+  2. Down migrations in supabase/migrations/ → moved to supabase/rollback/
+  3. pg_partman not available on Supabase managed Postgres (PG 17)
+     → Added default partition fallbacks in 0001_baseline_schema.sql
+  4. db-migrate-dryrun.ts used psql subprocess (unavailable on Windows)
+     → Ported to pg library
+  5. config.toml major_version was 16 → CLI detected actual version 17; corrected
+
+Final supabase link output:
+  WARNING: Local database version differs from the linked project.
+    [db] major_version = 17
+  Finished supabase link.
+
+Final supabase db push output (0002_rls_policies.sql — 0001 already tracked):
+  Connecting to remote database...
+  Skipping migration .gitkeep... (file name must match pattern "<timestamp>_name.sql")
+  Applying migration 0002_rls_policies.sql...
+  Finished supabase db push.
+
+0001_baseline_schema.sql NOTICEs (expected):
+  NOTICE (42710): extension "pgcrypto" already exists, skipping
+  NOTICE (00000): partman.create_parent skipped for scenario_results: default partition created
+  NOTICE (00000): partman.create_parent skipped for audit_logs: default partition created
+  NOTICE (00000): trigger "trg_set_updated_at" ... does not exist, skipping  (x7 tables)
+
+Result: EXIT 0 — both migrations applied, staging DB fully provisioned.
+Postgres version: 17 (Supabase managed)

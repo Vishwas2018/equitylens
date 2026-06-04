@@ -6,35 +6,141 @@
 
 ## Conventions
 
-* **ID**: `TD-NNNN`, monotonically increasing.
-* **Category**: `engine` / `db` / `api` / `web` / `auth` / `billing` / `reports` / `ai` / `ops` / `ci` / `docs` / `tests`.
-* **Severity**: `low` (cosmetic / minor inefficiency) / `medium` (creates friction; bounded) / `high` (will block future work or harm correctness if not addressed).
-* **Status**: `open` / `scheduled` (in a future day's plan or backlog) / `paid` (resolved).
-* **Interest**: a short note on how the debt compounds — "blocks D11", "doubles refactor cost per new endpoint", "degrades a11y score over time".
+- **ID**: `TD-NNNN`, monotonically increasing.
+- **Category**: `engine` / `db` / `api` / `web` / `auth` / `billing` / `reports` / `ai` / `ops` / `ci` / `docs` / `tests`.
+- **Severity**: `low` (cosmetic / minor inefficiency) / `medium` (creates friction; bounded) / `high` (will block future work or harm correctness if not addressed).
+- **Status**: `open` / `scheduled` (in a future day's plan or backlog) / `paid` (resolved).
+- **Interest**: a short note on how the debt compounds — "blocks D11", "doubles refactor cost per new endpoint", "degrades a11y score over time".
 
 ---
 
 ## Severity Triggers
 
-* **High** debt added in a single day requires an ADR if it lasts beyond that day.
-* Any high debt at start of Day 14 forces a Day 14 priority shift to pay it down.
-* No release candidate may carry **high** debt at end of Day 15.
+- **High** debt added in a single day requires an ADR if it lasts beyond that day.
+- Any high debt at start of Day 14 forces a Day 14 priority shift to pay it down.
+- No release candidate may carry **high** debt at end of Day 15.
 
 ---
 
 ## Open Debt
 
-| ID       | Category | Severity | Title                                                  | Opened day | Status    | Linked       |
-| -------- | -------- | -------- | ------------------------------------------------------ | ---------- | --------- | ------------ |
-| _empty_  |          |          |                                                        |            |           |              |
+| ID      | Category | Severity | Title                                                                                      | Opened day | Status    | Linked   |
+| ------- | -------- | -------- | ------------------------------------------------------------------------------------------ | ---------- | --------- | -------- |
+| TD-0005 | ci       | low      | bundle-budgets / a11y / disclaimer-audit CI checks not yet wired                           | Day 01     | scheduled | N/A      |
+| TD-0006 | ci       | low      | secret-scan CI check not yet wired                                                         | Day 01     | scheduled | N/A      |
+| TD-0007 | ci       | low      | prettier reformat noise mixed with config signal in D01-T3 commit                          | Day 01     | open      | N/A      |
+| TD-0009 | auth     | low      | appendAuditEntry fetches prev_hash non-atomically — concurrent writes can branch the chain | Day 03     | open      | DEV-0014 |
+
+---
+
+### TD-0004 — engine-determinism / ato-fixture-canary CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: **paid** — Day 4
+- **Linked**: N/A
+
+**What's the debt?**
+`engine-determinism` and `ato-fixture-canary` CCTV checks skipped. No engine logic exists yet.
+
+**Why was it taken on?**
+Engine calculation code doesn't exist until Day 4+.
+
+**Payoff**: `unit-engine` CI job (coverage gate ≥95%) + `engine-determinism` CI job (1000-iter harness) wired in `.github/workflows/ci.yml`. Both registered as required status checks on main with `app_id: 15368`. Proven: coverage gate fails below 95% (throwaway/coverage-gate-proof). Closed Day 4 via commits `bef7953`, `fecdeb2`, `38cdc8d`, `25ac27e`.
+
+---
+
+### TD-0005 — bundle-budgets / a11y / disclaimer-audit CI checks not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 8)
+- **Linked**: N/A
+
+**What's the debt?**
+`bundle-budgets`, `a11y`, and `disclaimer-audit` CCTV checks skipped.
+
+**Why was it taken on?**
+No UI components exist yet; bundle and a11y checks require a rendered app.
+
+**Cost right now**
+No automated checks for bundle size regressions, a11y violations, or missing disclaimers.
+
+**Interest**: Disclaimer omissions are a compliance risk (ASIC/AFCA); a11y regressions are legal risk (Disability Discrimination Act). Both compound as UI grows.
+
+**Trigger to repay**: Day 8 (UI feature work begins).
+
+**Payoff plan**: Wire commands in `runWiredChecks()`; add `@axe-core/playwright` and Next.js bundle analyser.
+
+**Estimate**: S
+
+---
+
+### TD-0006 — secret-scan CI check not yet wired
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: scheduled (wired Day 15)
+- **Linked**: N/A
+
+**What's the debt?**
+`secret-scan` CCTV check skipped. No scanning for accidentally committed secrets.
+
+**Why was it taken on?**
+No secrets have been committed yet; wiring a scanner requires selecting a tool (trufflehog, gitleaks, etc.).
+
+**Cost right now**
+A future accidental commit of a secret (API key, Supabase service role key) would not be caught by CI.
+
+**Interest**: Each day without scanning is a day a secret could be committed and pushed to the remote.
+
+**Trigger to repay**: Day 15 hardening (latest); sooner is better.
+
+**Payoff plan**: Add `gitleaks detect --no-git` or `trufflehog git` step to CI and CCTV.
+
+**Estimate**: XS
+
+---
+
+### TD-0007 — prettier reformat noise mixed with config signal in D01-T3 commit
+
+- **Category**: ci
+- **Severity**: low
+- **Opened**: Day 01
+- **Status**: open
+- **Linked**: N/A
+
+**What's the debt?**
+Running `pnpm format` during D01-T3 (Prettier config introduction) reformatted 40+ existing docs files. The reformatting changes are bundled in the same commit as the Prettier config. Future `git blame` and `git log` will attribute docs edits to D01-T3 rather than original authors.
+
+**Why was it taken on?**
+First-time Prettier run over existing files was unavoidable; staged separately would still show in the same PR.
+
+**Cost right now**
+Minor: `git log` noise on docs files.
+
+**Interest**: Each future Prettier config change will produce the same noise pattern, making signal/noise worse over time.
+
+**Trigger to repay**: Next time Prettier config changes — ship config change in a standalone commit, then run `pnpm format` in a follow-up "format: apply prettier config" commit.
+
+**Payoff plan**: Document convention in CLAUDE.md or contributing guide: "Prettier config changes ship in their own commit; the format sweep follows immediately."
+
+**Estimate**: XS (convention doc only)
 
 ---
 
 ## Paid Debt
 
-| ID       | Category | Title                              | Paid day | Closing commit | Notes                |
-| -------- | -------- | ---------------------------------- | -------- | -------------- | -------------------- |
-| _empty_  |          |                                    |          |                |                      |
+| ID      | Category | Title                                                                            | Paid day | Closing commit                      | Notes                                                                       |
+| ------- | -------- | -------------------------------------------------------------------------------- | -------- | ----------------------------------- | --------------------------------------------------------------------------- |
+| TD-0004 | ci       | engine-determinism / ato-fixture-canary CI checks not yet wired                  | Day 01   | D04-T3 commits `bef7953`, `38cdc8d` | `unit-engine` coverage gate + `engine-determinism` harness jobs wired in CI |
+| TD-0001 | ci       | migration-status / migration-dryrun CI checks not yet wired                      | Day 01   | D02-T2 commit                       | `db:migrate:dryrun` + `db:migrate:lint` scripts; migration-dryrun CI job    |
+| TD-0002 | ci       | rls-coverage / cross-tenant-probe CI checks not yet wired                        | Day 01   | D02-T3 commit                       | `tests/rls/` suite + `pnpm test:rls`; wired in CI Day 3                     |
+| TD-0003 | ci       | region-check CI check not yet wired                                              | Day 01   | D02-T2 commit                       | `runRegionCheck()` in checks.ts; region-check CI job                        |
+| TD-0008 | ci       | audit-deps check has no exception mechanism; long-tail CVEs cause persistent red | Day 02   | D02-T1 commit                       | `.audit-exceptions.json` + `audit-exceptions.ts` helper                     |
 
 ---
 
@@ -73,9 +179,34 @@
 
 ---
 
+### TD-0009 — appendAuditEntry non-atomic prev_hash fetch
+
+- **Category**: auth
+- **Severity**: low
+- **Opened**: Day 03
+- **Status**: open
+- **Linked**: DEV-0014
+
+**What's the debt?**
+`appendAuditEntry` fetches the most recent `computed_hash` in one query, then inserts a new row in a separate query. Under concurrent writes, two requests can fetch the same `prev_hash`, creating a forked chain.
+
+**Why was it taken on?**
+An atomic solution requires a SECURITY DEFINER PostgreSQL function or advisory lock — added complexity deferred for MVP (single-region, low concurrent audit write volume).
+
+**Cost right now**
+Hash chain could branch under concurrent audit writes. Chain verification would catch it but not auto-heal.
+
+**Interest**: Grows if audit volume increases or if concurrent server action handlers are added. Unlikely to trigger at MVP scale.
+
+**Trigger to repay**: Before any multi-region deployment or when daily audit log volume exceeds 1,000 entries.
+
+**Payoff plan**: Replace `appendAuditEntry` logic with a `SECURITY DEFINER` `append_audit_entry(...)` Postgres function using `SELECT ... FOR UPDATE` on the latest row.
+
+---
+
 ## Anti-Patterns
 
-* **Debt without a payoff plan is not debt; it's a defect.** If you don't know how to fix it, open a defect instead.
-* **"Refactor everything" is not a payoff plan.** Plans must be concrete and bounded.
-* **No silent debt.** Every shortcut taken to ship today's task gets an entry today, not later. Memory is unreliable.
-* **No transferring debt between owners without acknowledgement.** If TD-NNNN was opened on Day 5 and now blocks Day 11, the Day-5 author re-confirms before reassignment.
+- **Debt without a payoff plan is not debt; it's a defect.** If you don't know how to fix it, open a defect instead.
+- **"Refactor everything" is not a payoff plan.** Plans must be concrete and bounded.
+- **No silent debt.** Every shortcut taken to ship today's task gets an entry today, not later. Memory is unreliable.
+- **No transferring debt between owners without acknowledgement.** If TD-NNNN was opened on Day 5 and now blocks Day 11, the Day-5 author re-confirms before reassignment.

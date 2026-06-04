@@ -1,0 +1,26 @@
+D02-T3 — pnpm test:rls evidence (against Supabase staging)
+Date: 2026-05-20
+DATABASE_URL: postgres://postgres:***@db.wubqybgqehbqdolsdmrw.supabase.co:5432/postgres
+
+Issues encountered and fixed before green run:
+  1. policy-coverage used relkind='r' (misses partitioned tables relkind='p')
+     → Changed to relkind IN ('r', 'p')
+  2. cross-tenant used SET LOCAL ... TO $1 (SET doesn't accept params)
+     → Changed to pg_catalog.set_config('request.jwt.claims', $1, true)
+
+Final test run output:
+  RUN  v1.6.1
+
+  ✓ tests/rls/policy-coverage.test.ts (2 tests) 241ms
+  ✓ tests/rls/cross-tenant.test.ts (2 tests) 614ms
+
+  Test Files  2 passed (2)
+        Tests  4 passed (4)
+     Start at  17:33:54
+     Duration  1.30s
+
+Result: EXIT 0 — 4/4 tests pass.
+  - policy-coverage: all 21 tables have RLS enabled, all have ≥1 policy
+  - cross-tenant:
+      user B sees 0 rows from user A's org ✅
+      user A sees their own org (1 row) ✅

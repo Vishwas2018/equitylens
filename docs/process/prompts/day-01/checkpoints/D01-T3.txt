@@ -1,0 +1,43 @@
+Checkpoint: D01-T3 — ESLint, Prettier, Husky, commitlint
+Date: 2026-05-19
+Branch: feature/d01-bootstrap
+
+--- Step 1: pnpm lint ---
+turbo 2.9.14 — Running lint in 4 packages
+  @equitylens/design-tokens:lint  eslint src --max-warnings 0  OK
+  @equitylens/engine:lint         eslint src --max-warnings 0  OK
+  @equitylens/types:lint          eslint src --max-warnings 0  OK
+  @equitylens/web:lint            eslint . --max-warnings 0    OK
+Tasks: 4 successful, 4 total  Time: 3.613s
+RESULT: PASS
+
+--- Step 2: pnpm format:check ---
+Checking formatting...
+All matched files use Prettier code style!
+(40 docs/*.md and config files reformatted via pnpm format prior to check)
+RESULT: PASS
+
+--- Step 3: git commit --allow-empty -m "bad message" ---
+→ No staged files found.
+❌  Commit rejected: subject must end with a task ID, e.g. [D01-T1]
+    Got: bad message
+    Pattern: [D<day>-T<task>] e.g. [D01-T3]
+husky - commit-msg script failed (code 1)
+RESULT: PASS — bad message correctly blocked
+
+--- engine ESLint rules summary (packages/engine/.eslintrc.cjs) ---
+Rules active on src/**/*.ts:
+  no-restricted-globals: Date, performance → error
+  no-restricted-properties: Math.random → error
+  no-restricted-imports: decimal.js, big.js, bignumber.js, mathjs, lodash → error
+
+--- deviations from spec ---
+DEV-0006 (interpretation): spec listed 'header-pattern' as a commitlint rule;
+  this is not a built-in rule. Replaced with grep-based pattern check in
+  .husky/commit-msg hook. Behavior is identical: subject must end with [DNN-TM].
+DEV-0007 (env workaround): Husky hooks export npm_config_engine_strict=false
+  to allow pnpm to run on Node 24 locally. On Node 20.14 (CI), this export
+  is a no-op and hooks run cleanly without override.
+
+=== OVERALL: PASS ===
+pnpm lint exit 0, format:check exit 0, bad commit rejected.

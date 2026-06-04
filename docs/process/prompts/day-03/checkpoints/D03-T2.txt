@@ -1,0 +1,86 @@
+D03-T2 — Server actions + audit_logs hash chain
+Date: 2026-05-20
+
+## Files Created
+
+### Migration
+- supabase/migrations/0004_invites_and_audit_chain.sql
+  - org_invites table (id, org_id, email, role, token_hash UNIQUE, invited_by,
+    expires_at 7d, accepted_at, created_at) + RLS policies
+  - audit_logs: ADD COLUMN prev_hash TEXT, payload_hash TEXT, computed_hash TEXT
+- supabase/rollback/0004_invites_and_audit_chain_down.sql
+
+### Audit module
+- apps/web/server/audit/log.ts
+  - hashId(id): sha256(id + PEPPER) — no raw IDs in audit trail
+  - hashTenant(orgId): alias for hashId
+  - canonicalJson(val): recursive key-sorted JSON (deterministic)
+  - appendAuditEntry(entry): anonymises payload → gets prevHash from DB →
+    computedHash = sha256(prevHash || canonicalJson(anonymised)) → inserts
+  - generateInviteToken(): 32-byte random hex + sha256 hash
+
+- apps/web/server/audit/verify.ts
+  - verifyAuditChain(orgId?): fetches rows ordered by occurred_at, recomputes
+    each expected_computed_hash from stored prev_hash + canonicalJson(metadata),
+    returns { totalRows, verified, firstBrokenId }
+
+### Server actions (all under apps/web/server/actions/)
+- auth/signUp.ts    — supabase.auth.signUp + audit create/rls_deny
+- auth/signIn.ts    — signInWithPassword + audit login/rls_deny
+- auth/signOut.ts   — supabase.auth.signOut + audit logout
+- org/createOrg.ts  — insert organisations + owner membership (service role) + audit
+- org/inviteMember.ts — verify caller is owner/admin → generateInviteToken → insert
+                        org_invites (service role) + audit
+- org/acceptInvite.ts — hash token → validate invite → insert membership (service
+                        role) → mark invite accepted + audit
+- org/switchOrg.ts  — RPC set_active_org(p_org_id) + updateUserById app_metadata
+                      active_org_id + audit
+
+### Auth helper
+- apps/web/server/auth/actionClient.ts — createActionClient() wires cookies()
+  from next/headers to @supabase/ssr createServerClient
+
+### Minimal UI pages (zero design — functional only)
+- app/(auth)/sign-in/page.tsx
+- app/(auth)/sign-up/page.tsx
+- app/(app)/layout.tsx
+- app/(app)/orgs/new/page.tsx
+- app/(app)/orgs/switch/page.tsx
+- app/(app)/invites/[token]/page.tsx
+
+### Tests
+- tests/integration/audit-chain.test.ts — 10 unit tests (always runs):
+  canonicalJson, hashId, hash chain computation, tamper detection,
+  generateInviteToken
+- tests/integration/auth-flow.test.ts — 10 integration tests (skip without
+  staging creds): signUp×2, signIn×2, createOrg, inviteMember, acceptInvite×2,
+  switchOrg, cross-tenant isolation
+
+## Checkpoint Commands
+
+  pnpm test tests/integration/audit-chain.test.ts   # 10/10 ✅
+  pnpm test tests/integration/auth-flow.test.ts      # 10/10 ✅ (with staging creds)
+
+## Deviations Logged
+
+DEV-0013: inviteMember uses a one-time token rather than Supabase Auth invite flow.
+          The magic-link-disabled policy applies to sign-in; invite token is a
+          one-time membership grant (distinct flow). Interpretation: allowed.
+          Severity: low, accepted.
+
+DEV-0014: appendAuditEntry fetches prev_hash in a separate query then inserts.
+          Under concurrent writes, two entries could share the same prev_hash,
+          branching the chain. Risk is low for MVP (single-region, low volume);
+          a SECURITY DEFINER atomic function is the proper fix for production.
+          Severity: low, tracked for Day 8.
+          -> technical-debt.md updated.
+
+## Hash Chain Spec Compliance
+
+  computed_hash = sha256(prev_hash || canonicalJson(anonymisedPayload))
+  First entry: prev_hash = '0' * 64
+  Anonymised payload keys: actor_user_id_hash, tenant_id_hash, action,
+    resource_type, resource_id, occurred_at, ip_hash, user_agent_hash
+  Hashing function: sha256(id || AUDIT_HASH_PEPPER)
+  Verification: re-canonicalise stored metadata JSONB, recompute expected hash,
+    compare to stored computed_hash

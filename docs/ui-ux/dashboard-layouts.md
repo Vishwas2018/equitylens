@@ -33,10 +33,10 @@ Every authenticated screen lives inside the application shell:
 └────────────┴─────────────────────────────────────────────────────┘
 ```
 
-* **TopBar** height: `--space-7` (56 px). Sticky.
-* **SideNav** width: 240 px on `≥ lg`, collapses to icon-only (`w-14`) on `md`, replaced by a bottom tab bar on `< md`.
-* **Page content** has a maximum width of 1440 px until the viewport exceeds 1600 px, where it centers; on ≥ 1920 px the right rail expands to a 4-column option.
-* **AI Panel** is a right-edge sheet (collapsible), 420 px when open, see § 5.
+- **TopBar** height: `--space-7` (56 px). Sticky.
+- **SideNav** width: 240 px on `≥ lg`, collapses to icon-only (`w-14`) on `md`, replaced by a bottom tab bar on `< md`.
+- **Page content** has a maximum width of 1440 px until the viewport exceeds 1600 px, where it centers; on ≥ 1920 px the right rail expands to a 4-column option.
+- **AI Panel** is a right-edge sheet (collapsible), 420 px when open, see § 5.
 
 ### 1.2 Grid System
 
@@ -101,9 +101,9 @@ The landing surface after authentication. Goal: in one glance, the investor know
 
 ### 2.1 Data Hierarchy
 
-* Hero numbers in `--text-5xl` weight medium (not bold — bold is reserved for editorial emphasis).
-* Delta indicators (▲ / ▼) use semantic colour but at 70 % saturation to avoid drama.
-* Sparklines beneath each KPI show 12-month trend.
+- Hero numbers in `--text-5xl` weight medium (not bold — bold is reserved for editorial emphasis).
+- Delta indicators (▲ / ▼) use semantic colour but at 70 % saturation to avoid drama.
+- Sparklines beneath each KPI show 12-month trend.
 
 ### 2.2 Loading
 
@@ -158,14 +158,14 @@ A 24-month cash flow grid with the same row structure as the export CSV (`/repor
 
 Annualised tax position with breakdown:
 
-* Assessable rent
-* Less: deductible interest
-* Less: deductible expenses (categorised)
-* Less: Div 40 depreciation
-* Less: Div 43 depreciation
-* Net property impact
-* Marginal rate applied (with note: "Based on declared taxable income of …")
-* Estimated refund / payable
+- Assessable rent
+- Less: deductible interest
+- Less: deductible expenses (categorised)
+- Less: Div 40 depreciation
+- Less: Div 43 depreciation
+- Net property impact
+- Marginal rate applied (with note: "Based on declared taxable income of …")
+- Estimated refund / payable
 
 Below: ownership split table for joint owners showing each owner's share.
 
@@ -181,13 +181,13 @@ Only visible if user models a sale (via Scenario). Otherwise shows: "Model a sal
 
 When populated:
 
-* Sale year input
-* Sale price input
-* Cost base breakdown
-* Capital gain
-* Discount applied
-* Per-owner CGT estimate
-* Net proceeds after tax
+- Sale year input
+- Sale price input
+- Cost base breakdown
+- Capital gain
+- Discount applied
+- Per-owner CGT estimate
+- Net proceeds after tax
 
 ### 3.5 Loans Tab
 
@@ -251,9 +251,9 @@ Every input is two-way bound to the URL hash and debounced 200 ms. Recompute fir
 
 "Add comparison" appends a second column in the result canvas with deltas highlighted. A scenario can compare against:
 
-* Baseline (current state)
-* Prior scenario in the same property
-* A user-saved scenario
+- Baseline (current state)
+- Prior scenario in the same property
+- A user-saved scenario
 
 ### 4.3 Saving
 
@@ -300,10 +300,10 @@ A right-edge sheet (420 px wide on `≥ lg`, full-width drawer on `< md`). Trigg
 
 ### 5.1 Constraints
 
-* The AI Panel reads engine-computed values; it cannot compute or override numbers. See `/architecture/ai-integration.md` § 2.
-* Every response shows the "Sources" footer linking back to specific engine outputs that informed the answer.
-* "Bad answer" button records to `ai_interactions.feedback` for retraining/prompt-improvement reviews.
-* The panel never auto-opens.
+- The AI Panel reads engine-computed values; it cannot compute or override numbers. See `/architecture/ai-integration.md` § 2.
+- Every response shows the "Sources" footer linking back to specific engine outputs that informed the answer.
+- "Bad answer" button records to `ai_interactions.feedback` for retraining/prompt-improvement reviews.
+- The panel never auto-opens.
 
 ### 5.2 Suggestions
 
@@ -335,27 +335,27 @@ New report dialog: select report type, scope (one property / portfolio), FY, for
 
 Tabbed: Profile · Organisation · Tax preferences · Subscription · Integrations · Security · Notifications · Data export.
 
-* **Profile**: name, email, theme preference, locale.
-* **Organisation**: name, ABN, members (invite + role assignment).
-* **Tax preferences**: declared taxable income for the FY, residency status, marginal rate override, tax adviser contact (optional).
-* **Subscription**: tier, billing details, invoice history.
-* **Integrations**: bank-feed connect (Phase 2), accountant-share links.
-* **Security**: password, MFA enrolment, active sessions, account deletion (with 30-day grace, see `/architecture/security-and-compliance.md` § 8).
-* **Notifications**: report-ready, scenario-shared, dunning, weekly digest.
-* **Data export**: APP-mandated "export everything" zip generator.
+- **Profile**: name, email, theme preference, locale.
+- **Organisation**: name, ABN, members (invite + role assignment).
+- **Tax preferences**: declared taxable income for the FY, residency status, marginal rate override, tax adviser contact (optional).
+- **Subscription**: tier, billing details, invoice history.
+- **Integrations**: bank-feed connect (Phase 2), accountant-share links.
+- **Security**: password, MFA enrolment, active sessions, account deletion (with 30-day grace, see `/architecture/security-and-compliance.md` § 8).
+- **Notifications**: report-ready, scenario-shared, dunning, weekly digest.
+- **Data export**: APP-mandated "export everything" zip generator.
 
 ---
 
 ## 8. Empty States
 
-| Screen              | Empty trigger                       | Treatment                                                                                                |
-| ------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Portfolio overview  | No properties                       | Centred card; "Add your first property"; supporting copy explains data flow.                             |
-| Property cash flow  | No income/expense records           | Inline prompt; "Connect bank feed (Phase 2)" or "Import CSV"; example data preview.                      |
-| Scenario Lab        | No baseline exists                  | Disabled state with copy: "Add a property to build scenarios."                                            |
-| AI Panel            | No question asked yet               | Suggested 3 starter prompts based on current view.                                                       |
-| Reports             | No reports generated                | "Generate FY{current} summary" primary CTA.                                                              |
-| Audit log (admin)   | No actions yet                      | "Activity will appear here."                                                                              |
+| Screen             | Empty trigger             | Treatment                                                                           |
+| ------------------ | ------------------------- | ----------------------------------------------------------------------------------- |
+| Portfolio overview | No properties             | Centred card; "Add your first property"; supporting copy explains data flow.        |
+| Property cash flow | No income/expense records | Inline prompt; "Connect bank feed (Phase 2)" or "Import CSV"; example data preview. |
+| Scenario Lab       | No baseline exists        | Disabled state with copy: "Add a property to build scenarios."                      |
+| AI Panel           | No question asked yet     | Suggested 3 starter prompts based on current view.                                  |
+| Reports            | No reports generated      | "Generate FY{current} summary" primary CTA.                                         |
+| Audit log (admin)  | No actions yet            | "Activity will appear here."                                                        |
 
 Empty states never use generic "No data" copy. Every empty state names what's missing and provides exactly one next action.
 
@@ -363,14 +363,14 @@ Empty states never use generic "No data" copy. Every empty state names what's mi
 
 ## 9. Mobile Adaptations
 
-| Screen              | Mobile (< 640 px)                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------ |
-| Portfolio overview  | KPI strip → 2 × 2 grid. Equity chart full width. Property table → card list.                     |
-| Property detail     | Tabs become a horizontal scrollable tab strip. Cards stack.                                       |
-| Scenario Lab        | Inputs and results stack vertically. Recompute indicator more prominent. "Save" pinned to header.|
-| AI Panel            | Full-screen drawer with back chevron.                                                            |
-| Reports             | Table → card list; status pill prominent.                                                        |
-| Settings            | Tabs → accordion sections.                                                                       |
+| Screen             | Mobile (< 640 px)                                                                                 |
+| ------------------ | ------------------------------------------------------------------------------------------------- |
+| Portfolio overview | KPI strip → 2 × 2 grid. Equity chart full width. Property table → card list.                      |
+| Property detail    | Tabs become a horizontal scrollable tab strip. Cards stack.                                       |
+| Scenario Lab       | Inputs and results stack vertically. Recompute indicator more prominent. "Save" pinned to header. |
+| AI Panel           | Full-screen drawer with back chevron.                                                             |
+| Reports            | Table → card list; status pill prominent.                                                         |
+| Settings           | Tabs → accordion sections.                                                                        |
 
 Charts smaller than 320 px wide collapse to sparkline + key-number presentation; the full chart is reachable via "View detail" overlay.
 
@@ -378,29 +378,29 @@ Charts smaller than 320 px wide collapse to sparkline + key-number presentation;
 
 ## 10. Performance Targets
 
-| Metric                              | Target                       |
-| ----------------------------------- | ---------------------------- |
-| First contentful paint (FCP)        | < 1.2 s on 3G fast           |
-| Largest contentful paint (LCP)      | < 2.0 s                      |
-| Cumulative layout shift (CLS)       | < 0.02 (zero shift on numbers) |
-| Interaction to next paint (INP)     | < 200 ms                     |
-| Time to interactive on dashboard    | < 2.5 s                      |
-| Scenario recompute (cache hit)      | < 50 ms                      |
-| Scenario recompute (cache miss)     | < 250 ms                     |
+| Metric                           | Target                         |
+| -------------------------------- | ------------------------------ |
+| First contentful paint (FCP)     | < 1.2 s on 3G fast             |
+| Largest contentful paint (LCP)   | < 2.0 s                        |
+| Cumulative layout shift (CLS)    | < 0.02 (zero shift on numbers) |
+| Interaction to next paint (INP)  | < 200 ms                       |
+| Time to interactive on dashboard | < 2.5 s                        |
+| Scenario recompute (cache hit)   | < 50 ms                        |
+| Scenario recompute (cache miss)  | < 250 ms                       |
 
 Achieved via:
 
-* Server components on read-heavy pages.
-* Streaming SSR.
-* Tabular layout reservation (no late-arriving numbers shift the page).
-* Recharts with `isAnimationActive=false` on every chart.
+- Server components on read-heavy pages.
+- Streaming SSR.
+- Tabular layout reservation (no late-arriving numbers shift the page).
+- Recharts with `isAnimationActive=false` on every chart.
 
 ---
 
 ## 11. Cross-References
 
-* `/ui-ux/design-system.md` — tokens used throughout.
-* `/ui-ux/data-viz-guidelines.md` — chart specifications referenced from § 2, § 3, § 4.
-* `/architecture/api-contracts.md` § 5 — APIs feeding each screen.
-* `/architecture/ai-integration.md` — AI Panel constraints.
-* `/reports-exports/export-templates.md` — Report types from § 6.
+- `/ui-ux/design-system.md` — tokens used throughout.
+- `/ui-ux/data-viz-guidelines.md` — chart specifications referenced from § 2, § 3, § 4.
+- `/architecture/api-contracts.md` § 5 — APIs feeding each screen.
+- `/architecture/ai-integration.md` — AI Panel constraints.
+- `/reports-exports/export-templates.md` — Report types from § 6.

@@ -1,0 +1,47 @@
+D02-T2 Checkpoint — Supabase staging provision + region/migration CI
+Date: 2026-05-20
+Branch: feature/d01-bootstrap
+
+=== Supabase Project ===
+Project ref:   wubqybgqehbqdolsdmrw
+Project URL:   https://wubqybgqehbqdolsdmrw.supabase.co
+DB host:       db.wubqybgqehbqdolsdmrw.supabase.co
+Region:        ap-southeast-2 (confirmed in Supabase dashboard — ADR-0003 ✅)
+
+=== Files Created / Modified ===
+supabase/config.toml          — project_id = "wubqybgqehbqdolsdmrw" set under [api]
+supabase/migrations/.gitkeep  — directory placeholder for Day 3 migrations
+apps/web/.env.example         — env var template for onboarding
+apps/web/.env.local           — gitignored; to be populated by developer from dashboard
+scripts/audit-deps.ts         — standalone CI-facing audit:deps script
+scripts/db-migrate-dryrun.ts  — apply supabase/migrations/*.sql to ephemeral postgres
+scripts/db-migrate-lint.ts    — destructive-pattern linter for migration files
+scripts/lib/checks.ts         — runRegionCheck() wired; region-check removed from skipped
+package.json                  — audit:deps, db:migrate:dryrun, db:migrate:lint scripts added
+.github/workflows/ci.yml      — audit-deps, migration-dryrun, region-check jobs wired
+
+=== CCTV Audit Result ===
+Exit:    0 (no failures)
+Wired:   git-status ✅  typecheck ✅  lint ✅  format-check ✅  test ✅
+Warn:    audit-deps ⚠ (DEF-0001 / 7 CVEs excepted until 2026-05-27)
+         region-check ⚠ (SUPABASE_MGMT_TOKEN not set locally — expected)
+Skipped: migration-status, migration-dryrun, rls-coverage, cross-tenant-probe,
+         engine-determinism, ato-fixture-canary, bundle-budgets, a11y,
+         disclaimer-audit, secret-scan
+
+=== Human Actions Required ===
+GitHub Secrets (Settings → Secrets and variables → Actions → New repository secret):
+  SUPABASE_PROJECT_REF  = wubqybgqehbqdolsdmrw
+  SUPABASE_MGMT_TOKEN   = <Supabase personal access token>
+                          Get from: https://supabase.com/dashboard/account/tokens
+  STAGING_DATABASE_URL  = postgres://postgres.<project-ref>:<password>@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres
+
+Vercel Environment Variables (Project → Settings → Environment Variables):
+  NEXT_PUBLIC_SUPABASE_URL    = https://wubqybgqehbqdolsdmrw.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY  = <anon key from Supabase dashboard>
+  SUPABASE_SERVICE_ROLE_KEY   = <service role key — server only, NOT preview>
+
+=== Credential Sources ===
+Supabase API keys:  https://supabase.com/dashboard/project/wubqybgqehbqdolsdmrw/settings/api
+Supabase DB URI:    https://supabase.com/dashboard/project/wubqybgqehbqdolsdmrw/settings/database
+Management token:   https://supabase.com/dashboard/account/tokens

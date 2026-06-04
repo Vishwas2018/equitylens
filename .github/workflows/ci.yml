@@ -1,0 +1,395 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Commit hygiene (PR only) ──────────────────────────────────────────────
+  commit-lint:
+    name: Commit lint
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/restore-deps
+
+      - name: commitlint — conventional format
+        run: |
+          pnpm commitlint \
+            --from "${{ github.event.pull_request.base.sha }}" \
+            --to   "${{ github.event.pull_request.head.sha }}"
+
+      # Server-side enforcement of the task-ID suffix pattern.
+      # Mirrors the grep in .husky/commit-msg (DEV-0006 mitigation).
+      - name: commitlint — task-ID suffix [DNN-TM]
+        run: |
+          FAILED=0
+          while IFS= read -r line; do
+            sha="${line%% *}"
+            subject="${line#* }"
+            if ! printf '%s' "$subject" | grep -qE '\[D[0-9]{2}-T[0-9]+\]$'; then
+              echo "❌  $sha  missing task-ID suffix: $subject"
+              FAILED=1
+            fi
+          done < <(git log --format="%H %s" \
+                     "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}")
+          exit $FAILED
+
+  # ── Code quality ─────────────────────────────────────────────────────────
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - run: pnpm typecheck
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - run: pnpm lint
+
+  format-check:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - run: pnpm format:check
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    env:
+      # Required for BL-0029 technique B (JWT decode probe in jwt-probe.test.ts).
+      # Without these the describe.skipIf guard fires and the probe silently skips.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # BL-0030: live OpenAI fallback tests (3 tests in ai-gateway-fallback.test.ts).
+      # Without this key the describe.skipIf guard fires — skipped ≠ green.
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      # BL-0032: live Stripe checkout test (1 test in billing-webhook.test.ts).
+      # Must be a test-mode key (sk_test_...). Without it the skipIf guard fires.
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      # D15-T0 (item 1h): was build-only; moved here so the assertion loop
+      # and any test-time Sentry initialisation both receive the DSN.
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+      # D15-T0: verified non-empty by the assertion loop below; not consumed
+      # by the test runner itself.
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Assert all 8 required secrets are non-empty (D15-T0 / BL-0029)
+        run: |
+          FAILED=0
+          for v in OPENAI_API_KEY NEXT_PUBLIC_SENTRY_DSN STRIPE_SECRET_KEY \
+            STRIPE_WEBHOOK_SECRET NEXT_PUBLIC_SUPABASE_URL \
+            NEXT_PUBLIC_SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY \
+            SENTRY_AUTH_TOKEN; do
+            if [ -z "${!v}" ]; then
+              echo "MISSING/EMPTY: $v"
+              FAILED=1
+            else
+              echo "OK: $v"
+            fi
+          done
+          exit $FAILED
+      - run: pnpm test
+
+  # ── Engine coverage gate (≥95%) ─────────────────────────────────────────
+  # Must run on Node 20.14.0: @vitest/coverage-v8 1.6.x uses test-exclude which
+  # is incompatible with Node 24 (util.promisify breakage — DEV-0002).
+  # restore-deps pins Node via .nvmrc (20.14.0) so this is satisfied automatically.
+  unit-engine:
+    name: Engine unit + coverage gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Run engine tests with coverage (≥95% threshold)
+        run: pnpm --filter @equitylens/engine coverage
+
+  # ── Engine determinism harness ───────────────────────────────────────────
+  # Verifies same input → same output_hash every run.
+  # Isolated job so a non-determinism regression is immediately visible.
+  engine-determinism:
+    name: Engine determinism harness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Run determinism harness
+        run: pnpm --filter @equitylens/engine engine:determinism
+
+  # ── Security ─────────────────────────────────────────────────────────────
+  # Uses exception-aware audit script — known CVEs with an `until` date are
+  # surfaced as WARN (not FAIL). Exceptions live in .audit-exceptions.json.
+  # DEF-0001 (Next.js CVEs) parked until 2026-05-27 per BL-0022.
+  audit-deps:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - run: pnpm audit:deps
+
+  # ── Database ──────────────────────────────────────────────────────────────
+  # Wired Day 2: applies supabase/migrations/ to an ephemeral postgres and
+  # verifies they are lint-clean. Proves every migration applies on a fresh DB.
+  migration-dryrun:
+    name: Migration dry-run
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: equitylens_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+
+      - name: Apply migrations (dry-run up)
+        run: pnpm db:migrate:dryrun
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/equitylens_test
+
+      - name: Lint migrations for destructive patterns
+        run: pnpm db:migrate:lint
+
+      - name: Verify reversibility (down → up)
+        run: |
+          pnpm db:migrate:dryrun --reverse
+          pnpm db:migrate:dryrun
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/equitylens_test
+
+  # ── Infrastructure ────────────────────────────────────────────────────────
+  # Wired Day 2: verifies the linked Supabase project is in ap-southeast-2.
+  # Required for AU data residency compliance (Privacy Act / ADR-0003).
+  # Only runs on main/staging pushes where the staging project is the target.
+  region-check:
+    name: Supabase region check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    steps:
+      - name: Verify Supabase project is in ap-southeast-2
+        run: |
+          REGION=$(curl -sf \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_MGMT_TOKEN }}" \
+            "https://api.supabase.com/v1/projects/${{ secrets.SUPABASE_PROJECT_REF }}" \
+            | jq -r '.region')
+          echo "Detected region: $REGION"
+          if [ "$REGION" != "ap-southeast-2" ]; then
+            echo "::error::Supabase region is '$REGION', expected 'ap-southeast-2' (ADR-0003 / Privacy Act)"
+            exit 1
+          fi
+          echo "✅ Region confirmed: ap-southeast-2"
+
+  # ── Build ─────────────────────────────────────────────────────────────────
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [typecheck, lint, format-check, test, unit-engine, engine-determinism]
+    env:
+      BUILD_SHA: ${{ github.sha }}
+      # Sentry DSN must be present at build time so the client bundle is instrumented.
+      # Without it, NEXT_PUBLIC_SENTRY_DSN is undefined and Sentry stays disabled.
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - run: pnpm build
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [build]
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_JWT_SECRET: ${{ secrets.SUPABASE_JWT_SECRET }}
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      AUDIT_HASH_PEPPER: ${{ secrets.AUDIT_HASH_PEPPER }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-deps
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+      - name: Copy env for Next.js dev server
+        run: |
+          cat > apps/web/.env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_JWT_SECRET=${{ secrets.SUPABASE_JWT_SECRET }}
+          UPSTASH_REDIS_REST_URL=${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN=${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+          AUDIT_HASH_PEPPER=${{ secrets.AUDIT_HASH_PEPPER }}
+          EOF
+      - name: Run Playwright E2E tests
+        run: npx playwright test tests/e2e/auth-flow.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # ── Sentry E2E probe (D15-T0 gate) ─────────────────────────────────────────
+  # Machine-verifiable Sentry receipt. Sends a uniquely-tagged event via the
+  # HTTP Envelope API (no SDK dependency), waits for ingestion, then asserts the
+  # issue appears in the Issues API response.
+  # SDK-loads-without-error is necessary but NOT sufficient — the API hit is the
+  # proof (D15-T0 spec).
+  # Required secrets: NEXT_PUBLIC_SENTRY_DSN, SENTRY_AUTH_TOKEN.
+  # SENTRY_ORG/SENTRY_PROJECT are used as fallback only — org+project slugs are
+  # auto-discovered from the DSN's numeric project ID via the Sentry projects API.
+  sentry-probe:
+    name: Sentry E2E probe
+    runs-on: ubuntu-latest
+    needs: [build]
+    env:
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+    steps:
+      - name: Send probe event via Sentry HTTP Envelope API
+        run: |
+          RUN_ID="${{ github.run_id }}-${{ github.run_attempt }}"
+          EVENT_ID=$(python3 -c "import uuid; print(uuid.uuid4().hex)")
+          SENT_AT=$(python3 -c "import datetime; print(datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.000000Z'))")
+          TS_UNIX=$(python3 -c "import time; print(int(time.time()))")
+
+          SENTRY_KEY=$(printf '%s' "${NEXT_PUBLIC_SENTRY_DSN}" | sed -E 's|https://([^@]+)@.*|\1|')
+          SENTRY_HOST=$(printf '%s' "${NEXT_PUBLIC_SENTRY_DSN}" | sed -E 's|https://[^@]+@([^/]+)/.*|\1|')
+          SENTRY_PID=$(printf '%s' "${NEXT_PUBLIC_SENTRY_DSN}"  | sed -E 's|.*/([0-9]+)$|\1|')
+
+          # fingerprint forces a unique issue per run — prevents all CI probe events
+          # being grouped into the same Sentry issue (which would use the first run's title).
+          printf '%s\n%s\n%s\n' \
+            "{\"event_id\":\"${EVENT_ID}\",\"sent_at\":\"${SENT_AT}\",\"sdk\":{\"name\":\"sentry.ciprobe\",\"version\":\"1.0.0\"}}" \
+            "{\"type\":\"event\",\"content_type\":\"application/json\"}" \
+            "{\"event_id\":\"${EVENT_ID}\",\"timestamp\":\"${SENT_AT}\",\"level\":\"error\",\"fingerprint\":[\"D15 probe ${RUN_ID}\"],\"exception\":{\"values\":[{\"type\":\"Error\",\"value\":\"D15 probe ${RUN_ID}\"}]},\"tags\":{\"probe\":\"d15-t0\",\"run_id\":\"${RUN_ID}\"}}" \
+            > /tmp/sentry-envelope.txt
+
+          HTTP_STATUS=$(curl -s -o /tmp/sentry-resp.txt -w "%{http_code}" \
+            -X POST "https://${SENTRY_HOST}/api/${SENTRY_PID}/envelope/" \
+            -H "Content-Type: application/x-sentry-envelope" \
+            -H "X-Sentry-Auth: Sentry sentry_version=7, sentry_key=${SENTRY_KEY}, sentry_timestamp=${TS_UNIX}" \
+            --data-binary @/tmp/sentry-envelope.txt)
+
+          echo "Envelope POST → HTTP ${HTTP_STATUS}"
+          cat /tmp/sentry-resp.txt
+          if [ "${HTTP_STATUS}" != "200" ]; then
+            echo "::error::Sentry envelope POST returned ${HTTP_STATUS}, expected 200"
+            exit 1
+          fi
+          echo "Event sent: D15 probe ${RUN_ID} (event_id: ${EVENT_ID})"
+
+          # Pass run-id and numeric project ID to the next step via GITHUB_ENV.
+          echo "PROBE_RUN_ID=${RUN_ID}" >> "${GITHUB_ENV}"
+          echo "SENTRY_PID_FOR_PROBE=${SENTRY_PID}" >> "${GITHUB_ENV}"
+
+      - name: Poll Sentry Issues API and assert event receipt
+        run: |
+          # Search by run_id tag (unique per run) to avoid collisions from concurrent
+          # push + pull_request triggers that both run the probe and send different events.
+          # Text search tokenises the run ID and can match other runs; tag search is exact.
+          ENCODED=$(python3 -c \
+            "import urllib.parse,sys; print(urllib.parse.quote('run_id:' + sys.argv[1]))" \
+            "${PROBE_RUN_ID}")
+
+          # Auto-discover the correct org/project slugs from the DSN's numeric project ID.
+          # SENTRY_ORG/SENTRY_PROJECT secrets may not match the DSN — use the projects
+          # list API to find the canonical slugs for the project that received the event.
+          PROJECTS_JSON=$(curl -sf \
+            -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+            "https://sentry.io/api/0/projects/" 2>/dev/null || echo "[]")
+          RESOLVED_ORG=$(echo "${PROJECTS_JSON}" | python3 -c \
+            "import sys,json,sys as _; d=json.load(sys.stdin); pid=sys.argv[1]; p=[x for x in d if str(x['id'])==pid]; print(p[0]['organization']['slug'] if p else '')" \
+            "${SENTRY_PID_FOR_PROBE}" 2>/dev/null || echo "")
+          RESOLVED_PROJ=$(echo "${PROJECTS_JSON}" | python3 -c \
+            "import sys,json; d=json.load(sys.stdin); pid=sys.argv[1]; p=[x for x in d if str(x['id'])==pid]; print(p[0]['slug'] if p else '')" \
+            "${SENTRY_PID_FOR_PROBE}" 2>/dev/null || echo "")
+          if [ -z "${RESOLVED_ORG}" ] || [ -z "${RESOLVED_PROJ}" ]; then
+            echo "::warning::Could not resolve org/project slug for DSN project ID ${SENTRY_PID_FOR_PROBE} — falling back to SENTRY_ORG/SENTRY_PROJECT secrets"
+            RESOLVED_ORG="${SENTRY_ORG}"
+            RESOLVED_PROJ="${SENTRY_PROJECT}"
+          fi
+          echo "Resolved: org=${RESOLVED_ORG} project=${RESOLVED_PROJ}"
+
+          API_URL="https://sentry.io/api/0/projects/${RESOLVED_ORG}/${RESOLVED_PROJ}/issues/?query=${ENCODED}"
+          echo "GET ${API_URL}"
+
+          # Retry up to 6×10 s = 60 s total — Sentry typically ingests within 15 s.
+          COUNT=0
+          RESPONSE="[]"
+          API_HTTP_STATUS="0"
+          for attempt in $(seq 1 6); do
+            echo "Attempt ${attempt}/6 — sleeping 10 s..."
+            sleep 10
+            API_HTTP_STATUS=$(curl -s -o /tmp/sentry-api.txt -w "%{http_code}" \
+              -H "Authorization: Bearer ${SENTRY_AUTH_TOKEN}" \
+              "${API_URL}" 2>/dev/null || echo "0")
+            echo "Issues API HTTP status: ${API_HTTP_STATUS}"
+            if [ "${API_HTTP_STATUS}" = "200" ]; then
+              RESPONSE=$(cat /tmp/sentry-api.txt)
+            else
+              echo "Issues API error body: $(cat /tmp/sentry-api.txt 2>/dev/null)"
+              RESPONSE="[]"
+            fi
+            COUNT=$(echo "${RESPONSE}" | python3 -c \
+              "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+            if [ "${COUNT}" -ge 1 ]; then break; fi
+          done
+
+          echo "--- Issues API response ---"
+          echo "${RESPONSE}" | python3 -m json.tool --no-ensure-ascii 2>/dev/null \
+            || echo "${RESPONSE}"
+          echo "---------------------------"
+
+          if [ "${COUNT}" -lt 1 ]; then
+            echo "::error::Sentry Issues API: 0 issues for 'D15 probe ${PROBE_RUN_ID}' after 6 attempts"
+            exit 1
+          fi
+
+          TITLE=$(echo "${RESPONSE}" | python3 -c \
+            "import sys,json; print(json.load(sys.stdin)[0].get('title',''))" \
+            2>/dev/null || echo "")
+          ISSUE_ID=$(echo "${RESPONSE}" | python3 -c \
+            "import sys,json; print(json.load(sys.stdin)[0].get('id',''))" \
+            2>/dev/null || echo "")
+
+          if ! printf '%s' "${TITLE}" | grep -qF "D15 probe ${PROBE_RUN_ID}"; then
+            echo "::error::Issue title '${TITLE}' does not contain 'D15 probe ${PROBE_RUN_ID}'"
+            exit 1
+          fi
+
+          echo "issue_id=${ISSUE_ID}" >> "${GITHUB_OUTPUT}"
+          echo "✅ Sentry probe confirmed — issue_id=${ISSUE_ID}, title='${TITLE}'"

@@ -1,0 +1,28 @@
+Check: git-status
+Status: pass
+
+M apps/web/package.json
+ M package.json
+ M pnpm-lock.yaml
+ M scripts/audit-cctv.ts
+?? apps/web/__tests__/
+?? docs/process/prompts/day-01/01-cctv-audit-report.md
+?? docs/process/prompts/day-01/checkpoints/audit-a11y.txt
+?? docs/process/prompts/day-01/checkpoints/audit-ato-fixture-canary.txt
+?? docs/process/prompts/day-01/checkpoints/audit-audit-deps.txt
+?? docs/process/prompts/day-01/checkpoints/audit-bundle-budgets.txt
+?? docs/process/prompts/day-01/checkpoints/audit-cross-tenant-probe.txt
+?? docs/process/prompts/day-01/checkpoints/audit-disclaimer-audit.txt
+?? docs/process/prompts/day-01/checkpoints/audit-engine-determinism.txt
+?? docs/process/prompts/day-01/checkpoints/audit-format-check.txt
+?? docs/process/prompts/day-01/checkpoints/audit-git-status.txt
+?? docs/process/prompts/day-01/checkpoints/audit-lint.txt
+?? docs/process/prompts/day-01/checkpoints/audit-migration-dryrun.txt
+?? docs/process/prompts/day-01/checkpoints/audit-migration-status.txt
+?? docs/process/prompts/day-01/checkpoints/audit-region-check.txt
+?? docs/process/prompts/day-01/checkpoints/audit-rls-coverage.txt
+?? docs/process/prompts/day-01/checkpoints/audit-secret-scan.txt
+?? docs/process/prompts/day-01/checkpoints/audit-test.txt
+?? docs/process/prompts/day-01/checkpoints/audit-typecheck.txt
+?? scripts/lib/checks.ts
+?? scripts/lib/git.ts

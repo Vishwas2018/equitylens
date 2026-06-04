@@ -1,0 +1,49 @@
+D04-T1 Checkpoint — Engine skeleton + money core + determinism harness
+Date: 2026-05-21
+
+=== pnpm --filter @equitylens/engine typecheck ===
+> tsc --noEmit
+EXIT 0 — 0 errors
+
+=== pnpm --filter @equitylens/engine test ===
+ ✓ test/money/cents.test.ts       (22 tests)  11ms
+ ✓ test/money/canonical.test.ts   (14 tests)  32ms
+ ✓ test/determinism/harness.test.ts (5 tests) 205ms
+ Test Files  3 passed (3)
+ Tests       41 passed (41)
+EXIT 0
+
+=== pnpm engine:determinism (1000 iters) ===
+ ✓ test/determinism/harness.test.ts (5 tests) 114ms
+ Test Files  1 passed (1)  Tests  5 passed (5)
+EXIT 0 — 0 divergences across 1000 iterations
+
+=== Lint probe: Date.now() blocked ===
+echo 'export const x = Date.now();' > packages/engine/src/__lintprobe.ts
+pnpm --filter @equitylens/engine lint
+
+  1:18  error  Unexpected use of 'Date'. Use explicit date parameters;
+               Date is non-deterministic in engine code  no-restricted-globals
+✖ 1 problem (1 error, 0 warnings)
+EXIT 1 — lint FAILS as expected ✅
+
+rm packages/engine/src/__lintprobe.ts
+pnpm --filter @equitylens/engine lint
+EXIT 0 — clean lint ✅
+
+=== Files shipped ===
+packages/engine/src/money/cents.ts         — bigint Cents type, mulDiv, monthlyInterest
+packages/engine/src/money/canonical.ts     — canonicalJson + outputHash
+packages/engine/src/runtime/clock.ts       — Clock interface + FixedClock
+packages/engine/src/runtime/scenario.ts    — runScenario skeleton
+packages/engine/src/index.ts               — public exports
+packages/engine/vitest.config.ts           — coverage thresholds ≥95%
+packages/engine/package.json               — engine:determinism + coverage scripts
+packages/engine/test/money/cents.test.ts
+packages/engine/test/money/canonical.test.ts
+packages/engine/test/determinism/harness.test.ts
+
+=== Rounding convention ===
+DEV-0015: decimal-and-rounding.md does not exist.
+Convention: HALF_UP, sourced from financial-calc-engine.md §5.2 formula.
+Flagged for human confirmation before fixture set is finalised.

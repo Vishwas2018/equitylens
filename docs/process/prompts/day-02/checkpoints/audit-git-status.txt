@@ -1,0 +1,25 @@
+Check: git-status
+Status: pass
+
+M docs/process/prompts/day-02/01-cctv-audit-report.md
+ M docs/process/registers/daily-progress-log.md
+ M docs/process/registers/deviation-log.md
+ M docs/process/registers/product-backlog.md
+?? docs/process/prompts/day-02/03-end-of-day-report.md
+?? docs/process/prompts/day-02/checkpoints/audit-a11y.txt
+?? docs/process/prompts/day-02/checkpoints/audit-ato-fixture-canary.txt
+?? docs/process/prompts/day-02/checkpoints/audit-audit-deps.txt
+?? docs/process/prompts/day-02/checkpoints/audit-bundle-budgets.txt
+?? docs/process/prompts/day-02/checkpoints/audit-cross-tenant-probe.txt
+?? docs/process/prompts/day-02/checkpoints/audit-disclaimer-audit.txt
+?? docs/process/prompts/day-02/checkpoints/audit-engine-determinism.txt
+?? docs/process/prompts/day-02/checkpoints/audit-format-check.txt
+?? docs/process/prompts/day-02/checkpoints/audit-git-status.txt
+?? docs/process/prompts/day-02/checkpoints/audit-lint.txt
+?? docs/process/prompts/day-02/checkpoints/audit-migration-dryrun.txt
+?? docs/process/prompts/day-02/checkpoints/audit-migration-status.txt
+?? docs/process/prompts/day-02/checkpoints/audit-region-check.txt
+?? docs/process/prompts/day-02/checkpoints/audit-rls-coverage.txt
+?? docs/process/prompts/day-02/checkpoints/audit-secret-scan.txt
+?? docs/process/prompts/day-02/checkpoints/audit-test.txt
+?? docs/process/prompts/day-02/checkpoints/audit-typecheck.txt

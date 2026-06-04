@@ -1,0 +1,74 @@
+D04-T3 Checkpoint — Coverage gate + determinism CI job
+Date: 2026-05-21
+
+=== CI jobs added ===
+unit-engine:
+  - Runs: pnpm --filter @equitylens/engine coverage
+  - Node: 20.14.0 via restore-deps (.nvmrc) — required for @vitest/coverage-v8 1.6.x
+    (Node 24 incompatibility logged as DEV-0002)
+  - Threshold: ≥95% lines/functions/branches/statements enforced by vitest.config.ts
+  - Blocks: build job
+
+engine-determinism:
+  - Runs: pnpm --filter @equitylens/engine engine:determinism
+  - Executes test/determinism/harness.test.ts — verifies same input → same output_hash
+  - Blocks: build job
+
+build job updated:
+  needs: [typecheck, lint, format-check, test, unit-engine, engine-determinism]
+
+=== turbo.json updated ===
+Added tasks: coverage, engine:determinism
+
+=== Branch protection command ===
+# Run after merging to main to enforce both new jobs as required status checks:
+gh api \
+  --method PUT \
+  -H "Accept: application/vnd.github+json" \
+  repos/Vishwas2018/equitylens/branches/main/protection \
+  --input - <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "Type check",
+      "Lint",
+      "Format check",
+      "Test",
+      "Engine unit + coverage gate",
+      "Engine determinism harness",
+      "Build"
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": {
+    "required_approving_review_count": 1
+  },
+  "restrictions": null
+}
+EOF
+
+=== Step 4: Job names (as registered in GitHub Actions / branch protection contexts) ===
+"Engine unit + coverage gate"    (job id: unit-engine)
+"Engine determinism harness"     (job id: engine-determinism)
+
+=== Step 5: Branch protection — both engine contexts confirmed app_id: 15368 ===
+Context: "Engine unit + coverage gate"   app_id: 15368  (GitHub Actions app)
+Context: "Engine determinism harness"    app_id: 15368  (GitHub Actions app)
+Applied via checks[] format (not legacy contexts[]) — mandatory for app_id binding.
+
+=== Step 6: Coverage gate proof — gate confirmed to bite ===
+Proof branch: throwaway/coverage-gate-proof
+Change: describe('add', ...) → describe.skip(...) in cents.test.ts → drops coverage below 95%
+Failing job URL: https://github.com/Vishwas2018/equitylens/actions/runs/26219552723/job/77150666037
+Result: "Engine unit + coverage gate" FAILED as expected. Branch deleted, PR #2 closed.
+
+=== Passing run (main PR #1 — feature/d01-bootstrap → main) ===
+Run: https://github.com/Vishwas2018/equitylens/actions/runs/26217763088
+  Engine unit + coverage gate  PASS: https://github.com/Vishwas2018/equitylens/actions/runs/26217763088/job/77144460874
+  Engine determinism harness   PASS: https://github.com/Vishwas2018/equitylens/actions/runs/26217763088/job/77144460938
+PR URL: https://github.com/Vishwas2018/equitylens/pull/1
+
+=== Files changed ===
+.github/workflows/ci.yml  — added unit-engine, engine-determinism jobs; build needs updated
+turbo.json                — added coverage, engine:determinism tasks

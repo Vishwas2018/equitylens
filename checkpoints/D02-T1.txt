@@ -1,0 +1,38 @@
+D02-T1 Checkpoint — Audit Exceptions Mechanism
+Date: 2026-05-20
+Branch: feature/d01-bootstrap
+
+=== Verification Commands ===
+
+1. pnpm audit:cctv --day 02
+   Result: EXIT 0
+   audit-deps: warn (7 entries, all excepted until 2026-05-27)
+   All other wired checks: pass
+
+2. cat .audit-exceptions.json | jq '.exceptions | length'
+   Result: 7
+
+3. node -e "console.log(new Date('2026-05-27') > new Date())"
+   Result: true (verified 2026-05-20 → 2026-05-27 is in the future)
+
+=== Files Created/Modified ===
+
+NEW  .audit-exceptions.json          — 7 DEF-0001 CVE exceptions, until 2026-05-27
+NEW  scripts/lib/audit-exceptions.ts — loadExceptions(), checkException(), parseAuditAdvisories()
+MOD  scripts/lib/checks.ts           — runAuditDeps() wired, CheckResult adds 'warn' status
+MOD  scripts/audit-cctv.ts           — ⚠  icon for warn, wiredRows show warn notes
+MOD  .prettierignore                 — exclude generated CCTV report files
+
+=== TD-0008 Status ===
+
+PAID — moved to Paid Debt table in technical-debt.md
+
+=== DEF-0001 Status ===
+
+PARKED — deadline 2026-05-27 (Day 8). All 7 CVEs show as WARN in CCTV report.
+Exception list: GHSA-mwv6-3258-q52c, GHSA-5j59-xgg2-r9c4, GHSA-h25m-26qc-wcjf,
+               GHSA-q4gf-8mx6-v5v3, GHSA-8h8q-6873-q5fj, GHSA-c4j6-fc7j-m34r,
+               GHSA-36qx-fr4f-26g5
+All linked to DEF-0001 / BL-0022 (Next.js 14→15 migration).
+
+=== CHECKPOINT STATUS: PASS ===

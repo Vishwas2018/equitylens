@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "exceptions": [
+    {
+      "cve": "GHSA-mwv6-3258-q52c",
+      "package": "next",
+      "severity": "high",
+      "reason": "DoS via RSC deserialization — applicable; accepted under DEV-0023; hard stop Day 13 (2026-05-30). No further deferral.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-5j59-xgg2-r9c4",
+      "package": "next",
+      "severity": "high",
+      "reason": "DoS via RSC deserialization — applicable; accepted under DEV-0023; hard stop Day 13 (2026-05-30). No further deferral.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-h25m-26qc-wcjf",
+      "package": "next",
+      "severity": "high",
+      "reason": "DoS via RSC deserialization — applicable; accepted under DEV-0023; hard stop Day 13 (2026-05-30). No further deferral.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-q4gf-8mx6-v5v3",
+      "package": "next",
+      "severity": "high",
+      "reason": "DoS via RSC deserialization — applicable; accepted under DEV-0023; hard stop Day 13 (2026-05-30). No further deferral.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-8h8q-6873-q5fj",
+      "package": "next",
+      "severity": "high",
+      "reason": "DoS via RSC deserialization — applicable; accepted under DEV-0023; hard stop Day 13 (2026-05-30). No further deferral.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-c4j6-fc7j-m34r",
+      "package": "next",
+      "severity": "high",
+      "reason": "SSRF via WebSocket — NOT EXPLOITABLE: no custom WebSocket server; App Router on Vercel edge; grep apps/web/server/ for WebSocket returns zero results. Retained in exceptions for CI hygiene.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    },
+    {
+      "cve": "GHSA-36qx-fr4f-26g5",
+      "package": "next",
+      "severity": "high",
+      "reason": "i18n Pages Router bypass — NOT EXPLOITABLE: no pages/ directory, no i18n config in next.config.mjs (verified 2026-05-24). Retained in exceptions for CI hygiene.",
+      "until": "2026-05-30",
+      "linked_defect": "DEF-0001",
+      "linked_deviation": "DEV-0023"
+    }
+  ]
+}

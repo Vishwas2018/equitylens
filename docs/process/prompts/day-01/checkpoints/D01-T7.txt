@@ -1,0 +1,85 @@
+D01-T7 Checkpoint — Day 1 Closeout
+====================================
+Date: 2026-05-19
+Branch: feature/d01-bootstrap
+HEAD SHA at closeout: 82cd65ac5de19f8407beca13127114d23c931672
+
+## Task
+Close out Day 1: update all registers, write EOD reports, apply day-01-end tag, push.
+
+## Registers updated
+
+### deviation-log.md
+- Open: DEV-0002 (Node 24/pnpm 10 local dev, medium, accepted), DEV-0006 (header-pattern grep
+  hook, low, accepted+mitigation)
+- Closed: DEV-0001 (two D00-T1 commits), DEV-0005 (tsconfig.base in D01-T1), DEV-0007
+  (hooks engine-strict env var), DEV-0008 (lowercase subject-case), DEV-0009 (vercel.json
+  rootDirectory not in schema)
+- Full detail sections written for all 9 deviations
+
+### technical-debt.md
+- TD-0001: migration-status/migration-dryrun CI checks not yet wired (ci, low, scheduled Day 2)
+- TD-0002: rls-coverage/cross-tenant-probe CI checks not yet wired (ci, low, scheduled Day 2)
+- TD-0003: region-check CI check not yet wired (ci, low, scheduled Day 2)
+- TD-0004: engine-determinism/ato-fixture-canary CI checks not yet wired (ci, low, scheduled Day 4)
+- TD-0005: bundle-budgets/a11y/disclaimer-audit CI checks not yet wired (ci, low, scheduled Day 8)
+- TD-0006: secret-scan CI check not yet wired (ci, low, scheduled Day 15)
+- TD-0007: prettier reformat noise mixed with config signal in D01-T3 commit (ci, low, open)
+- TD-0008: audit-deps exception mechanism (ci, medium, open) — already logged D01-T4
+
+### daily-progress-log.md
+- Day 0 and Day 1 entries complete
+- Day 1: status clean, all 7 tasks achieved, registers touched, notable decisions, surprises,
+  carried-forward items documented
+
+### defect-log.md
+- DEF-0001: sev2 open (logged at D01-T4 follow-up commit)
+
+### product-backlog.md
+- BL-0022: P0 Next.js 14→15 migration (logged at D01-T4 follow-up commit)
+
+## EOD reports written
+
+- docs/process/prompts/day-00/03-end-of-day-report.md — backfilled
+- docs/process/prompts/day-01/03-end-of-day-report.md — Day 1 report
+
+## CCTV audit summary (run during D01-T4)
+
+| Check          | Result |
+| -------------- | ------ |
+| git-status     | PASS   |
+| typecheck      | PASS   |
+| lint           | PASS   |
+| format-check   | PASS   |
+| test           | PASS   |
+| audit-deps     | FAIL   | ← DEF-0001 (known, tracked)
+
+Exit code: 1 (expected)
+
+## Deployment (verified D01-T6)
+
+- Preview URL: https://equitylens-26137hhyi-vishwas2018s-projects.vercel.app
+- /api/health: {"ok":true,"version":"dev"}
+- Region: syd1
+
+## Decisions locked today
+
+1. npm_config_engine_strict=false env-var in hooks (not per-hook .npmrc)
+2. CI audit-deps is a hard failure (no continue-on-error) — drives DEF-0001 resolution
+3. Next.js upgraded 14.2.5 → 14.2.29 immediately; 14→15 assessed at Day 2 morning
+4. outputDirectory: ".next" in vercel.json (relative to Root Directory); rootDirectory is
+   dashboard-only setting
+
+## Carried into Day 2
+
+1. DEF-0001 decision gate: migrate Next.js 14→15 now (Day 2) OR defer to Day 8?
+2. Supabase project creation → wires TD-0001 through TD-0003
+3. GitHub branch protection required status checks — human must configure
+4. Vercel BUILD_SHA env var — set VERCEL_GIT_COMMIT_SHA as BUILD_SHA in Vercel project settings
+
+## Tag
+
+day-01-end applied at closeout commit HEAD.
+
+## Result: PASS
+All 7 Day 1 tasks complete. No untracked debt. One sev2 defect open (DEF-0001, expected).
